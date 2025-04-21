@@ -1,0 +1,27 @@
+.btn {
+  padding: 0.6rem 1.4rem;
+  font-size: 1rem;
+  font-weight: lighter;
+  color: #fff;
+  background: linear-gradient(to top, #ff6f7d, #b064ff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(192, 132, 252, 0.3);
+}
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(240, 171, 252, 0.5);
+}
+.dept-btn {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}

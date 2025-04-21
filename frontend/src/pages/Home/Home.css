@@ -1,0 +1,95 @@
+.App {
+  position: relative;
+  /* background: radial-gradient(ellipse at center, #7e22ce 0%, #0a0a0a 100%); */
+  color: #fff;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 5%;
+  z-index: 10;
+}
+
+.dept-btn .hamburger {
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+}
+.nav-right {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+.nav-item {
+  cursor: pointer;
+  position: relative;
+  font-size: 0.95rem;
+}
+.nav-item:hover {
+  color: #c084fc;
+}
+.arrow {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+}
+
+/* ===== Hero Section ===== */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  height: 100vh;
+}
+.hero-content {
+  max-width: 45%;
+}
+.hero-title {
+  font-size: 3rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+.hero-title span {
+  color: #c084fc;
+}
+.hero-subtitle {
+  margin: 1rem 0;
+  font-size: 1.1rem;
+  color: #ddd;
+}
+
+/* ===== Controller image & glow ellipse ===== */
+.hero-image {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hero-image img {
+  max-width: 500px;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.controller-ellipse {
+  position: absolute;
+  width: 600px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(192, 132, 252, 0.5) 0%,
+    rgba(192, 132, 252, 0.2) 40%,
+    transparent 100%
+  );
+  filter: blur(100px);
+  z-index: -1;
+}
