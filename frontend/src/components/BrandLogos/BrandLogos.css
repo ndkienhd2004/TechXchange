@@ -3,8 +3,31 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
+  width: 100%;
   border-bottom: 1px solid #333;
   overflow-x: auto;
+  background-color: #1e1e1e;
+  height: 6vh;
+}
+.home-items {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-direction: column;
+}
+.home-items-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-direction: row;
 }
 
 .brand-logo {

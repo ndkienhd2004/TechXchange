@@ -1,0 +1,95 @@
+/* FeaturedProducts.css */
+.featured-products-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.featured-title {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.featured-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 20px;
+  min-height: 600px; /* Chiều cao tối thiểu để đảm bảo cột có không gian */
+  align-items: stretch; /* Đảm bảo các cột con có chiều cao bằng nhau */
+}
+
+/* Premium Gadgets Column */
+.premium-gadgets-container {
+  background-color: #2d214a;
+  border-radius: 8px;
+  border: 1px solid #3d325a;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  grid-row: span 2;
+}
+
+.hot-deals-badge {
+  background-color: #9c27b0;
+  color: white;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.gadgets-collection {
+  color: white;
+  font-size: 14px;
+  text-align: center;
+  padding: 120px 0;
+}
+
+.premium-gadgets-text {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.premium-title {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.premium-subtitle {
+  color: #a8a8a8;
+  font-size: 14px;
+}
+
+/* Products Column */
+.products-feature-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr; /* Mỗi hàng chiếm đều không gian */
+  gap: 15px;
+  height: 100%; /* Đảm bảo cột này chiếm toàn bộ chiều cao của grid */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .featured-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-gadgets-container {
+    grid-row: span 1;
+  }
+
+  .products-container {
+    grid-template-columns: 1fr;
+  }
+}

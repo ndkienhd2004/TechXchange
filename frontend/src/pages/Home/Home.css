@@ -1,95 +1,115 @@
-.App {
-  position: relative;
-  /* background: radial-gradient(ellipse at center, #7e22ce 0%, #0a0a0a 100%); */
-  color: #fff;
+.home {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-direction: column;
 }
 
-/* ===== Navbar ===== */
-.navbar {
-  position: absolute;
-  top: 0;
+.home-content {
+  width: 100vw;
+  align-items: center;
+  justify-content: center;
+  height: 40vh;
+}
+
+/* Phần BrandLogo cũng có màu nền mặc định */
+.brand-logos {
+  width: 100%;
+}
+
+/* Từ phần new arrival trở đi mới áp dụng gradient */
+.home-items {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  padding: 20px;
+  color: white;
+  background: linear-gradient(to bottom, #161129, #0f0a17, #0a0a0a);
+}
+
+.home-leftOutline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 6;
   left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 5%;
-  z-index: 10;
+  width: 50%;
+  height: 100%;
 }
 
-.dept-btn .hamburger {
-  margin-right: 0.5rem;
-  font-size: 1.2rem;
-}
-.nav-right {
-  list-style: none;
-  display: flex;
-  gap: 1.5rem;
-}
-.nav-item {
-  cursor: pointer;
-  position: relative;
-  font-size: 0.95rem;
-}
-.nav-item:hover {
-  color: #c084fc;
-}
-.arrow {
-  margin-left: 0.25rem;
-  font-size: 0.7rem;
-}
-
-/* ===== Hero Section ===== */
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 5%;
-  height: 100vh;
-}
-.hero-content {
-  max-width: 45%;
-}
-.hero-title {
+.home-title {
   font-size: 3rem;
   line-height: 1.2;
   font-weight: 800;
+  color: white;
 }
-.hero-title span {
+
+.home-title span {
   color: #c084fc;
 }
-.hero-subtitle {
+
+.home-subtitle {
   margin: 1rem 0;
   font-size: 1.1rem;
   color: #ddd;
 }
 
-/* ===== Controller image & glow ellipse ===== */
-.hero-image {
+.carousel-container {
   position: relative;
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-.hero-image img {
-  max-width: 500px;
+  justify-content: center;
   width: 100%;
-  height: auto;
-  display: block;
 }
-.controller-ellipse {
+
+.home-items-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  flex-direction: row;
+  gap: 1rem;
+  overflow: hidden;
+  padding: 10px 0;
+}
+
+.carousel-button {
   position: absolute;
-  width: 600px;
-  height: 400px;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    ellipse at center,
-    rgba(192, 132, 252, 0.5) 0%,
-    rgba(192, 132, 252, 0.2) 40%,
-    transparent 100%
-  );
-  filter: blur(100px);
-  z-index: -1;
+  transform: translateY(-50%);
+  background-color: rgba(156, 39, 176, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background-color 0.3s;
+}
+
+.carousel-button:hover {
+  background-color: rgba(156, 39, 176, 0.9);
+}
+
+.carousel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prev {
+  left: 10px;
+}
+
+.next {
+  right: 10px;
 }

@@ -1,4 +1,4 @@
-import StarRating from "../RatingStar/RatingStar";
+import StarRating from "../../RatingStar/RatingStar";
 import "./ProductCard.css";
 import EffectButton from "../../Button/Button"; // Capitalize the import
 
