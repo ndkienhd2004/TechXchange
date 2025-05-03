@@ -1,6 +1,12 @@
+import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const handleCartButtonClicked = () => {
+    navigate("/cart");
+  };
+
   return (
     <nav className="navbar">
       <div className="app-info">
@@ -24,7 +30,9 @@ const Navbar = () => {
         </select>
       </div>
       <div className="nav-icons">
-        <span className="icon">🛒</span>
+        <span className="icon" onClick={handleCartButtonClicked}>
+          🛒
+        </span>
         <span className="icon">❤️</span>
         <span className="icon account">
           👤 <span className="account-text">My Account</span>

@@ -1,4 +1,3 @@
-/* FeaturedProducts.css */
 .featured-products-container {
   width: 100%;
   max-width: 1200px;
@@ -10,16 +9,14 @@
   text-align: center;
   color: white;
   margin-bottom: 30px;
-  font-size: 24px;
-  font-weight: 600;
+  /* font-size: 24px;
+  font-weight: 600; */
 }
 
 .featured-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-gap: 20px;
-  min-height: 600px; /* Chiều cao tối thiểu để đảm bảo cột có không gian */
-  align-items: stretch; /* Đảm bảo các cột con có chiều cao bằng nhau */
 }
 
 /* Premium Gadgets Column */
@@ -27,11 +24,15 @@
   background-color: #2d214a;
   border-radius: 8px;
   border: 1px solid #3d325a;
-  padding: 20px;
+  padding: 0;
+  height: 100%;
+}
+
+.premium-gadgets-content {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  grid-row: span 2;
+  height: 100%;
+  padding: 20px;
 }
 
 .hot-deals-badge {
@@ -49,12 +50,16 @@
   color: white;
   font-size: 14px;
   text-align: center;
-  padding: 120px 0;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .premium-gadgets-text {
   margin-top: auto;
   padding-top: 20px;
+  margin-bottom: 20px;
 }
 
 .premium-title {
@@ -71,12 +76,16 @@
 }
 
 /* Products Column */
-.products-feature-container {
+.products-grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr; /* Mỗi hàng chiếm đều không gian */
+  grid-template-rows: 1fr 1fr;
   gap: 15px;
-  height: 100%; /* Đảm bảo cột này chiếm toàn bộ chiều cao của grid */
+}
+
+/* Ensure product cards take full height of their grid cell */
+.products-grid-container > div {
+  height: 100%;
 }
 
 /* Responsive */
@@ -86,10 +95,16 @@
   }
 
   .premium-gadgets-container {
-    grid-row: span 1;
+    margin-bottom: 20px;
+    height: auto;
   }
 
-  .products-container {
+  .premium-gadgets-content {
+    min-height: 400px;
+  }
+
+  .products-grid-container {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }

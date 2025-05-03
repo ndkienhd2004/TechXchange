@@ -13,7 +13,7 @@ const ProductCard = ({ product }) => {
       <StarRating rating={product.rating} />
       <div className="product-actions">
         <button className="buy-now-btn">Buy now</button>
-        <EffectButton className="add-to-cart-btn" placeHolder="Add to cart" />
+        <EffectButton placeHolder="Add to cart" />
       </div>
     </div>
   );
