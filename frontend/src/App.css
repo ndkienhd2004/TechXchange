@@ -2,6 +2,8 @@
   margin: 0;
   padding: 0;
   background-color: #2e2e2e;
+  width: 100%;
+  overflow: hidden; /* Ẩn thanh cuộn của root */
 }
 html,
 body {

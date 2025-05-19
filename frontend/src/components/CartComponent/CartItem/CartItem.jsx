@@ -1,17 +1,15 @@
 // CartItem.js
-import React, { useState } from "react";
+import React from "react";
 import { Trash2, Plus, Minus } from "lucide-react";
 import "./CartItem.css"; // Import CSS riêng cho CartItem
 
-const CartItem = ({ item, onQuantityChange, onRemove }) => {
-  const [isChecked, setIsChecked] = useState(false);
-
+const CartItem = ({ item, onQuantityChange, onRemove, onCheckboxChange }) => {
   return (
     <div className="cart-item">
       <input
         type="checkbox"
-        checked={isChecked}
-        onCheckedChange={setIsChecked}
+        checked={item.isChecked}
+        onChange={(e) => onCheckboxChange(item.id, e.target.checked)}
         className="flex-shrink-0"
       />
       <img src={item.image} alt={item.name} className="item-image" />
@@ -36,7 +34,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
           min="1"
           value={item.quantity}
           onChange={(e) =>
-            onQuantityChange(item.id, parseInt(e.target.value, 10))
+            onQuantityChange(item.id, parseInt(e.target.value, 10) || 1)
           }
           className="w-16 text-center"
         />

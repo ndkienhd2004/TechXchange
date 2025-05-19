@@ -14,7 +14,8 @@ const initialCartItems = [
     options: "Màu: Đỏ, Kích thước: M",
     price: 250000,
     quantity: 2,
-    image: "https://via.placeholder.com/150", // Thay thế bằng URL hình ảnh thực tế
+    image: "/api/placeholder/150/150", // Sử dụng placeholder API nội bộ
+    isChecked: true, // Mặc định chọn tất cả
   },
   {
     id: "2",
@@ -22,7 +23,8 @@ const initialCartItems = [
     options: "Màu: Xanh, Kích thước: L",
     price: 300000,
     quantity: 1,
-    image: "https://via.placeholder.com/150", // Thay thế bằng URL hình ảnh thực tế
+    image: "/api/placeholder/150/150", // Sử dụng placeholder API nội bộ
+    isChecked: true, // Mặc định chọn tất cả
   },
   {
     id: "3",
@@ -30,7 +32,8 @@ const initialCartItems = [
     options: "Màu: Vàng, Kích thước: S",
     price: 150000,
     quantity: 3,
-    image: "https://via.placeholder.com/150", // Thay thế bằng URL hình ảnh thật
+    image: "/api/placeholder/150/150", // Sử dụng placeholder API nội bộ
+    isChecked: true, // Mặc định chọn tất cả
   },
 ];
 
@@ -44,10 +47,11 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState(initialCartItems);
   const [appliedVoucher, setAppliedVoucher] = useState(null);
 
-  // Tính tổng tiền
+  // Tính tổng tiền - chỉ tính cho các sản phẩm được chọn
   const calculateTotal = () => {
     return cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
+      (total, item) =>
+        total + (item.isChecked ? item.price * item.quantity : 0),
       0
     );
   };
@@ -82,6 +86,27 @@ const Cart = () => {
     setCartItems(cartItems.filter((item) => item.id !== itemId));
   };
 
+  // Hàm xử lý chọn/bỏ chọn sản phẩm
+  const handleCheckboxChange = (itemId, isChecked) => {
+    setCartItems(
+      cartItems.map((item) =>
+        item.id === itemId ? { ...item, isChecked } : item
+      )
+    );
+  };
+
+  // Hàm xử lý chọn tất cả
+  const handleSelectAll = (isChecked) => {
+    setCartItems(cartItems.map((item) => ({ ...item, isChecked })));
+  };
+
+  // Kiểm tra xem có chọn tất cả hay không
+  const isAllSelected =
+    cartItems.length > 0 && cartItems.every((item) => item.isChecked);
+
+  // Đếm số lượng sản phẩm được chọn
+  const selectedItemsCount = cartItems.filter((item) => item.isChecked).length;
+
   // Hàm xử lý áp dụng mã giảm giá
   const handleApplyVoucher = (code) => {
     const voucher = VOUCHERS.find((v) => v.code === code);
@@ -98,7 +123,11 @@ const Cart = () => {
 
   // Hàm xử lý thanh toán (chuyển đến trang thanh toán)
   const handleCheckout = () => {
-    //  Logic chuyển trang thanh toán (sử dụng React Router hoặc window.location.href)
+    if (selectedItemsCount === 0) {
+      alert("Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+      return;
+    }
+    // Logic chuyển trang thanh toán (sử dụng React Router hoặc window.location.href)
     alert(`Chuyển đến trang thanh toán với tổng tiền: ${total - discount} VNĐ`);
   };
 
@@ -106,11 +135,11 @@ const Cart = () => {
     <div className="cart-page">
       <h1 className="cart-page-title">
         <ShoppingCart className="w-6 h-6" />
-        Giỏ hàng của bạn
+        Your Cart{" "}
       </h1>
       {cartItems.length === 0 ? (
         <div className="empty-cart-message">
-          Giỏ hàng của bạn trống.
+          Your cart is empty. Please add some products to your cart.
           {/* Thêm link để tiếp tục mua sắm */}
         </div>
       ) : (
@@ -118,12 +147,29 @@ const Cart = () => {
           {/* Danh sách sản phẩm */}
           <div className="product-list">
             <PromotionBanner />
+
+            {/* Checkbox chọn tất cả */}
+            <div className="select-all-container">
+              <label className="select-all-label">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="select-all-checkbox"
+                />
+                <span className="select-all-text">
+                  Chọn tất cả ({selectedItemsCount}/{cartItems.length})
+                </span>
+              </label>
+            </div>
+
             {cartItems.map((item) => (
               <CartItem
                 key={item.id}
                 item={item}
                 onQuantityChange={handleQuantityChange}
                 onRemove={handleRemoveItem}
+                onCheckboxChange={handleCheckboxChange}
               />
             ))}
           </div>
@@ -139,6 +185,7 @@ const Cart = () => {
               total={total}
               onCheckout={handleCheckout}
               discount={discount}
+              selectedItemsCount={selectedItemsCount}
             />
           </div>
         </div>

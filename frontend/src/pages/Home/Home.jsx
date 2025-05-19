@@ -1,9 +1,7 @@
 import "./home.css";
-import NavBar from "../../components/NavBar/NavBar";
 import BrandLogo from "../../components/BrandLogos/BrandLogos";
 import ProductCard from "../../components/HomeComponents/ProductCard/ProductCard";
 import { useEffect, useState } from "react";
-import featuredProducts from "../../components/HomeComponents/FeaturedProducts/FeaturedProducts";
 import FeaturedProducts from "../../components/HomeComponents/FeaturedProducts/FeaturedProducts";
 const Home = () => {
   const productData = [
@@ -80,7 +78,7 @@ const Home = () => {
   ];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleProducts, setVisibleProducts] = useState([]);
-  const itemsToShow = 6;
+  const itemsToShow = 5;
   useEffect(() => {
     // Update visible products when currentIndex changes
     const endIndex = currentIndex + itemsToShow;
@@ -101,7 +99,6 @@ const Home = () => {
   };
   return (
     <div className="home">
-      <NavBar />
       <div className="home-content">
         <div className="home-leftOutline">
           <h1 className="home-title">
@@ -126,9 +123,12 @@ const Home = () => {
           </button>
           <div className="home-items-list">
             {visibleProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div className="product-card-wrapper" key={product.id}>
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
+
           <button
             className="carousel-button next"
             onClick={nextSlide}

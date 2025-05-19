@@ -20,12 +20,12 @@
 .item-name {
   font-size: 1rem;
   font-weight: bold;
-  color: #333;
+  color: white;
 }
 
 .item-options {
   font-size: 0.875rem;
-  color: #666;
+  color: whitesmoke;
 }
 
 .item-price {
@@ -59,7 +59,7 @@
 }
 
 .item-total {
-  color: #333;
+  color: white;
   font-weight: bold;
   white-space: nowrap;
 }

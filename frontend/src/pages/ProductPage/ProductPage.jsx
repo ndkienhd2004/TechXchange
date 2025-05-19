@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import "./ProductPage.css";
 import ProductInfo from "../../components/ProductPageComponent/ProductInfo/ProductInfo";
-import NavBar from "../../components/Navbar/Navbar";
 import Review from "../../components/ProductPageComponent/Review/Review";
 const ProductPage = () => {
   const [currentImage, setCurrentImage] = useState(0);
@@ -58,7 +57,6 @@ const ProductPage = () => {
 
   return (
     <div className="product-detail-page-container">
-      <NavBar />
       {/* Breadcrumb */}
       <div className="breadcrumb">
         <a href="/">Home</a> &gt; <a href="/categories">Categories</a> &gt;{" "}
@@ -113,7 +111,7 @@ const ProductPage = () => {
       <div className="vendor-section">
         <div className="vendor-info">
           <div className="vendor-logo">
-            <img src="/images/ugreen-logo.png" alt="UGREEN Vietnam Shop" />
+            <img src="/images/ugreen-logo.png" alt="Shop Logo" />
           </div>
           <div className="vendor-details">
             <h3>UGREEN Vietnam Shop</h3>

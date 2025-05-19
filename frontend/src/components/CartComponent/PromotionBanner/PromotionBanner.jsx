@@ -5,7 +5,7 @@ import "./PromotionBanner.css"; // Import CSS riêng cho PromotionBanner
 const PromotionBanner = () => {
   return (
     <div className="promotion-banner" role="alert">
-      <p className="font-bold">Khuyến mãi!</p>
+      <p className="promotion-header">Khuyến mãi!</p>
       <p>Miễn phí vận chuyển cho đơn hàng trên 500.000 VNĐ</p>
     </div>
   );

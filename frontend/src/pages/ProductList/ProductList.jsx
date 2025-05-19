@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./ProductList.css";
 import CategoriesFilter from "../../components/ProductListComponent/CategoriesFilter/CategoriesFilter";
 import BrandLogos from "../../components/BrandLogos/BrandLogos";
-import Navbar from "../../components/Navbar/Navbar";
 import ProductCard from "../../components/ProductListComponent/ProductCard/ProductCard";
 const productData = [
   {
@@ -65,7 +64,6 @@ const ProductListingPage = () => {
   return (
     <div className="product-listing-page">
       {/* Brand logos section */}
-      <Navbar />
       <BrandLogos />
 
       {/* Breadcrumb */}

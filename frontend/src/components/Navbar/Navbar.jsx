@@ -13,7 +13,7 @@ const Navbar = () => {
         <a className="brand-gradient">TechXchange</a>
       </div>
       <div className="search-container">
-        <span className="search-icon">🔍</span>
+        <span className="nav-search">🔍</span>
         <input
           type="text"
           placeholder="Search For Products..."

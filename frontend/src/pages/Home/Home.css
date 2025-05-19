@@ -68,14 +68,9 @@
 
 .home-items-list {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  flex-direction: row;
-  gap: 1rem;
+  gap: 12px;
   overflow: hidden;
-  padding: 10px 0;
+  padding: 20px;
 }
 
 .carousel-button {
@@ -112,4 +107,10 @@
 
 .next {
   right: 10px;
+}
+
+.product-card-wrapper {
+  min-width: 280px; /* có thể điều chỉnh theo nhu cầu */
+  max-width: 280px;
+  flex-shrink: 0;
 }
