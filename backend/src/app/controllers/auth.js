@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-const redisClient = require("../redisClient");
+const redisClient = require("../../config/redisClient");
 require("dotenv").config();
 
 const MAX_AGE = 3 * 24 * 60 * 60;

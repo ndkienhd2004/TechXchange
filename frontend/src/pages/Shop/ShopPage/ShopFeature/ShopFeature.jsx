@@ -97,7 +97,7 @@ const ShopFeature = () => {
   };
 
   return (
-    <div className="shop-feature">
+    <div className="shop-feature" id="feature">
       <div className="featured-product-header">
         <h2>Featured Product</h2>
         <a href="#" className="view-all-link">

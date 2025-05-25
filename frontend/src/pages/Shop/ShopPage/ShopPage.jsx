@@ -1,10 +1,23 @@
 import { useEffect, useState } from "react";
 import shopLogo from "../../../assets/Images/ugreen-logo.png";
-import ShopNavBar from "../../../components/ShopComponent/ShopNavBar/ShopNavBar";
-import { Outlet } from "react-router-dom";
+import ShopNavBar from "./ShopNavBar/ShopNavBar";
 import "./ShopPage.css";
+import ShopFeature from "./ShopFeature/ShopFeature";
+import AllProduct from "./AllProduct/AllProduct";
+import BannerCarousel from "./Banner/Banner";
 
 const ShopPage = () => {
+  const [activeFilter, setActiveFilter] = useState({
+    group: "CATEGORIES",
+    value: "laptop",
+  });
+
+  // Handler for filter changes
+  const handleFilterChange = (filterInfo) => {
+    setActiveFilter(filterInfo);
+    // You can add logic here to filter products based on the selected filter
+    console.log(`Filter changed to ${filterInfo.group}: ${filterInfo.value}`);
+  };
   return (
     <div className="shop-page">
       <div className="shop-header">
@@ -64,7 +77,14 @@ const ShopPage = () => {
       <div className="shop-nav-container">
         <ShopNavBar />
       </div>
-      <Outlet />
+      <ShopFeature />
+      <div className="shop-banners">
+        <BannerCarousel />
+      </div>
+      <AllProduct
+        handleFilterChange={handleFilterChange}
+        activeFilter={activeFilter}
+      />
     </div>
   );
 };

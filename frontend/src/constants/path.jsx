@@ -1,5 +1,3 @@
-import favoriteProducts from "../pages/User/FavoriteProducts/FavoriteProducts";
-
 const PATH = {
   home: "/",
   about: "/about-us",
@@ -12,6 +10,7 @@ const PATH = {
   shopPage: "/shop",
   allProducts: "/all-products",
   event: "/event",
+  shopManagement: "/shop-management",
 };
 
 export default PATH;

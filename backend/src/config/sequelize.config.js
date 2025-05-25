@@ -1,15 +1,16 @@
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
 
-// Kết nối với MySQL
+// Kết nối với PostgreSQL
 const sequelize = new Sequelize(
   process.env.DB_NAME, // Tên database
   process.env.DB_USER, // Username
   process.env.DB_PASS, // Mật khẩu
   {
     host: process.env.DB_HOST,
-    dialect: "mysql", // Loại database (MySQL)
-    logging: false, // Ẩn log SQL trong terminal
+    port: process.env.DB_PORT, // Cổng kết nốis
+    dialect: "postgres", // Đổi sang postgres
+    logging: false, // Ẩn log SQL
   }
 );
 
@@ -17,9 +18,9 @@ const sequelize = new Sequelize(
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Connected to MySQL");
+    console.log("Connected to PostgreSQL");
   } catch (error) {
-    console.error("Error connecting to MySQL:", error);
+    console.error("Error connecting to PostgreSQL:", error);
     process.exit(1);
   }
 };

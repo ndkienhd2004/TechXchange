@@ -10,7 +10,7 @@ import FavoriteProducts from "../pages/User/FavoriteProducts/FavoriteProducts";
 import ProtectedRoute from "./ProtectedRoutes";
 import NotAuthorized from "../pages/NotAuthorized/NotAuthorized";
 import ShopPage from "../pages/Shop/ShopPage/ShopPage";
-import ShopFeature from "../pages/Shop/ShopPage/ShopFeature/ShopFeature";
+import ShopManagement from "../pages/Shop/ShopManagement/ShopManagement";
 function createRoutes() {
   const routes = useRoutes([
     {
@@ -48,18 +48,38 @@ function createRoutes() {
     },
     {
       path: PATH.shopPage,
-      element: (
-        // <ProtectedRoute requiredRole="shop">
-        <ShopPage />
-        // </ProtectedRoute>
-      ),
+      element: <ShopPage />,
+    },
+    {
+      path: PATH.shopManagement,
+      // <ProtectedRoute requiredRole="shop">
+      element: <ShopManagement />,
+      // </ProtectedRoute>
       children: [
         {
-          index: true,
-          element: <ShopFeature />,
+          path: "dashboard",
+          element: <div>Shop Dashboard</div>,
         },
-        // { path: PATH.allProducts, element: <allProducts /> },
-        // { path: PATH.event, element: <event /> },
+        {
+          path: "orders",
+          element: <div>Shop Orders</div>,
+        },
+        {
+          path: "products",
+          element: <div>Shop Products</div>,
+        },
+        {
+          path: "profile",
+          element: <div>Shop Profile</div>,
+        },
+        {
+          path: "analytics",
+          element: <div>Shop Analytics</div>,
+        },
+        {
+          path: "message",
+          element: <div>Shop Message</div>,
+        },
       ],
     },
     { path: "/unauthorized", element: <NotAuthorized /> },

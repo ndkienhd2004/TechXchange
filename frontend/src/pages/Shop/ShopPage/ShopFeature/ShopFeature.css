@@ -64,3 +64,11 @@
   overflow: hidden;
   padding: 20px;
 }
+.shop-banner {
+  width: 100vw;
+  height: 200px;
+  margin: 24px auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
