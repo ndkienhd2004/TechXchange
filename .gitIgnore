@@ -1,2 +1,1 @@
-docker-compose.override.yml
-TexchXchange.sql
+docker-compose.yml

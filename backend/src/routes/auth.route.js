@@ -1,9 +1,12 @@
 const express = require("express");
 const route = express.Router();
-const AuthController = require("../app/controllers/auth");
+import * as AuthController from "../app/controllers/authController.js";
 
-route.post("/login", AuthController.login);
-route.post("/register", AuthController.register);
-route.post("/logout", AuthController.logout);
+export default function authRoute(app) {
+  route.get("/", AuthController.getAllUsers);
+  route.get("/:id", AuthController.getUserById);
+  route.put("/:id", AuthController.updateUser);
+  route.delete("/:id", AuthController.deleteUser);
 
-module.exports = route;
+  app.use(route);
+}

@@ -8,9 +8,9 @@ const sequelize = new Sequelize(
   process.env.DB_PASS, // Mật khẩu
   {
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT, // Cổng kết nốis
-    dialect: "postgres", // Đổi sang postgres
-    logging: false, // Ẩn log SQL
+    port: process.env.DB_PORT,
+    dialect: "postgres",
+    logging: false,
   }
 );
 

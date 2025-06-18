@@ -1,17 +1,19 @@
-const express = require("express");
-const morgan = require("morgan");
-const route = require("./routes/index.route.js");
-const cookieParser = require("cookie-parser");
-const cors = require("cors");
-const path = require("path");
-require("dotenv").config();
-const { sequelize, connectDB } = require("./config/sequelize.config.js");
-const bodyParser = require("body-parser");
+import express from "express";
+import dotenv from "dotenv";
+import morgan from "morgan";
+import route from "./routes/index.route.js";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import path from "path";
+import { sequelize, connectDB } from "./config/sequelize.config.js";
+import bodyParser from "body-parser";
+
+dotenv.config();
 const { createServer } = require("http");
 
 const app = express();
 const server = createServer(app);
-const port = process.env.PORT || 3000;
+const port = process.env.PORT ?? 3000;
 
 // Kết nối Database
 connectDB();
@@ -32,6 +34,10 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 
 // Routes
 route(app);
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the backend server!");
+});
 
 // Khởi động server
 server.listen(port, () => {

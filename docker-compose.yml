@@ -7,17 +7,19 @@ services:
     volumes:
       - redis_data:/data
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres
+  mysql:
+    image: mysql:latest
+    container_name: mysql
     ports:
-      - "5433:5432"
+      - "5433:3306"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: techXchange
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     volumes:
-      - ./TechXchange.sql:/docker-entrypoint-initdb.d/TechXchange.sql
-      - postgres_data:/var/lib/postgresql/data
+      - ./techXchange.sql:/docker-entrypoint-initdb.d/techXchange.sql
+      - mysql_data:/var/lib/mysql/data
 volumes:
   redis_data:
-  postgres_data:
+  mysql_data:

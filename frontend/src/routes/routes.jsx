@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoutes";
 import NotAuthorized from "../pages/NotAuthorized/NotAuthorized";
 import ShopPage from "../pages/Shop/ShopPage/ShopPage";
 import ShopManagement from "../pages/Shop/ShopManagement/ShopManagement";
+import Analystic from "../pages/Shop/ShopManagement/Analystic/Analystic";
 function createRoutes() {
   const routes = useRoutes([
     {
@@ -74,7 +75,7 @@ function createRoutes() {
         },
         {
           path: "analytics",
-          element: <div>Shop Analytics</div>,
+          element: <Analystic />,
         },
         {
           path: "message",
