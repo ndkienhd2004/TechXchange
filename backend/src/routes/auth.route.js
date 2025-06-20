@@ -17,7 +17,7 @@ route.post("/verify-reset-code", AuthController.verifyResetCode);
 route.post("/reset-password", AuthController.resetPassword);
 
 // Protected routes example
-route.get("/test", (req, res) => {
+route.get("/", (req, res) => {
   res.status(200).json({ message: "Test route is working!" });
 });
 

@@ -1,8 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 require("dotenv").config();
-console.log("gmail user:", process.env.GMAIL_USER);
-console.log("gmail pass:", process.env.GMAIL_PASS);
+
 import morgan from "morgan";
 import route from "./routes/index.route.js";
 import cookieParser from "cookie-parser";
