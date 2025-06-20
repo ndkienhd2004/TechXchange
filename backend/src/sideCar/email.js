@@ -4,17 +4,6 @@ dotenv.config();
 
 class EmailNotification {
   constructor() {
-    // ---- BẮT ĐẦU ĐOẠN CODE DEBUG ----
-    console.log("\n--- KIỂM TRA BIẾN MÔI TRƯỜNG CHO EMAIL ---");
-    console.log("Giá trị GMAIL_USER:", process.env.GMAIL_USER);
-    // Để bảo mật, chỉ kiểm tra xem GMAIL_PASS có được nạp hay không
-    console.log(
-      "GMAIL_PASS đã được nạp chưa?:",
-      process.env.GMAIL_PASS ? "CÓ" : "KHÔNG"
-    );
-    console.log("------------------------------------------\n");
-    // ---- KẾT THÚC ĐOẠN CODE DEBUG ----
-
     this.transporter = nodeMailer.createTransport({
       service: "gmail",
       auth: {
