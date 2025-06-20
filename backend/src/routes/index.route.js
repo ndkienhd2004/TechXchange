@@ -5,9 +5,12 @@ import ProductRoute from "./product.route.js";
 
 function route(app) {
   app.use("/api/auth", AuthRoute);
-  // app.use("/api/users", UserRoute);
-  app.use("/api/products", ProductRoute);
-  // app.use("/api/stores", StoreRoute);
+  // app.use("/api/users", UserRoute());
+  // app.use("/api/products", ProductRoute);
+  // app.use("/api/stores", StoreRoute());
+  app.use("/api", (req, res) => {
+    res.status(404).json({ message: "API endpoint not found" });
+  });
 }
 
 export default route;

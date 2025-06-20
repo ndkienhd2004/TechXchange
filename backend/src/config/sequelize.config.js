@@ -9,7 +9,7 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    dialect: "postgres",
+    dialect: "mysql", // Sử dụng MySQL dialect
     logging: false,
   }
 );
@@ -18,9 +18,9 @@ const sequelize = new Sequelize(
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Connected to PostgreSQL");
+    console.log("Connected to MySQL");
   } catch (error) {
-    console.error("Error connecting to PostgreSQL:", error);
+    console.error("Error connecting to MySQL:", error);
     process.exit(1);
   }
 };

@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import db from "../models/user";
+import db from "../../models/user";
 
 export default function getAllProducts(req, res) {
   const products = [

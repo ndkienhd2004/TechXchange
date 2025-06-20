@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const redisClient = require("../redisClient");
+const userModel = User.init();
 
 class UserController {
   async getUser(req, res) {
@@ -11,7 +12,7 @@ class UserController {
         return res.status(200).json(JSON.parse(cachedUser));
       }
 
-      const user = await User.findById(req.user.id).select("-password");
+      const user = await userModel.findById(req.user.id).select("-password");
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
