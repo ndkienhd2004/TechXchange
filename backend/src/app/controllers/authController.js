@@ -1,8 +1,7 @@
-// controllers/auth.controller.js
+// controllers/auth.controller.js (UPDATED)
 const jwt = require("jsonwebtoken");
-const authService = require("../services/AuthServices"); // Adjust path
-const redisClient = require("../../config/redisClient"); // Adjust path
-require("dotenv").config();
+const authService = require("../services/AuthServices");
+const redisClient = require("../../config/redisClient");
 
 const MAX_AGE = 3 * 24 * 60 * 60; // 3 days in seconds
 
@@ -34,7 +33,7 @@ class AuthController {
 
       res.status(200).json({ user, token });
     } catch (error) {
-      res.status(error.statusCode | 400).json({ message: error.message });
+      res.status(error.statusCode || 400).json({ message: error.message });
     }
   }
 
@@ -59,7 +58,7 @@ class AuthController {
 
       res.status(201).json({ user: newUser, token });
     } catch (error) {
-      res.status(error.statusCode | 400).json({ message: error.message });
+      res.status(error.statusCode || 400).json({ message: error.message });
     }
   }
 
@@ -76,20 +75,83 @@ class AuthController {
     res.cookie("jwt", "", { maxAge: 1 });
     res.status(200).json({ message: "Logout successful" });
   }
+
   async forgotPassword(req, res) {
-    // Placeholder for forgot password logic
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const response = await authService.forgotPassword(email);
+
+      return res.status(200).json({
+        message: response.message,
+        expiresInMinutes: response.expiresInMinutes,
+      });
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({
+        message: error.message,
+      });
     }
-    // Here you would typically send a reset password email
-    const response = await authService.forgotPassword(email);
-    if (response.success) {
-      return res.status(200).json({ message: "Reset password email sent" });
+  }
+
+  async verifyResetCode(req, res) {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({
+          message: "Email and code are required",
+        });
+      }
+
+      const response = await authService.verifyResetCode(email, code);
+
+      return res.status(200).json({
+        message: response.message,
+        tempToken: response.tempToken,
+        expiresInMinutes: response.expiresInMinutes,
+      });
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({
+        message: error.message,
+      });
     }
-    return res
-      .status(500)
-      .json({ message: "Failed to send reset password email" });
+  }
+
+  async resetPassword(req, res) {
+    try {
+      const { email, tempToken, newPassword } = req.body;
+
+      if (!email || !tempToken || !newPassword) {
+        return res.status(400).json({
+          message: "Email, temporary token, and new password are required",
+        });
+      }
+
+      // Validate password strength
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          message: "Password must be at least 6 characters long",
+        });
+      }
+
+      const response = await authService.resetPassword(
+        email,
+        tempToken,
+        newPassword
+      );
+
+      return res.status(200).json({
+        message: response.message,
+      });
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({
+        message: error.message,
+      });
+    }
   }
 }
 
