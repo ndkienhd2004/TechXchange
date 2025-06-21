@@ -1,15 +1,25 @@
-import * as ProductController from "../app/controllers/productController.js";
-const router = require("express").Router();
+const express = require("express");
+const route = express.Router();
+const ProductController = require("../app/controllers/productController.js");
+const BrandController = require("../app/controllers/brandController.js");
 
-export default function productRoute(app) {
-  router.get("/", ProductController.getAllProducts);
+route.get("/brands", BrandController.getAllBrands);
+route.get("/brands/:id", BrandController.getBrandById);
+route.post("/brands", BrandController.createBrand);
+route.put("/brands/:id", BrandController.updateBrand);
+route.delete("/brands/:id", BrandController.deleteBrand);
 
-  router.get("/:id", ProductController.getProductById);
+route.get("/", ProductController.getAllProducts);
 
-  router.post("/", ProductController.createProduct);
+route.get("/:id", ProductController.getProductById);
 
-  router.put("/:id", ProductController.updateProduct);
-  router.delete("/:id", ProductController.deleteProduct);
+route.post("/", ProductController.createProduct);
 
-  app.use(router);
-}
+route.put("/:id", ProductController.updateProduct);
+route.delete("/:id", ProductController.deleteProduct);
+// Protected routes example
+route.get("/test", (req, res) => {
+  res.status(200).json({ message: "Test route is working!" });
+});
+
+module.exports = route;

@@ -1,57 +1,75 @@
-import { Sequelize } from "sequelize";
-import db from "../../models/user";
-
-export default function getAllProducts(req, res) {
-  const products = [
-    { id: 1, name: "Product 1", price: 100 },
-    { id: 2, name: "Product 2", price: 200 },
-    { id: 3, name: "Product 3", price: 300 },
-  ];
-
-  res.status(200).json(products);
-}
-
-export function getProductById(req, res) {
-  const productId = parseInt(req.params.id, 10);
-  const products = [
-    { id: 1, name: "Product 1", price: 100 },
-    { id: 2, name: "Product 2", price: 200 },
-    { id: 3, name: "Product 3", price: 300 },
-  ];
-
-  const product = products.find((p) => p.id === productId);
-
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+const productService = require("../services/ProductServices.js");
+class ProductController {
+  constructor() {
+    this.productService = productService;
   }
+  getAllProducts = async (req, res) => {
+    try {
+      const products = await this.productService.getAllProducts();
+      if (products.length === 0) {
+        return res.status(404).json({ message: "No products found" });
+      }
+      res.status(200).json(products);
+    } catch (error) {
+      console.error("Error in getAllProducts:", error);
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  };
 
-  res.status(200).json(product);
-}
-
-export async function createProduct(req, res) {
-  try {
-    // await db.Product.create(req.body);
-    res
-      .status(201)
-      .json({ message: "Product created successfully", data: req.body });
-  } catch (error) {
-    console.error("Error creating product:", error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+  getProductById = async (req, res) => {
+    try {
+      const product = await this.productService.getProductById(req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.status(200).json(product);
+    } catch (error) {
+      console.error("Error in getProductById:", error);
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  };
+  async createProduct(req, res) {
+    try {
+      const newProduct = await this.productService.createProduct(req.body);
+      res.status(201).json(newProduct);
+    } catch (error) {
+      console.error("Error in createProduct:", error);
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
   }
+  async updateProduct(req, res) {
+    try {
+      const updatedProduct = await this.productService.updateProduct(
+        req.params.id,
+        req.body
+      );
+      const { name, description, price, imageUrl } = productData;
+      if (price !== undefined && (isNaN(price) || price <= 0)) {
+        throw new Error("Price must be a positive number");
+      }
+      // Thêm bước kiểm tra này, giống như bạn đã làm ở hàm delete
+      if (!updatedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.status(200).json(updatedProduct);
+    } catch (error) {
+      console.error("Error in updateProduct:", error);
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  }
+  deleteProduct = async (req, res) => {
+    try {
+      const result = await this.productService.deleteProduct(req.params.id);
+      if (!result) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.status(200).json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Error in deleteProduct:", error);
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  };
 }
 
-export function updateProduct(req, res) {
-  const productId = parseInt(req.params.id, 10);
-  const updatedProduct = req.body;
-  // Logic to update the product in the database would go here
-  updatedProduct.id = productId; // Ensure the ID remains the same
-  res.status(200).json(updatedProduct);
-}
-
-export function deleteProduct(req, res) {
-  const productId = parseInt(req.params.id, 10);
-  // Logic to delete the product from the database would go here
-  res.status(204).send(); // No content to return after deletion
-}
+module.exports = new ProductController();

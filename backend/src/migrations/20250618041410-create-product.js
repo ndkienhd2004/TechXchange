@@ -27,6 +27,7 @@ module.exports = {
         onDelete: "SET NULL",
       },
       brand_id: {
+        allowNull: true,
         type: Sequelize.INTEGER,
         references: { model: "brands", key: "id" },
         onUpdate: "CASCADE",
@@ -57,6 +58,7 @@ module.exports = {
       quantity: {
         type: Sequelize.INTEGER,
       },
+
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -64,6 +66,10 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
+      },
+      image_url: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
     });
   },
