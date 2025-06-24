@@ -1,30 +1,38 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Product extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+      // ví dụ: Product.belongsTo(models.User, { as: 'seller', foreignKey: 'seller_id' });
     }
   }
-  Product.init({
-    name: DataTypes.STRING,
-    description: DataTypes.TEXT,
-    price: DataTypes.DECIMAL,
-    quality: DataTypes.STRING,
-    conditionPercent: DataTypes.INTEGER,
-    rating: DataTypes.FLOAT,
-    salesCount: DataTypes.INTEGER,
-    quantity: DataTypes.INTEGER
-  }, {
-    sequelize,
-    modelName: 'Product',
-  });
+  Product.init(
+    {
+      name: DataTypes.STRING,
+      description: DataTypes.TEXT,
+      price: DataTypes.DECIMAL,
+      quality: DataTypes.ENUM("new", "like_new", "good", "fair"),
+      conditionPercent: {
+        type: DataTypes.INTEGER,
+        field: "condition_percent",
+      },
+      rating: DataTypes.FLOAT,
+      salesCount: {
+        type: DataTypes.INTEGER,
+        field: "sales_count",
+      },
+      quantity: DataTypes.INTEGER,
+      imageUrl: {
+        type: DataTypes.STRING,
+        field: "image_url",
+      },
+    },
+    {
+      sequelize,
+      modelName: "Product",
+      tableName: "products",
+      underscored: true,
+    }
+  );
   return Product;
 };
