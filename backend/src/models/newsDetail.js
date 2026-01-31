@@ -1,27 +1,22 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Store extends Model {}
+  class NewsDetail extends Model {}
 
-  Store.init(
+  NewsDetail.init(
     {
       id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
       },
-      owner_id: {
+      product_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      name: {
-        type: DataTypes.STRING(100),
-      },
-      description: {
-        type: DataTypes.TEXT,
-      },
-      rating: {
-        type: DataTypes.DOUBLE,
+      news_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -34,14 +29,21 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "Store",
-      tableName: "stores",
+      modelName: "NewsDetail",
+      tableName: "news_detail",
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-      indexes: [{ name: "idx_stores_owner", fields: ["owner_id"] }],
+      indexes: [
+        {
+          name: "uq_news_detail_news_product",
+          unique: true,
+          fields: ["news_id", "product_id"],
+        },
+        { name: "idx_news_detail_product", fields: ["product_id"] },
+      ],
     }
   );
 
-  return Store;
+  return NewsDetail;
 };

@@ -1,27 +1,22 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Store extends Model {}
+  class BannerDetail extends Model {}
 
-  Store.init(
+  BannerDetail.init(
     {
       id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
       },
-      owner_id: {
+      product_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      name: {
-        type: DataTypes.STRING(100),
-      },
-      description: {
-        type: DataTypes.TEXT,
-      },
-      rating: {
-        type: DataTypes.DOUBLE,
+      banner_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -34,14 +29,21 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "Store",
-      tableName: "stores",
+      modelName: "BannerDetail",
+      tableName: "banner_detail",
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-      indexes: [{ name: "idx_stores_owner", fields: ["owner_id"] }],
+      indexes: [
+        {
+          name: "uq_banner_detail_banner_product",
+          unique: true,
+          fields: ["banner_id", "product_id"],
+        },
+        { name: "idx_banner_detail_product", fields: ["product_id"] },
+      ],
     }
   );
 
-  return Store;
+  return BannerDetail;
 };

@@ -1,46 +1,47 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Message extends Model {}
+  class CartItem extends Model {}
 
-  Message.init(
+  CartItem.init(
     {
       id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
       },
-      sender_id: {
+      user_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      receiver_id: {
+      product_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      message: {
-        type: DataTypes.TEXT,
+      quantity: {
+        type: DataTypes.INTEGER,
       },
-      is_read: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-      sent_at: {
+      added_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
     },
     {
       sequelize,
-      modelName: "Message",
-      tableName: "messages",
+      modelName: "CartItem",
+      tableName: "cart_items",
       timestamps: false,
       indexes: [
-        { name: "idx_messages_sender_sentat", fields: ["sender_id", "sent_at"] },
-        { name: "idx_messages_receiver_sentat", fields: ["receiver_id", "sent_at"] },
+        {
+          name: "uq_cart_user_product",
+          unique: true,
+          fields: ["user_id", "product_id"],
+        },
+        { name: "idx_cart_items_user_added", fields: ["user_id", "added_at"] },
+        { name: "idx_cart_items_product", fields: ["product_id"] },
       ],
     }
   );
 
-  return Message;
+  return CartItem;
 };

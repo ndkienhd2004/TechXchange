@@ -1,27 +1,30 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Store extends Model {}
+  class RefreshToken extends Model {}
 
-  Store.init(
+  RefreshToken.init(
     {
       id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
       },
-      owner_id: {
+      user_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      name: {
-        type: DataTypes.STRING(100),
-      },
-      description: {
+      token: {
         type: DataTypes.TEXT,
+        allowNull: false,
       },
-      rating: {
-        type: DataTypes.DOUBLE,
+      expires_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      is_revoked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -34,14 +37,21 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "Store",
-      tableName: "stores",
+      modelName: "RefreshToken",
+      tableName: "refresh_tokens",
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-      indexes: [{ name: "idx_stores_owner", fields: ["owner_id"] }],
+      indexes: [
+        {
+          fields: ["user_id"],
+        },
+        {
+          fields: ["token"],
+        },
+      ],
     }
   );
 
-  return Store;
+  return RefreshToken;
 };

@@ -1,54 +1,57 @@
-"use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
-  class Review extends Model {
-    static associate(models) {
-      // định nghĩa các mối quan hệ ở đây
-      Review.belongsTo(models.User, {
-        foreignKey: "reviewer_id",
-        as: "reviewer",
-      });
-      Review.belongsTo(models.Product, {
-        foreignKey: "product_id",
-        as: "product",
-      });
-      Review.belongsTo(models.Store, { foreignKey: "store_id", as: "store" });
-    }
-  }
+  class Review extends Model {}
+
   Review.init(
     {
-      //... các thuộc tính của bạn
-      rating: DataTypes.INTEGER,
-      comment: DataTypes.TEXT,
-      target_type: DataTypes.ENUM("product", "store"),
-      //... các khóa ngoại sẽ được sequelize tự động thêm
+      id: {
+        type: DataTypes.BIGINT,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      reviewer_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+      },
+      product_id: {
+        type: DataTypes.BIGINT,
+      },
+      store_id: {
+        type: DataTypes.BIGINT,
+      },
+      rating: {
+        type: DataTypes.INTEGER,
+      },
+      comment: {
+        type: DataTypes.TEXT,
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize,
       modelName: "Review",
       tableName: "reviews",
-      underscored: true,
-      // === THÊM LOGIC KIỂM TRA Ở ĐÂY ===
-      validate: {
-        eitherProductOrStore() {
-          if (this.target_type === "product" && !this.product_id) {
-            throw new Error(
-              'Review target is "product", but product_id is missing.'
-            );
-          }
-          if (this.target_type === "store" && !this.store_id) {
-            throw new Error(
-              'Review target is "store", but store_id is missing.'
-            );
-          }
-          if (this.product_id && this.store_id) {
-            throw new Error(
-              "A review can only be for a product OR a store, not both."
-            );
-          }
+      timestamps: false,
+      indexes: [
+        {
+          name: "idx_reviews_reviewer_created",
+          fields: ["reviewer_id", "created_at"],
         },
-      },
+        {
+          name: "idx_reviews_product_created",
+          fields: ["product_id", "created_at"],
+        },
+        {
+          name: "idx_reviews_store_created",
+          fields: ["store_id", "created_at"],
+        },
+      ],
     }
   );
+
   return Review;
 };

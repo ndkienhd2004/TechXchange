@@ -1,47 +1,44 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Order extends Model {}
+  class ProductImage extends Model {}
 
-  Order.init(
+  ProductImage.init(
     {
       id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
       },
-      customer_id: {
+      product_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      total_price: {
-        type: DataTypes.DECIMAL(10, 2),
+      url: {
+        type: DataTypes.TEXT,
       },
-      status: {
-        type: DataTypes.ENUM("pending", "completed", "canceled"),
-        defaultValue: "pending",
+      sort_order: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
       },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
-      note: {
-        type: DataTypes.TEXT,
-      },
     },
     {
       sequelize,
-      modelName: "Order",
-      tableName: "orders",
+      modelName: "ProductImage",
+      tableName: "product_images",
       timestamps: false,
       indexes: [
         {
-          name: "idx_orders_customer_status_created",
-          fields: ["customer_id", "status", "created_at"],
+          name: "idx_product_images_product_sort",
+          fields: ["product_id", "sort_order"],
         },
       ],
     }
   );
 
-  return Order;
+  return ProductImage;
 };

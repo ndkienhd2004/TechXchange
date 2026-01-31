@@ -1,44 +1,57 @@
-"use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
-  class Report extends Model {
-    static associate(models) {
-      // định nghĩa các mối quan hệ ở đây
-    }
-  }
+  class Report extends Model {}
+
   Report.init(
     {
-      //... các thuộc tính của bạn
-      reason: DataTypes.TEXT,
-      status: DataTypes.ENUM("pending", "resolved", "rejected"),
-      target_type: DataTypes.ENUM("user", "product", "store"),
-      //...
+      id: {
+        type: DataTypes.BIGINT,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      reporter_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+      },
+      reported_user_id: {
+        type: DataTypes.BIGINT,
+      },
+      reported_product_id: {
+        type: DataTypes.BIGINT,
+      },
+      reported_store_id: {
+        type: DataTypes.BIGINT,
+      },
+      reason: {
+        type: DataTypes.TEXT,
+      },
+      status: {
+        type: DataTypes.ENUM("pending", "resolved", "rejected"),
+        defaultValue: "pending",
+      },
+      reviewed_at: {
+        type: DataTypes.DATE,
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       sequelize,
       modelName: "Report",
       tableName: "reports",
-      underscored: true,
-      // === THÊM LOGIC KIỂM TRA Ở ĐÂY ===
-      validate: {
-        onlyOneTarget() {
-          const targets = [
-            this.reported_user_id,
-            this.reported_product_id,
-            this.reported_store_id,
-          ];
-          const nonNullTargets = targets.filter(
-            (target) => target !== null
-          ).length;
-
-          if (nonNullTargets !== 1) {
-            throw new Error(
-              "A report must have exactly one target (user, product, or store)."
-            );
-          }
+      timestamps: false,
+      indexes: [
+        { name: "idx_reports_status_created", fields: ["status", "created_at"] },
+        {
+          name: "idx_reports_reporter_created",
+          fields: ["reporter_id", "created_at"],
         },
-      },
+      ],
     }
   );
+
   return Report;
 };

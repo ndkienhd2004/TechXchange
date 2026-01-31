@@ -1,46 +1,88 @@
-import express from "express";
-import dotenv from "dotenv";
 require("dotenv").config();
 
-import morgan from "morgan";
-import route from "./routes/index.route.js";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import path from "path";
-import { sequelize, connectDB } from "./config/sequelize.config.js";
-import bodyParser from "body-parser";
+const app = require("./app");
+const sequelize = require("../config/db");
+const { User, RefreshToken } = require("./models");
 
-const { createServer } = require("http");
+const port = Number(process.env.PORT || 3000);
 
-const app = express();
-const server = createServer(app);
-const port = process.env.PORT ?? 3000;
+/**
+ * Sync database models and create tables if they don't exist
+ */
+async function syncDatabase() {
+  try {
+    console.log("🔄 Syncing database models...");
 
-// Kết nối Database
-connectDB();
+    // Sync all models (creates tables if they don't exist)
+    await sequelize.sync({ alter: false });
 
-// Middleware
-app.use(cors()); // Bật CORS
-app.use(cookieParser()); // Sử dụng cookie-parser
-app.use(express.json()); // Hỗ trợ xử lý JSON
-app.use(express.urlencoded({ extended: true })); // Xử lý dữ liệu form
-app.use(bodyParser.json({ limit: "50mb" })); // Tăng giới hạn JSON
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+    console.log("✅ Database sync completed");
+  } catch (error) {
+    console.error("❌ Database sync failed:", error);
+    throw error;
+  }
+}
 
-// Ghi log request bằng Morgan
-app.use(morgan("combined"));
+/**
+ * Verify database integrity
+ */
+async function verifyDatabaseIntegrity() {
+  try {
+    console.log("🔐 Verifying database integrity...");
 
-// Chia sẻ file tĩnh từ thư mục `public`
-app.use("/public", express.static(path.join(__dirname, "public")));
+    // Check users count
+    const userCount = await sequelize.query(
+      "SELECT COUNT(*) as count FROM users"
+    );
+    const users = userCount[0][0].count;
+    console.log(`   - Users: ${users}`);
 
-// Routes
-route(app);
+    // Check refresh_tokens count
+    const tokenCount = await sequelize.query(
+      "SELECT COUNT(*) as count FROM refresh_tokens"
+    );
+    const tokens = tokenCount[0][0].count;
+    console.log(`   - Refresh Tokens: ${tokens}`);
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the backend server!");
-});
+    console.log("✅ Database integrity verified");
+  } catch (error) {
+    console.error("❌ Database integrity check failed:", error);
+    throw error;
+  }
+}
 
-// Khởi động server
-server.listen(port, () => {
-  console.log(`Server đang chạy tại http://localhost:${port}`);
-});
+/**
+ * Main server startup function
+ */
+async function start() {
+  try {
+    console.log("🚀 Starting TechXchange Backend Server...\n");
+
+    // Step 1: Authenticate database
+    console.log("🔗 Connecting to database...");
+    await sequelize.authenticate();
+    console.log("✅ Database connection established\n");
+
+    // Step 2: Sync database models
+    await syncDatabase();
+    console.log();
+
+    // Step 4: Verify database integrity
+    await verifyDatabaseIntegrity();
+    console.log();
+
+    // Step 5: Start Express server
+    console.log("🌐 Starting Express server...");
+    app.listen(port, () => {
+      console.log(`✅ Server listening on port ${port}`);
+      console.log(`📚 API Documentation: http://localhost:${port}/docs`);
+      console.log(`❤️ Health Check: http://localhost:${port}/health\n`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+// Start server
+start();
