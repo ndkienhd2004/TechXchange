@@ -186,6 +186,50 @@ export const navLinkHover = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.brand.purple[400],
 });
 
+/** Button reset so it looks like navLink (same as Trang chủ, Sản phẩm, ...) */
+export const navLinkButton = (theme: Theme): CSSProperties => ({
+  ...navLink(theme),
+  background: "none",
+  border: "none",
+  outline: "none",
+  font: "inherit",
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- signature matches other style fns
+export const navDropdownWrap = (theme: Theme): CSSProperties => ({
+  position: "relative",
+  display: "inline-flex",
+});
+
+export const navDropdownMenu = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  marginTop: theme.spacing[1],
+  minWidth: "180px",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing[2],
+  boxShadow: theme.shadows.lg,
+  padding: theme.spacing[2],
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing[1],
+  zIndex: 100,
+});
+
+export const navDropdownItem = (theme: Theme): CSSProperties => ({
+  ...navLink(theme),
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing[2],
+  display: "block",
+});
+
+export const navDropdownItemHover = (theme: Theme): CSSProperties => ({
+  ...navLinkHover(theme),
+  background: theme.colors.palette.backgrounds.hover,
+});
+
 export const brandsBar = (theme: Theme): CSSProperties => ({
   maxWidth: "1400px",
   margin: "0 auto",

@@ -1,34 +1,22 @@
-import { baseApi } from "@/store/rtkQuery/baseApi";
+import { getAxiosInstance } from "@/services/axiosConfig";
 import type { User } from "../types";
 
-export const userApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    getUserProfile: builder.query<User, string>({
-      query: (userId) => `/users/${userId}`,
-      providesTags: (result, error, userId) => [{ type: "User", id: userId }],
-    }),
-    updateUserProfile: builder.mutation<
-      User,
-      { userId: string; data: Partial<User> }
-    >({
-      query: ({ userId, data }) => ({
-        url: `/users/${userId}`,
-        method: "PATCH",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { userId }) => [
-        { type: "User", id: userId },
-      ],
-    }),
-    getUsers: builder.query<User[], void>({
-      query: () => "/users",
-      providesTags: ["User"],
-    }),
-  }),
-});
+const api = () => getAxiosInstance();
 
-export const {
-  useGetUserProfileQuery,
-  useUpdateUserProfileMutation,
-  useGetUsersQuery,
-} = userApi;
+export const getUserProfile = async (userId: string): Promise<User> => {
+  const response = await api().get<User>(`/users/${userId}`);
+  return response.data;
+};
+
+export const updateUserProfile = async (
+  userId: string,
+  data: Partial<User>
+): Promise<User> => {
+  const response = await api().patch<User>(`/users/${userId}`, data);
+  return response.data;
+};
+
+export const getUsers = async (): Promise<User[]> => {
+  const response = await api().get<User[]>("/users");
+  return response.data;
+};

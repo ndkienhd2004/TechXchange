@@ -1,36 +1,42 @@
-import { baseApi } from "@/store/rtkQuery/baseApi";
+import { getAxiosInstance } from "@/services/axiosConfig";
 
-// Example: Using injectEndpoints
-export const authApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    login: builder.mutation<
-      { token: string; user: { id: string; email: string; name: string } },
-      { email: string; password: string }
-    >({
-      query: (credentials) => ({
-        url: "/auth/login",
-        method: "POST",
-        body: credentials,
-      }),
-    }),
-    register: builder.mutation<
-      { token: string; user: { id: string; email: string; name: string } },
-      { email: string; password: string; name: string }
-    >({
-      query: (userData) => ({
-        url: "/auth/register",
-        method: "POST",
-        body: userData,
-      }),
-    }),
-    getCurrentUser: builder.query<
-      { id: string; email: string; name: string },
-      void
-    >({
-      query: () => "/auth/me",
-    }),
-  }),
-});
+const api = () => getAxiosInstance();
 
-export const { useLoginMutation, useRegisterMutation, useGetCurrentUserQuery } =
-  authApi;
+export const SignInService = async (email: string, password: string) => {
+  const response = await api().post("/auth/login", { email, password });
+  return response.data;
+};
+
+export const SignUpService = async (
+  email: string,
+  password: string,
+  name: string,
+  gender: string,
+  phone: string
+) => {
+  const response = await api().post("/auth/register", {
+    email,
+    password,
+    name,
+    gender,
+    phone,
+  });
+  return response.data;
+};
+
+export const UpdateUserService = async (data: {
+  username: string;
+  email: string;
+  gender: string;
+  phone: string;
+  avatar?: string;
+  address?: string;
+}) => {
+  const response = await api().put("/users/profile", data);
+  return response.data;
+};
+
+export const GetUserProfileService = async () => {
+  const response = await api().get("/users/profile");
+  return response.data;
+};

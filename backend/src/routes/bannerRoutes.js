@@ -19,20 +19,9 @@ const BannerController = require("../app/controller/bannerController");
  *         description: Mặc định chỉ lấy banner active
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Banner'
+ *         $ref: '#/components/responses/Ok200'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get("/", BannerController.getBanners);
 

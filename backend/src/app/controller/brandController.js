@@ -1,4 +1,5 @@
 const BrandService = require("../service/brandService");
+const { response } = require("../utils/response");
 
 /**
  * Brand Controller - Xử lý requests liên quan đến thương hiệu
@@ -14,24 +15,14 @@ class BrandController {
       const image = req.body.image ? String(req.body.image).trim() : null;
 
       if (!name) {
-        return res.status(400).json({
-          success: false,
-          message: "Tên thương hiệu là bắt buộc",
-        });
+        return response.badRequest(res, "Tên thương hiệu là bắt buộc");
       }
 
       const brand = await BrandService.createBrand({ name, image });
 
-      return res.status(201).json({
-        success: true,
-        message: "Tạo thương hiệu thành công",
-        data: brand,
-      });
+      return response.created(res, "Tạo thương hiệu thành công", brand);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -43,16 +34,13 @@ class BrandController {
     try {
       const brands = await BrandService.getBrands();
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách thương hiệu thành công",
-        data: brands,
-      });
+      return response.success(
+        res,
+        "Lấy danh sách thương hiệu thành công",
+        brands
+      );
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -67,17 +55,11 @@ class BrandController {
       const image = req.body.image ? String(req.body.image).trim() : undefined;
 
       if (!brandId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID thương hiệu không hợp lệ",
-        });
+        return response.badRequest(res, "ID thương hiệu không hợp lệ");
       }
 
       if (name === "") {
-        return res.status(400).json({
-          success: false,
-          message: "Tên thương hiệu không được để trống",
-        });
+        return response.badRequest(res, "Tên thương hiệu không được để trống");
       }
 
       const brand = await BrandService.updateBrand(brandId, {
@@ -85,16 +67,9 @@ class BrandController {
         image,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Cập nhật thương hiệu thành công",
-        data: brand,
-      });
+      return response.success(res, "Cập nhật thương hiệu thành công", brand);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -106,23 +81,14 @@ class BrandController {
     try {
       const brandId = Number(req.params.id);
       if (!brandId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID thương hiệu không hợp lệ",
-        });
+        return response.badRequest(res, "ID thương hiệu không hợp lệ");
       }
 
       await BrandService.deleteBrand(brandId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Xóa thương hiệu thành công",
-      });
+      return response.success(res, "Xóa thương hiệu thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 }

@@ -1,4 +1,5 @@
 const UserService = require("../service/userService");
+const { response } = require("../utils/response");
 
 /**
  * User Controller - Xử lý requests liên quan đến user
@@ -13,16 +14,9 @@ class UserController {
       const userId = req.user.id;
       const user = await UserService.getUserProfile(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thông tin thành công",
-        data: user,
-      });
+      return response.success(res, "Lấy thông tin thành công", user);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -41,22 +35,15 @@ class UserController {
         gender,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Cập nhật thông tin thành công",
-        data: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          phone: user.phone,
-          gender: user.gender,
-        },
+      return response.success(res, "Cập nhật thông tin thành công", {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        phone: user.phone,
+        gender: user.gender,
       });
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -69,16 +56,9 @@ class UserController {
       const userId = req.params.id;
       const user = await UserService.getPublicProfile(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thông tin thành công",
-        data: user,
-      });
+      return response.success(res, "Lấy thông tin thành công", user);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -93,16 +73,13 @@ class UserController {
 
       const result = await UserService.getAllUsers(limit, offset);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách người dùng thành công",
-        data: result,
-      });
+      return response.success(
+        res,
+        "Lấy danh sách người dùng thành công",
+        result
+      );
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -115,16 +92,9 @@ class UserController {
       const userId = req.params.id;
       const user = await UserService.getUserById(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thông tin người dùng thành công",
-        data: user,
-      });
+      return response.success(res, "Lấy thông tin người dùng thành công", user);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -149,16 +119,9 @@ class UserController {
         offset
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Tìm kiếm người dùng thành công",
-        data: result,
-      });
+      return response.success(res, "Tìm kiếm người dùng thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -170,16 +133,9 @@ class UserController {
     try {
       const stats = await UserService.getUserStats();
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thống kê thành công",
-        data: stats,
-      });
+      return response.success(res, "Lấy thống kê thành công", stats);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -192,42 +148,24 @@ class UserController {
       const userId = req.user.id;
       const { oldPassword, newPassword, confirmPassword } = req.body;
 
-      // Validate input
       if (!oldPassword || !newPassword || !confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Vui lòng điền đầy đủ thông tin",
-        });
+        return response.badRequest(res, "Vui lòng điền đầy đủ thông tin");
       }
 
-      // Validate password length
       if (newPassword.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu mới phải có ít nhất 6 ký tự",
-        });
+        return response.badRequest(res, "Mật khẩu mới phải có ít nhất 6 ký tự");
       }
 
-      // Check password confirmation
       if (newPassword !== confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu xác nhận không khớp",
-        });
+        return response.badRequest(res, "Mật khẩu xác nhận không khớp");
       }
 
       const AuthServices = require("../service/auth");
       await AuthServices.changePassword(userId, oldPassword, newPassword);
 
-      return res.status(200).json({
-        success: true,
-        message: "Đổi mật khẩu thành công",
-      });
+      return response.success(res, "Đổi mật khẩu thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -241,24 +179,18 @@ class UserController {
       const { password } = req.body;
 
       if (!password) {
-        return res.status(400).json({
-          success: false,
-          message: "Vui lòng cung cấp mật khẩu để xác nhận",
-        });
+        return response.badRequest(
+          res,
+          "Vui lòng cung cấp mật khẩu để xác nhận"
+        );
       }
 
       const AuthServices = require("../service/auth");
       await AuthServices.deleteUser(userId, password);
 
-      return res.status(200).json({
-        success: true,
-        message: "Xóa tài khoản thành công",
-      });
+      return response.success(res, "Xóa tài khoản thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 }

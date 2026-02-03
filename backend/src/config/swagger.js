@@ -32,10 +32,100 @@ const options = {
           description: "Enter your JWT token",
         },
       },
+      responses: {
+        Ok200: {
+          description: "200 - Thành công",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  code: {
+                    type: "string",
+                    example: "200",
+                    description: "Mã HTTP trả về cho FE",
+                  },
+                  success: { type: "boolean", example: true },
+                  message: { type: "string" },
+                  data: {
+                    type: "object",
+                    description: "Dữ liệu trả về (tùy endpoint)",
+                  },
+                },
+              },
+            },
+          },
+        },
+        Created201: {
+          description: "201 - Tạo mới thành công",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  code: {
+                    type: "string",
+                    example: "201",
+                    description: "Mã HTTP trả về cho FE",
+                  },
+                  success: { type: "boolean", example: true },
+                  message: { type: "string" },
+                  data: { type: "object", description: "Resource vừa tạo" },
+                },
+              },
+            },
+          },
+        },
+        BadRequest400: {
+          description: "400 - Dữ liệu không hợp lệ (thiếu field, format sai)",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        Unauthorized401: {
+          description: "401 - Chưa đăng nhập hoặc token không hợp lệ",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        Forbidden403: {
+          description: "403 - Không có quyền truy cập tài nguyên",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        NotFound404: {
+          description: "404 - Không tìm thấy tài nguyên",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        ServerError500: {
+          description: "500 - Lỗi server",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+      },
       schemas: {
         Error: {
           type: "object",
           properties: {
+            code: {
+              type: "string",
+              example: "400",
+              description: "Mã HTTP trả về cho FE (400, 401, 403, 404, 500)",
+            },
             success: {
               type: "boolean",
               example: false,

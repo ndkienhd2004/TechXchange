@@ -13,20 +13,9 @@ const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
  *     description: Lấy danh sách thương hiệu công khai
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Brand'
+ *         $ref: '#/components/responses/Ok200'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get("/", BrandController.getBrands);
 
@@ -55,7 +44,13 @@ router.get("/", BrandController.getBrands);
  *                 type: string
  *     responses:
  *       201:
- *         description: Tạo yêu cầu thành công
+ *         $ref: '#/components/responses/Created201'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.post(
   "/requests",
@@ -93,7 +88,13 @@ router.post(
  *           default: 0
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/requests/me",

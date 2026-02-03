@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -8,8 +9,11 @@ const storeRoutes = require("./routes/storeRoutes");
 const brandRoutes = require("./routes/brandRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
 const swaggerSpecs = require("./config/swagger");
+const { response } = require("./app/utils/response");
 
 const app = express();
+
+app.use(cors());
 
 // Middleware
 app.use(express.json());
@@ -39,21 +43,28 @@ app.use("/api/stores", storeRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/banners", bannerRoutes);
 
-// Global error handler
+// Global error handler - 500
 app.use((err, req, res, next) => {
   console.error("Error:", err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Lỗi server",
-  });
+  const status = err.status || 500;
+  if (status === 404) {
+    return response.notFound(res, err.message || "Không tìm thấy");
+  }
+  if (status === 401) {
+    return response.unauthorized(res, err.message || "Chưa xác thực");
+  }
+  if (status === 403) {
+    return response.forbidden(res, err.message || "Không có quyền");
+  }
+  if (status === 400) {
+    return response.badRequest(res, err.message || "Dữ liệu không hợp lệ");
+  }
+  return response.serverError(res, err.message || "Lỗi server");
 });
 
-// 404 handler
+// 404 - Not Found endpoint
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Không tìm thấy endpoint",
-  });
+  response.notFound(res, "Không tìm thấy endpoint");
 });
 
 module.exports = app;

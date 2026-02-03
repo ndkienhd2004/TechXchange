@@ -81,35 +81,9 @@ const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
  *         description: Thứ tự sắp xếp
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     total:
- *                       type: integer
- *                     products:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Product'
- *                     page:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
+ *         $ref: '#/components/responses/Ok200'
  *       500:
- *         description: Lỗi server
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get("/", ProductController.getProducts);
 
@@ -174,22 +148,20 @@ router.get("/", ProductController.getProducts);
  *                       type: string
  *     responses:
  *       201:
- *         description: Tạo thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Product'
+ *         $ref: '#/components/responses/Created201'
  *       400:
- *         description: Dữ liệu không hợp lệ
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
-router.post("/", authMiddleware, shopMiddleware, ProductController.createProduct);
+router.post(
+  "/",
+  authMiddleware,
+  shopMiddleware,
+  ProductController.createProduct
+);
 
 /**
  * @swagger
@@ -214,24 +186,11 @@ router.post("/", authMiddleware, shopMiddleware, ProductController.createProduct
  *         description: Trạng thái sản phẩm (mặc định active, dùng "all" để bỏ lọc)
  *     responses:
  *       200:
- *         description: Lấy chi tiết thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Product'
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
  *       404:
- *         description: Sản phẩm không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound404'
  */
 router.get("/:id", ProductController.getProductById);
 

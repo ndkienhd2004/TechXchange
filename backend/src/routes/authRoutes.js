@@ -20,17 +20,9 @@ const router = express.Router();
  *             $ref: '#/components/schemas/RegisterRequest'
  *     responses:
  *       201:
- *         description: Đăng ký thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
+ *         $ref: '#/components/responses/Created201'
  *       400:
- *         description: Lỗi validation hoặc email đã tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
  */
 router.post("/register", AuthController.register);
 
@@ -50,17 +42,9 @@ router.post("/register", AuthController.register);
  *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
- *         description: Đăng nhập thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
+ *         $ref: '#/components/responses/Ok200'
  *       401:
- *         description: Email hoặc mật khẩu không chính xác
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.post("/login", AuthController.login);
 
@@ -99,22 +83,9 @@ router.post("/login", AuthController.login);
  *                 example: newpassword123
  *     responses:
  *       200:
- *         description: Reset mật khẩu thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
+ *         $ref: '#/components/responses/Ok200'
  *       400:
- *         description: Lỗi validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
  */
 router.post("/reset-password", AuthController.resetPassword);
 
@@ -134,27 +105,9 @@ router.post("/reset-password", AuthController.resetPassword);
  *             $ref: '#/components/schemas/RefreshTokenRequest'
  *     responses:
  *       200:
- *         description: Refresh token thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     accessToken:
- *                       type: string
- *                     refreshToken:
- *                       type: string
+ *         $ref: '#/components/responses/Ok200'
  *       401:
- *         description: Refresh token không hợp lệ
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.post("/refresh-token", AuthController.refreshToken);
 
@@ -180,16 +133,11 @@ router.post("/refresh-token", AuthController.refreshToken);
  *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *     responses:
  *       200:
- *         description: Đăng xuất thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.post("/logout", authMiddleware, AuthController.logout);
 
@@ -205,16 +153,11 @@ router.post("/logout", authMiddleware, AuthController.logout);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Đăng xuất thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.post("/logout-all", authMiddleware, AuthController.logoutAll);
 
@@ -230,29 +173,9 @@ router.post("/logout-all", authMiddleware, AuthController.logoutAll);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Token hợp lệ
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     email:
- *                       type: string
- *                     role:
- *                       type: string
+ *         $ref: '#/components/responses/Ok200'
  *       401:
- *         description: Token không hợp lệ
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.get("/verify", authMiddleware, AuthController.verifyToken);
 

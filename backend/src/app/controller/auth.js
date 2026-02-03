@@ -1,4 +1,5 @@
 const AuthServices = require("../service/auth");
+const { response } = require("../utils/response");
 
 class AuthController {
   /**
@@ -11,27 +12,18 @@ class AuthController {
 
       // Validate input
       if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "Email và mật khẩu là bắt buộc",
-        });
+        return response.badRequest(res, "Email và mật khẩu là bắt buộc");
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: "Email không hợp lệ",
-        });
+        return response.badRequest(res, "Email không hợp lệ");
       }
 
       // Validate password length
       if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu phải có ít nhất 6 ký tự",
-        });
+        return response.badRequest(res, "Mật khẩu phải có ít nhất 6 ký tự");
       }
 
       const result = await AuthServices.register({
@@ -42,16 +34,9 @@ class AuthController {
         gender,
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Đăng ký thành công",
-        data: result,
-      });
+      return response.created(res, "Đăng ký thành công", result);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -65,24 +50,14 @@ class AuthController {
 
       // Validate input
       if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "Email và mật khẩu là bắt buộc",
-        });
+        return response.badRequest(res, "Email và mật khẩu là bắt buộc");
       }
 
       const result = await AuthServices.login(email, password);
 
-      return res.status(200).json({
-        success: true,
-        message: "Đăng nhập thành công",
-        data: result,
-      });
+      return response.success(res, "Đăng nhập thành công", result);
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message,
-      });
+      return response.unauthorized(res, error.message);
     }
   }
 
@@ -96,16 +71,9 @@ class AuthController {
 
       const user = await AuthServices.getUserById(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thông tin thành công",
-        data: user,
-      });
+      return response.success(res, "Lấy thông tin thành công", user);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -124,22 +92,15 @@ class AuthController {
         gender,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Cập nhật thông tin thành công",
-        data: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          phone: user.phone,
-          gender: user.gender,
-        },
+      return response.success(res, "Cập nhật thông tin thành công", {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        phone: user.phone,
+        gender: user.gender,
       });
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -154,39 +115,22 @@ class AuthController {
 
       // Validate input
       if (!oldPassword || !newPassword || !confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Vui lòng điền đầy đủ thông tin",
-        });
+        return response.badRequest(res, "Vui lòng điền đầy đủ thông tin");
       }
 
-      // Validate password length
       if (newPassword.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu mới phải có ít nhất 6 ký tự",
-        });
+        return response.badRequest(res, "Mật khẩu mới phải có ít nhất 6 ký tự");
       }
 
-      // Check password confirmation
       if (newPassword !== confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu xác nhận không khớp",
-        });
+        return response.badRequest(res, "Mật khẩu xác nhận không khớp");
       }
 
       await AuthServices.changePassword(userId, oldPassword, newPassword);
 
-      return res.status(200).json({
-        success: true,
-        message: "Đổi mật khẩu thành công",
-      });
+      return response.success(res, "Đổi mật khẩu thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -200,31 +144,18 @@ class AuthController {
 
       // Validate input
       if (!email || !newPassword || !confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Vui lòng điền đầy đủ thông tin",
-        });
+        return response.badRequest(res, "Vui lòng điền đầy đủ thông tin");
       }
 
-      // Check password confirmation
       if (newPassword !== confirmPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Mật khẩu xác nhận không khớp",
-        });
+        return response.badRequest(res, "Mật khẩu xác nhận không khớp");
       }
 
       await AuthServices.resetPassword(email, newPassword);
 
-      return res.status(200).json({
-        success: true,
-        message: "Reset mật khẩu thành công",
-      });
+      return response.success(res, "Reset mật khẩu thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -239,16 +170,13 @@ class AuthController {
 
       const result = await AuthServices.getAllUsers(limit, offset);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách người dùng thành công",
-        data: result,
-      });
+      return response.success(
+        res,
+        "Lấy danh sách người dùng thành công",
+        result
+      );
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -262,16 +190,9 @@ class AuthController {
 
       const user = await AuthServices.getUserById(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy thông tin người dùng thành công",
-        data: user,
-      });
+      return response.success(res, "Lấy thông tin người dùng thành công", user);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -285,23 +206,17 @@ class AuthController {
       const { password } = req.body;
 
       if (!password) {
-        return res.status(400).json({
-          success: false,
-          message: "Vui lòng cung cấp mật khẩu để xác nhận",
-        });
+        return response.badRequest(
+          res,
+          "Vui lòng cung cấp mật khẩu để xác nhận"
+        );
       }
 
       await AuthServices.deleteUser(userId, password);
 
-      return res.status(200).json({
-        success: true,
-        message: "Xóa tài khoản thành công",
-      });
+      return response.success(res, "Xóa tài khoản thành công");
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -311,16 +226,9 @@ class AuthController {
    */
   static async verifyToken(req, res) {
     try {
-      return res.status(200).json({
-        success: true,
-        message: "Token hợp lệ",
-        data: req.user,
-      });
+      return response.success(res, "Token hợp lệ", req.user);
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message,
-      });
+      return response.unauthorized(res, error.message);
     }
   }
 
@@ -333,24 +241,14 @@ class AuthController {
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
-        return res.status(400).json({
-          success: false,
-          message: "Refresh token là bắt buộc",
-        });
+        return response.badRequest(res, "Refresh token là bắt buộc");
       }
 
       const result = await AuthServices.refreshAccessToken(refreshToken);
 
-      return res.status(200).json({
-        success: true,
-        message: "Refresh token thành công",
-        data: result,
-      });
+      return response.success(res, "Refresh token thành công", result);
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message,
-      });
+      return response.unauthorized(res, error.message);
     }
   }
 
@@ -366,15 +264,9 @@ class AuthController {
         await AuthServices.revokeRefreshToken(refreshToken);
       }
 
-      return res.status(200).json({
-        success: true,
-        message: "Đăng xuất thành công",
-      });
+      return response.success(res, "Đăng xuất thành công");
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -388,15 +280,9 @@ class AuthController {
 
       await AuthServices.revokeAllRefreshTokens(userId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Đăng xuất từ tất cả thiết bị thành công",
-      });
+      return response.success(res, "Đăng xuất từ tất cả thiết bị thành công");
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 }

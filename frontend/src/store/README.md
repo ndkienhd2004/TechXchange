@@ -1,59 +1,44 @@
-# Redux Store Structure
+# Redux Store
 
-This directory contains the Redux store configuration following Redux Toolkit best practices.
+- **axiosConfig.ts** — Axios cho toàn hệ thống: baseURL, token, 401 → refresh-token hoặc logout. Gọi `createAxiosInstance(store)` trong `makeStore`.
+- **State** — Quản lý riêng ở từng slice (authSlice, userSlice, ...). API gọi qua `getAxiosInstance()` trong authApi, userApi, ...
 
-## Structure
+## Cấu trúc
 
 ```
 store/
-├── index.ts              # Store configuration, RootState, AppDispatch types
-├── hooks.ts              # Typed hooks: useAppDispatch, useAppSelector, useAppStore
-├── rootReducer.ts         # Combined reducers
-├── middleware.ts          # Custom middleware (optional)
-└── rtkQuery/
-    ├── baseApi.ts         # RTK Query base API configuration
-    └── endpoints.ts       # Shared endpoints (optional)
+├── index.ts         # makeStore, createAxiosInstance(store), AppStore, RootState
+├── axiosConfig.ts   # createAxiosInstance, getAxiosInstance (token, refresh, 401)
+├── hooks.ts         # useAppDispatch, useAppSelector, useAppStore
+├── rootReducer.ts   # combineReducers (auth, user, ...)
+└── middleware.ts    # (optional)
 ```
 
-## Usage
-
-### In Components
+## Trong component
 
 ```tsx
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials } from "@/features/auth";
-
-function MyComponent() {
-  const dispatch = useAppDispatch();
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  
-  // Use dispatch and selectors...
-}
-```
-
-### Using RTK Query
-
-```tsx
-import { useLoginMutation } from "@/features/auth";
+import { SignIn } from "@/features/auth/store/authSlice";
+import {
+  selectLoading,
+  selectError,
+} from "@/features/auth/store/authSelectors";
 
 function LoginForm() {
-  const [login, { isLoading, error }] = useLoginMutation();
-  
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector(selectLoading);
+  const error = useAppSelector(selectError);
+
   const handleSubmit = async (credentials) => {
-    try {
-      const result = await login(credentials).unwrap();
-      // Handle success
-    } catch (err) {
-      // Handle error
+    const result = await dispatch(SignIn(credentials));
+    if (SignIn.fulfilled.match(result)) {
+      // redirect...
     }
   };
 }
 ```
 
-## Adding New Features
+## Thêm API mới
 
-1. Create feature folder in `src/features/[featureName]/`
-2. Add slice in `store/[featureName]Slice.ts`
-3. Add to `rootReducer.ts`
-4. Create API endpoints in `services/[featureName]Api.ts` if needed
-5. Export from feature `index.ts`
+1. Dùng `getAxiosInstance()` từ `@/store/axiosConfig` trong service (authApi, userApi, ...).
+2. State (loading, error, data) quản lý trong slice của feature (thunks + extraReducers).

@@ -33,13 +33,13 @@ const { authMiddleware, adminMiddleware } = require("../app/middleware/auth");
  *         description: Vị trí bắt đầu
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UsersList'
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/users",
@@ -67,22 +67,13 @@ router.get(
  *         description: ID của người dùng
  *     responses:
  *       200:
- *         description: Lấy thông tin thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/User'
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  *       404:
- *         description: Người dùng không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound404'
  */
 router.get(
   "/users/:id",
@@ -132,13 +123,13 @@ router.get(
  *         description: Vị trí bắt đầu
  *     responses:
  *       200:
- *         description: Tìm kiếm thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UsersList'
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/users/search",
@@ -159,25 +150,13 @@ router.get(
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lấy thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     total:
- *                       type: integer
- *                     admins:
- *                       type: integer
- *                     regularUsers:
- *                       type: integer
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/users/stats",
@@ -217,13 +196,13 @@ router.get(
  *         description: Trạng thái yêu cầu (all để bỏ lọc)
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/StoreRequestList'
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/store-requests",
@@ -251,25 +230,13 @@ router.get(
  *         description: ID yêu cầu
  *     responses:
  *       200:
- *         description: Duyệt thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     request:
- *                       $ref: '#/components/schemas/StoreRequest'
- *                     store:
- *                       $ref: '#/components/schemas/Store'
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/store-requests/:id/approve",
@@ -307,20 +274,11 @@ router.put(
  *                 example: Thieu giay to
  *     responses:
  *       200:
- *         description: Từ chối thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/StoreRequest'
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/store-requests/:id/reject",
@@ -360,25 +318,13 @@ router.put(
  *                 example: San pham khong dap ung tieu chuan
  *     responses:
  *       200:
- *         description: Hủy thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     product:
- *                       $ref: '#/components/schemas/Product'
- *                     review:
- *                       type: object
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  *       403:
- *         description: Không có quyền
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/products/:id/cancel",
@@ -412,18 +358,13 @@ router.put(
  *                 type: string
  *     responses:
  *       201:
- *         description: Tạo thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Brand'
+ *         $ref: '#/components/responses/Created201'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.post(
   "/brands",
@@ -462,7 +403,13 @@ router.post(
  *                 type: string
  *     responses:
  *       200:
- *         description: Cập nhật thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/brands/:id",
@@ -490,7 +437,13 @@ router.put(
  *         description: ID thương hiệu
  *     responses:
  *       200:
- *         description: Xóa thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.delete(
   "/brands/:id",
@@ -528,7 +481,13 @@ router.delete(
  *           default: 0
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
   "/brand-requests",
@@ -556,7 +515,13 @@ router.get(
  *         description: ID yêu cầu
  *     responses:
  *       200:
- *         description: Duyệt thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/brand-requests/:id/approve",
@@ -593,7 +558,13 @@ router.put(
  *                 type: string
  *     responses:
  *       200:
- *         description: Từ chối thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.put(
   "/brand-requests/:id/reject",
@@ -630,18 +601,13 @@ router.put(
  *                 example: 1
  *     responses:
  *       201:
- *         description: Tạo thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/Banner'
+ *         $ref: '#/components/responses/Created201'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.post(
   "/banners",
@@ -680,7 +646,13 @@ router.post(
  *                 type: integer
  *     responses:
  *       201:
- *         description: Thêm thành công
+ *         $ref: '#/components/responses/Created201'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.post(
   "/banners/:id/details",
@@ -714,7 +686,13 @@ router.post(
  *         description: ID sản phẩm
  *     responses:
  *       200:
- *         description: Xóa thành công
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
  */
 router.delete(
   "/banners/:id/details/:productId",

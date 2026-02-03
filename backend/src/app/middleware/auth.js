@@ -1,28 +1,28 @@
 const AuthServices = require("../service/auth");
+const { response } = require("../utils/response");
 
 /**
  * Middleware xác thực JWT token
  * Kiểm tra token từ Authorization header
+ * 401 = Unauthorized
  */
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        message: "Vui lòng đăng nhập để sử dụng",
-      });
+      return response.unauthorized(
+        res,
+        "Vui lòng đăng nhập để sử dụng",
+        "no_token"
+      );
     }
 
     // Lấy token từ header (định dạng: "Bearer <token>")
     const token = authHeader.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Token không hợp lệ",
-      });
+      return response.unauthorized(res, "Token không hợp lệ", "invalid_token");
     }
 
     // Xác thực token
@@ -30,68 +30,62 @@ const authMiddleware = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: error.message || "Token xác thực thất bại",
-    });
+    const msg = error.message || "Token xác thực thất bại";
+    // Phân biệt token hết hạn để FE có thể gọi refresh token
+    const isExpired =
+      msg.toLowerCase().includes("jwt expired") ||
+      msg.toLowerCase().includes("expired");
+    const reason = isExpired ? "token_expired" : "invalid_token";
+    const message = isExpired ? "Token đã hết hạn" : msg;
+    return response.unauthorized(res, message, reason);
   }
 };
 
 /**
  * Middleware kiểm tra quyền admin
  * Phải được sử dụng sau authMiddleware
+ * 401 = Unauthorized, 403 = Forbidden
  */
 const adminMiddleware = (req, res, next) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Vui lòng đăng nhập",
-      });
+      return response.unauthorized(res, "Vui lòng đăng nhập");
     }
 
     if (req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền truy cập tài nguyên này",
-      });
+      return response.forbidden(
+        res,
+        "Bạn không có quyền truy cập tài nguyên này"
+      );
     }
 
     next();
   } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: "Lỗi kiểm tra quyền",
-    });
+    return response.forbidden(res, "Lỗi kiểm tra quyền");
   }
 };
 
 /**
  * Middleware kiểm tra quyền shop
  * Phải được sử dụng sau authMiddleware
+ * 401 = Unauthorized, 403 = Forbidden
  */
 const shopMiddleware = (req, res, next) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "Vui lòng đăng nhập",
-      });
+      return response.unauthorized(res, "Vui lòng đăng nhập");
     }
 
     if (req.user.role !== "shop") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền truy cập tài nguyên này",
-      });
+      return response.forbidden(
+        res,
+        "Bạn không có quyền truy cập tài nguyên này"
+      );
     }
 
     next();
   } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: "Lỗi kiểm tra quyền",
-    });
+    return response.forbidden(res, "Lỗi kiểm tra quyền");
   }
 };
 

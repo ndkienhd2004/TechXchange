@@ -1,23 +1,41 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { setupListeners } from "@reduxjs/toolkit/query";
-import { baseApi } from "./rtkQuery/baseApi";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage"; // localStorage
 import rootReducer from "./rootReducer";
+import { createAxiosInstance } from "@/services/axiosConfig";
 
-export const makeStore = () => {
-  const store = configureStore({
-    reducer: rootReducer,
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(baseApi.middleware),
-  });
-
-  // Enable refetchOnFocus and refetchOnReconnect behaviors
-  setupListeners(store.dispatch);
-
-  return store;
+// Chỉ persist các slice cần thiết
+const persistConfig = {
+  key: "root",
+  version: 1,
+  storage,
+  whitelist: ["auth", "cart"], // hoặc dùng blacklist
 };
 
-// Infer the type of makeStore
-export type AppStore = ReturnType<typeof makeStore>;
-// Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<AppStore["getState"]>;
-export type AppDispatch = AppStore["dispatch"];
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+export const store = configureStore({
+  reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
+});
+
+createAxiosInstance(store);
+
+export const persistor = persistStore(store);
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

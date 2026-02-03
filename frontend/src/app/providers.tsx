@@ -1,14 +1,20 @@
 "use client";
 
 import { Provider } from "react-redux";
-import { makeStore } from "@/store";
 
-export default function Providers({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const store = makeStore();
+import NProgressProvider from "@/components/commons/NProgress";
+import { persistor, store } from "@/store";
+import { PersistGate } from "redux-persist/integration/react";
+import ThemeProvider from "@/theme/ThemeProvider";
 
-  return <Provider store={store}>{children}</Provider>;
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <ThemeProvider>
+          <NProgressProvider>{children}</NProgressProvider>
+        </ThemeProvider>
+      </PersistGate>
+    </Provider>
+  );
 }

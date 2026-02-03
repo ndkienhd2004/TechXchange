@@ -1,4 +1,5 @@
 const StoreRequestService = require("../service/storeRequestService");
+const { response } = require("../utils/response");
 
 /**
  * Store Request Controller - Xử lý requests mở cửa hàng
@@ -14,10 +15,7 @@ class StoreRequestController {
       const { store_name, store_description } = req.body;
 
       if (!store_name || !String(store_name).trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Tên cửa hàng là bắt buộc",
-        });
+        return response.badRequest(res, "Tên cửa hàng là bắt buộc");
       }
 
       const request = await StoreRequestService.createRequest(userId, {
@@ -27,16 +25,13 @@ class StoreRequestController {
           : null,
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Tạo yêu cầu mở cửa hàng thành công",
-        data: request,
-      });
+      return response.created(
+        res,
+        "Tạo yêu cầu mở cửa hàng thành công",
+        request
+      );
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -58,16 +53,9 @@ class StoreRequestController {
         offset
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Lấy danh sách yêu cầu thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -87,16 +75,9 @@ class StoreRequestController {
         offset
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Lấy danh sách yêu cầu thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -108,10 +89,7 @@ class StoreRequestController {
     try {
       const requestId = Number(req.params.id);
       if (!requestId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID yêu cầu không hợp lệ",
-        });
+        return response.badRequest(res, "ID yêu cầu không hợp lệ");
       }
 
       const result = await StoreRequestService.approveRequest(
@@ -119,16 +97,9 @@ class StoreRequestController {
         req.user.id
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Duyệt yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Duyệt yêu cầu thành công", result);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -142,10 +113,7 @@ class StoreRequestController {
       const { note } = req.body;
 
       if (!requestId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID yêu cầu không hợp lệ",
-        });
+        return response.badRequest(res, "ID yêu cầu không hợp lệ");
       }
 
       const request = await StoreRequestService.rejectRequest(
@@ -154,16 +122,9 @@ class StoreRequestController {
         note
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Từ chối yêu cầu thành công",
-        data: request,
-      });
+      return response.success(res, "Từ chối yêu cầu thành công", request);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 }

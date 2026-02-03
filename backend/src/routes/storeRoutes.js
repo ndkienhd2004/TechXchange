@@ -21,24 +21,11 @@ const { authMiddleware } = require("../app/middleware/auth");
  *             $ref: '#/components/schemas/CreateStoreRequest'
  *     responses:
  *       201:
- *         description: Tạo yêu cầu thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   $ref: '#/components/schemas/StoreRequest'
+ *         $ref: '#/components/responses/Created201'
  *       400:
- *         description: Lỗi validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.post("/requests", authMiddleware, StoreRequestController.createRequest);
 
@@ -73,18 +60,16 @@ router.post("/requests", authMiddleware, StoreRequestController.createRequest);
  *         description: Trạng thái yêu cầu (all để bỏ lọc)
  *     responses:
  *       200:
- *         description: Lấy danh sách thành công
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/StoreRequestList'
+ *         $ref: '#/components/responses/Ok200'
  *       401:
- *         description: Không được phép truy cập
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
-router.get("/requests/me", authMiddleware, StoreRequestController.getMyRequests);
+router.get(
+  "/requests/me",
+  authMiddleware,
+  StoreRequestController.getMyRequests
+);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const ProductService = require("../service/productService");
+const { response } = require("../utils/response");
 
 /**
  * Product Controller - Xử lý requests liên quan đến sản phẩm
@@ -49,16 +50,9 @@ class ProductController {
         sortOrder
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách sản phẩm thành công",
-        data: result,
-      });
+      return response.success(res, "Lấy danh sách sản phẩm thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -70,25 +64,15 @@ class ProductController {
     try {
       const productId = Number(req.params.id);
       if (!productId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID sản phẩm không hợp lệ",
-        });
+        return response.badRequest(res, "ID sản phẩm không hợp lệ");
       }
 
       const statuses = ProductService.parseStatus(req.query.status);
       const product = await ProductService.getProductById(productId, statuses);
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy chi tiết sản phẩm thành công",
-        data: product,
-      });
+      return response.success(res, "Lấy chi tiết sản phẩm thành công", product);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        message: error.message,
-      });
+      return response.notFound(res, error.message);
     }
   }
 
@@ -120,17 +104,11 @@ class ProductController {
       const quantity = parseNumber(req.body.quantity);
 
       if (!category_id || !store_id || !name || price === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "Thiếu thông tin bắt buộc",
-        });
+        return response.badRequest(res, "Thiếu thông tin bắt buộc");
       }
 
       if (quantity === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "Số lượng là bắt buộc",
-        });
+        return response.badRequest(res, "Số lượng là bắt buộc");
       }
 
       const images = Array.isArray(req.body.images)
@@ -169,16 +147,9 @@ class ProductController {
         attributes,
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Tạo sản phẩm thành công",
-        data: product,
-      });
+      return response.created(res, "Tạo sản phẩm thành công", product);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -192,17 +163,11 @@ class ProductController {
       const reason = req.body.reason ? String(req.body.reason).trim() : "";
 
       if (!productId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID sản phẩm không hợp lệ",
-        });
+        return response.badRequest(res, "ID sản phẩm không hợp lệ");
       }
 
       if (!reason) {
-        return res.status(400).json({
-          success: false,
-          message: "Lý do là bắt buộc",
-        });
+        return response.badRequest(res, "Lý do là bắt buộc");
       }
 
       const result = await ProductService.cancelProduct(
@@ -211,16 +176,9 @@ class ProductController {
         reason
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Hủy sản phẩm thành công",
-        data: result,
-      });
+      return response.success(res, "Hủy sản phẩm thành công", result);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 }

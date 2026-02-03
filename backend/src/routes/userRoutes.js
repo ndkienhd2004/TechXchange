@@ -15,22 +15,11 @@ const { authMiddleware } = require("../app/middleware/auth");
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lấy thông tin thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/User'
+ *         $ref: '#/components/responses/Ok200'
  *       401:
- *         description: Không được phép truy cập
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       404:
+ *         $ref: '#/components/responses/NotFound404'
  */
 router.get("/profile", authMiddleware, UserController.getProfile);
 
@@ -52,22 +41,11 @@ router.get("/profile", authMiddleware, UserController.getProfile);
  *             $ref: '#/components/schemas/UpdateProfileRequest'
  *     responses:
  *       200:
- *         description: Cập nhật thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/User'
+ *         $ref: '#/components/responses/Ok200'
  *       400:
- *         description: Lỗi validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.put("/profile", authMiddleware, UserController.updateProfile);
 
@@ -88,31 +66,9 @@ router.put("/profile", authMiddleware, UserController.updateProfile);
  *         description: ID của người dùng
  *     responses:
  *       200:
- *         description: Lấy thông tin thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     username:
- *                       type: string
- *                     gender:
- *                       type: string
- *                     created_at:
- *                       type: string
+ *         $ref: '#/components/responses/Ok200'
  *       404:
- *         description: Người dùng không tồn tại
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/NotFound404'
  */
 router.get("/public/:id", UserController.getPublicProfile);
 
@@ -134,22 +90,11 @@ router.get("/public/:id", UserController.getPublicProfile);
  *             $ref: '#/components/schemas/ChangePasswordRequest'
  *     responses:
  *       200:
- *         description: Đổi mật khẩu thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
+ *         $ref: '#/components/responses/Ok200'
  *       400:
- *         description: Lỗi validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.post("/change-password", authMiddleware, UserController.changePassword);
 
@@ -178,22 +123,11 @@ router.post("/change-password", authMiddleware, UserController.changePassword);
  *                 example: password123
  *     responses:
  *       200:
- *         description: Xóa tài khoản thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
+ *         $ref: '#/components/responses/Ok200'
  *       400:
- *         description: Lỗi validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
  */
 router.delete("/account", authMiddleware, UserController.deleteAccount);
 

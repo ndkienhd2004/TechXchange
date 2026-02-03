@@ -1,4 +1,5 @@
 const BrandRequestService = require("../service/brandRequestService");
+const { response } = require("../utils/response");
 
 /**
  * Brand Request Controller - Xử lý requests yêu cầu tạo brand
@@ -15,10 +16,7 @@ class BrandRequestController {
       const image = req.body.image ? String(req.body.image).trim() : null;
 
       if (!name) {
-        return res.status(400).json({
-          success: false,
-          message: "Tên thương hiệu là bắt buộc",
-        });
+        return response.badRequest(res, "Tên thương hiệu là bắt buộc");
       }
 
       const request = await BrandRequestService.createRequest(requesterId, {
@@ -26,16 +24,13 @@ class BrandRequestController {
         image,
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Tạo yêu cầu thương hiệu thành công",
-        data: request,
-      });
+      return response.created(
+        res,
+        "Tạo yêu cầu thương hiệu thành công",
+        request
+      );
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -57,16 +52,9 @@ class BrandRequestController {
         offset
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Lấy danh sách yêu cầu thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -86,16 +74,9 @@ class BrandRequestController {
         offset
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Lấy danh sách yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Lấy danh sách yêu cầu thành công", result);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return response.serverError(res, error.message);
     }
   }
 
@@ -107,10 +88,7 @@ class BrandRequestController {
     try {
       const requestId = Number(req.params.id);
       if (!requestId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID yêu cầu không hợp lệ",
-        });
+        return response.badRequest(res, "ID yêu cầu không hợp lệ");
       }
 
       const result = await BrandRequestService.approveRequest(
@@ -118,16 +96,9 @@ class BrandRequestController {
         req.user.id
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Duyệt yêu cầu thành công",
-        data: result,
-      });
+      return response.success(res, "Duyệt yêu cầu thành công", result);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -141,10 +112,7 @@ class BrandRequestController {
       const { note } = req.body;
 
       if (!requestId) {
-        return res.status(400).json({
-          success: false,
-          message: "ID yêu cầu không hợp lệ",
-        });
+        return response.badRequest(res, "ID yêu cầu không hợp lệ");
       }
 
       const request = await BrandRequestService.rejectRequest(
@@ -153,16 +121,9 @@ class BrandRequestController {
         note
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Từ chối yêu cầu thành công",
-        data: request,
-      });
+      return response.success(res, "Từ chối yêu cầu thành công", request);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return response.badRequest(res, error.message);
     }
   }
 }
