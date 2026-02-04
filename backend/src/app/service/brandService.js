@@ -1,4 +1,4 @@
-const { Brand, Product } = require("../../models");
+const { Brand, Product, ProductCatalog } = require("../../models");
 
 /**
  * Brand Service - Xử lý nghiệp vụ liên quan đến thương hiệu
@@ -91,6 +91,13 @@ class BrandService {
       });
       if (usedByProduct) {
         throw new Error("Không thể xóa thương hiệu đang được sử dụng");
+      }
+
+      const usedByCatalog = await ProductCatalog.findOne({
+        where: { brand_id: brandId },
+      });
+      if (usedByCatalog) {
+        throw new Error("Không thể xóa thương hiệu đang được sử dụng trong catalog");
       }
 
       await brand.destroy();

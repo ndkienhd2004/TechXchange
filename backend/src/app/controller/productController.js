@@ -12,7 +12,7 @@ class ProductController {
   static async getProducts(req, res) {
     try {
       const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
-      const offset = parseInt(req.query.offset, 10) || 0;
+      const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
 
       const parseNumber = (value) => {
         if (value === undefined) {
@@ -45,14 +45,14 @@ class ProductController {
       const result = await ProductService.getProducts(
         filters,
         limit,
-        offset,
+        page,
         sortBy,
-        sortOrder
+        sortOrder,
       );
 
       return response.success(res, "Lấy danh sách sản phẩm thành công", result);
     } catch (error) {
-      return response.serverError(res, error.message);
+      return response.badRequest(res, error.message);
     }
   }
 
@@ -77,6 +77,28 @@ class ProductController {
   }
 
   /**
+   * Shop: Xóa listing của mình
+   * DELETE /products/:id
+   */
+  static async deleteListing(req, res) {
+    try {
+      const productId = Number(req.params.id);
+      if (!productId) {
+        return response.badRequest(res, "ID sản phẩm không hợp lệ");
+      }
+
+      const result = await ProductService.deleteListing(
+        req.user.id,
+        productId
+      );
+
+      return response.success(res, "Xóa sản phẩm thành công", result);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  /**
    * Tạo sản phẩm mới
    * POST /products
    */
@@ -91,19 +113,15 @@ class ProductController {
         return Number.isNaN(parsed) ? undefined : parsed;
       };
 
-      const category_id = parseNumber(req.body.category_id);
+      const catalog_id = parseNumber(req.body.catalog_id);
       const store_id = parseNumber(req.body.store_id);
-      const brand_id = parseNumber(req.body.brand_id);
-      const name = req.body.name ? String(req.body.name).trim() : "";
-      const description = req.body.description
-        ? String(req.body.description).trim()
-        : null;
       const price = parseNumber(req.body.price);
-      const quality = req.body.quality ? String(req.body.quality).trim() : null;
-      const condition_percent = parseNumber(req.body.condition_percent);
       const quantity = parseNumber(req.body.quantity);
+      const variant_key = req.body.variant_key
+        ? String(req.body.variant_key).trim()
+        : null;
 
-      if (!category_id || !store_id || !name || price === undefined) {
+      if (!catalog_id || !store_id || price === undefined) {
         return response.badRequest(res, "Thiếu thông tin bắt buộc");
       }
 
@@ -122,32 +140,69 @@ class ProductController {
             .filter((item) => item.url)
         : [];
 
-      const attributes = Array.isArray(req.body.attributes)
-        ? req.body.attributes
-            .map((item) => ({
-              attr_key: item?.attr_key ? String(item.attr_key).trim() : null,
-              attr_value: item?.attr_value
-                ? String(item.attr_value).trim()
-                : null,
-            }))
-            .filter((item) => item.attr_key && item.attr_value)
-        : [];
-
       const product = await ProductService.createProduct(userId, {
-        category_id,
+        catalog_id,
         store_id,
-        brand_id,
-        name,
-        description,
         price,
-        quality,
-        condition_percent,
         quantity,
         images,
-        attributes,
       });
 
       return response.created(res, "Tạo sản phẩm thành công", product);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  /**
+   * Tạo listing từ catalog (Shop)
+   * POST /products/listings
+   */
+  static async createListing(req, res) {
+    try {
+      const userId = req.user.id;
+      const parseNumber = (value) => {
+        if (value === undefined || value === null || value === "") {
+          return undefined;
+        }
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? undefined : parsed;
+      };
+
+      const catalog_id = parseNumber(req.body.catalog_id);
+      const store_id = parseNumber(req.body.store_id);
+      const price = parseNumber(req.body.price);
+      const quantity = parseNumber(req.body.quantity);
+
+      if (!catalog_id || !store_id || price === undefined) {
+        return response.badRequest(res, "Thiếu thông tin bắt buộc");
+      }
+
+      if (quantity === undefined) {
+        return response.badRequest(res, "Số lượng là bắt buộc");
+      }
+
+      const images = Array.isArray(req.body.images)
+        ? req.body.images
+            .map((item) => ({
+              url: item?.url ? String(item.url).trim() : null,
+              sort_order: Number.isNaN(Number(item?.sort_order))
+                ? undefined
+                : Number(item.sort_order),
+            }))
+            .filter((item) => item.url)
+        : [];
+
+      const listing = await ProductService.createListingFromCatalog(userId, {
+        catalog_id,
+        store_id,
+        price,
+        quantity,
+        images,
+        variant_key,
+      });
+
+      return response.created(res, "Tạo listing thành công", listing);
     } catch (error) {
       return response.badRequest(res, error.message);
     }
@@ -173,7 +228,7 @@ class ProductController {
       const result = await ProductService.cancelProduct(
         productId,
         req.user.id,
-        reason
+        reason,
       );
 
       return response.success(res, "Hủy sản phẩm thành công", result);

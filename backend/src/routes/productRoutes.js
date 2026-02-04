@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const ProductController = require("../app/controller/productController");
+const ProductCatalogController = require("../app/controller/productCatalogController");
+const ProductRequestController = require("../app/controller/productRequestController");
 const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
 
 /**
@@ -10,7 +12,7 @@ const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
  *     tags:
  *       - Product
  *     summary: Lấy danh sách sản phẩm
- *     description: Lấy danh sách sản phẩm công khai
+ *     description: Lấy danh sách sản phẩm công khai (trả kèm catalog.brand và catalog.category)
  *     parameters:
  *       - in: query
  *         name: limit
@@ -19,11 +21,11 @@ const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
  *           default: 10
  *         description: Số lượng bản ghi
  *       - in: query
- *         name: offset
+ *         name: page
  *         schema:
  *           type: integer
- *           default: 0
- *         description: Vị trí bắt đầu
+ *           default: 1
+ *         description: Trang hiện tại
  *       - in: query
  *         name: category_id
  *         schema:
@@ -89,12 +91,57 @@ router.get("/", ProductController.getProducts);
 
 /**
  * @swagger
+ * /products/catalogs:
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Lấy danh sách catalog
+ *     description: Danh sách sản phẩm chuẩn để shop chọn
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: brand_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: active
+ *         description: Trạng thái catalog (mặc định active, dùng \"all\" để bỏ lọc)
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get("/catalogs", ProductCatalogController.getCatalogs);
+
+/**
+ * @swagger
  * /products:
  *   post:
  *     tags:
  *       - Product
- *     summary: Tạo sản phẩm mới
- *     description: Tạo sản phẩm mới (shop only)
+ *     summary: Tạo listing từ catalog
+ *     description: Shop chọn sản phẩm từ catalog và tạo listing (shop only)
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -104,28 +151,17 @@ router.get("/", ProductController.getProducts);
  *           schema:
  *             type: object
  *             required:
- *               - category_id
+ *               - catalog_id
  *               - store_id
- *               - name
  *               - price
  *               - quantity
  *             properties:
- *               category_id:
+ *               catalog_id:
  *                 type: integer
  *               store_id:
  *                 type: integer
- *               brand_id:
- *                 type: integer
- *               name:
- *                 type: string
- *               description:
- *                 type: string
  *               price:
  *                 type: number
- *               quality:
- *                 type: string
- *               condition_percent:
- *                 type: integer
  *               quantity:
  *                 type: integer
  *               images:
@@ -137,15 +173,8 @@ router.get("/", ProductController.getProducts);
  *                       type: string
  *                     sort_order:
  *                       type: integer
- *               attributes:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     attr_key:
- *                       type: string
- *                     attr_value:
- *                       type: string
+ *               variant_key:
+ *                 type: string
  *     responses:
  *       201:
  *         $ref: '#/components/responses/Created201'
@@ -163,6 +192,103 @@ router.post(
   ProductController.createProduct
 );
 
+ 
+
+/**
+ * @swagger
+ * /products/requests:
+ *   post:
+ *     tags:
+ *       - Product
+ *     summary: Gửi yêu cầu tạo sản phẩm mới
+ *     description: Shop gửi yêu cầu tạo sản phẩm mới (shop only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - category_id
+ *             properties:
+ *               name:
+ *                 type: string
+ *               category_id:
+ *                 type: integer
+ *               brand_id:
+ *                 type: integer
+ *               brand_name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               specs:
+ *                 type: object
+ *               default_image:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         $ref: '#/components/responses/Created201'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.post(
+  "/requests",
+  authMiddleware,
+  shopMiddleware,
+  ProductRequestController.createRequest
+);
+
+/**
+ * @swagger
+ * /products/requests/me:
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Danh sách yêu cầu sản phẩm của shop
+ *     description: Shop xem lịch sử yêu cầu (shop only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: pending
+ *         description: Trạng thái yêu cầu (all để bỏ lọc)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get(
+  "/requests/me",
+  authMiddleware,
+  shopMiddleware,
+  ProductRequestController.getMyRequests
+);
+
 /**
  * @swagger
  * /products/{id}:
@@ -170,7 +296,7 @@ router.post(
  *     tags:
  *       - Product
  *     summary: Lấy chi tiết sản phẩm
- *     description: Lấy thông tin chi tiết của một sản phẩm
+ *     description: Lấy thông tin chi tiết của một sản phẩm (trả kèm catalog.brand và catalog.category)
  *     parameters:
  *       - in: path
  *         name: id
@@ -193,5 +319,39 @@ router.post(
  *         $ref: '#/components/responses/NotFound404'
  */
 router.get("/:id", ProductController.getProductById);
+
+/**
+ * @swagger
+ * /products/{id}:
+ *   delete:
+ *     tags:
+ *       - Product
+ *     summary: Xóa listing của shop
+ *     description: Shop xóa listing của chính mình (shop only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID sản phẩm
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.delete(
+  "/:id",
+  authMiddleware,
+  shopMiddleware,
+  ProductController.deleteListing
+);
 
 module.exports = router;

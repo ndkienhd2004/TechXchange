@@ -3,8 +3,10 @@ const router = express.Router();
 const UserController = require("../app/controller/userController");
 const StoreRequestController = require("../app/controller/storeRequestController");
 const ProductController = require("../app/controller/productController");
+const ProductCatalogController = require("../app/controller/productCatalogController");
 const BrandController = require("../app/controller/brandController");
 const BrandRequestController = require("../app/controller/brandRequestController");
+const ProductRequestController = require("../app/controller/productRequestController");
 const BannerController = require("../app/controller/bannerController");
 const { authMiddleware, adminMiddleware } = require("../app/middleware/auth");
 
@@ -167,6 +169,40 @@ router.get(
 
 /**
  * @swagger
+ * /admin/catalog-products/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin
+ *     summary: Xóa catalog sản phẩm
+ *     description: Xóa catalog sản phẩm (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID catalog
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.delete(
+  "/catalog-products/:id",
+  authMiddleware,
+  adminMiddleware,
+  ProductCatalogController.deleteCatalog
+);
+
+/**
+ * @swagger
  * /admin/store-requests:
  *   get:
  *     tags:
@@ -209,6 +245,127 @@ router.get(
   authMiddleware,
   adminMiddleware,
   StoreRequestController.getRequests
+);
+
+/**
+ * @swagger
+ * /admin/product-requests:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Lấy danh sách yêu cầu sản phẩm
+ *     description: Lấy danh sách yêu cầu sản phẩm (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: pending
+ *         description: Trạng thái yêu cầu (all để bỏ lọc)
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get(
+  "/product-requests",
+  authMiddleware,
+  adminMiddleware,
+  ProductRequestController.getRequests
+);
+
+/**
+ * @swagger
+ * /admin/product-requests/{id}/approve:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Duyệt yêu cầu sản phẩm
+ *     description: Duyệt yêu cầu sản phẩm (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID yêu cầu
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.put(
+  "/product-requests/:id/approve",
+  authMiddleware,
+  adminMiddleware,
+  ProductRequestController.approveRequest
+);
+
+/**
+ * @swagger
+ * /admin/product-requests/{id}/reject:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Từ chối yêu cầu sản phẩm
+ *     description: Từ chối yêu cầu sản phẩm (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID yêu cầu
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               note:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.put(
+  "/product-requests/:id/reject",
+  authMiddleware,
+  adminMiddleware,
+  ProductRequestController.rejectRequest
 );
 
 /**

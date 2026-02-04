@@ -7,6 +7,8 @@ const Store = require("./store")(sequelize, DataTypes);
 const ProductCategory = require("./productCategory")(sequelize, DataTypes);
 const Brand = require("./brand")(sequelize, DataTypes);
 const BrandRequest = require("./brandRequest")(sequelize, DataTypes);
+const ProductRequest = require("./productRequest")(sequelize, DataTypes);
+const ProductCatalog = require("./productCatalog")(sequelize, DataTypes);
 const Product = require("./product")(sequelize, DataTypes);
 const AdminReview = require("./adminReview")(sequelize, DataTypes);
 const Order = require("./order")(sequelize, DataTypes);
@@ -49,6 +51,18 @@ Product.belongsTo(ProductCategory, {
 Brand.hasMany(Product, { foreignKey: "brand_id", as: "products" });
 Product.belongsTo(Brand, { foreignKey: "brand_id", as: "brand" });
 
+Brand.hasMany(ProductCatalog, { foreignKey: "brand_id", as: "catalogs" });
+ProductCatalog.belongsTo(Brand, { foreignKey: "brand_id", as: "brand" });
+
+ProductCategory.hasMany(ProductCatalog, {
+  foreignKey: "category_id",
+  as: "catalogs",
+});
+ProductCatalog.belongsTo(ProductCategory, {
+  foreignKey: "category_id",
+  as: "category",
+});
+
 User.hasMany(BrandRequest, {
   foreignKey: "requester_id",
   as: "brandRequests",
@@ -57,11 +71,30 @@ BrandRequest.belongsTo(User, { foreignKey: "requester_id", as: "requester" });
 BrandRequest.belongsTo(User, { foreignKey: "admin_id", as: "admin" });
 BrandRequest.belongsTo(Brand, { foreignKey: "brand_id", as: "brand" });
 
+User.hasMany(ProductRequest, {
+  foreignKey: "requester_id",
+  as: "productRequests",
+});
+ProductRequest.belongsTo(User, { foreignKey: "requester_id", as: "requester" });
+ProductRequest.belongsTo(User, { foreignKey: "admin_id", as: "admin" });
+ProductRequest.belongsTo(Brand, { foreignKey: "brand_id", as: "brand" });
+ProductRequest.belongsTo(ProductCategory, {
+  foreignKey: "category_id",
+  as: "category",
+});
+ProductRequest.belongsTo(ProductCatalog, {
+  foreignKey: "catalog_id",
+  as: "catalog",
+});
+
 User.hasMany(Product, { foreignKey: "seller_id", as: "products" });
 Product.belongsTo(User, { foreignKey: "seller_id", as: "seller" });
 
 Store.hasMany(Product, { foreignKey: "store_id", as: "products" });
 Product.belongsTo(Store, { foreignKey: "store_id", as: "store" });
+
+ProductCatalog.hasMany(Product, { foreignKey: "catalog_id", as: "listings" });
+Product.belongsTo(ProductCatalog, { foreignKey: "catalog_id", as: "catalog" });
 
 User.hasMany(AdminReview, { foreignKey: "admin_id", as: "adminReviews" });
 AdminReview.belongsTo(User, { foreignKey: "admin_id", as: "admin" });
@@ -172,6 +205,8 @@ module.exports = {
   ProductCategory,
   Brand,
   BrandRequest,
+  ProductRequest,
+  ProductCatalog,
   Product,
   AdminReview,
   Order,

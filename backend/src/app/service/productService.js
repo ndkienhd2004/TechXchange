@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const {
   sequelize,
   Product,
+  ProductCatalog,
   ProductCategory,
   Brand,
   Store,
@@ -15,6 +16,35 @@ const {
  * Product Service - Xử lý nghiệp vụ liên quan đến sản phẩm
  */
 class ProductService {
+  static normalizeVariantKey(raw) {
+    if (!raw || typeof raw !== "string") {
+      return null;
+    }
+    const parts = raw
+      .split("|")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => {
+        const [key, ...rest] = item.split("=");
+        const k = (key || "").trim().toLowerCase();
+        const v = rest.join("=").trim();
+        return k ? [k, v] : null;
+      })
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return null;
+    }
+
+    parts.sort((a, b) => {
+      if (a[0] === b[0]) {
+        return a[1].localeCompare(b[1]);
+      }
+      return a[0].localeCompare(b[0]);
+    });
+
+    return parts.map(([k, v]) => `${k}=${v}`).join("|");
+  }
   /**
    * Chuẩn hóa tham số status
    * @param {string} statusParam
@@ -47,73 +77,58 @@ class ProductService {
   static async getProducts(
     filters = {},
     limit = 10,
-    offset = 0,
+    page = 1,
     sortBy = "created_at",
-    sortOrder = "DESC"
+    sortOrder = "DESC",
   ) {
     try {
-      const whereClause = {};
+      const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+      const offset = (safePage - 1) * limit;
+      const whereListing = {};
+      const whereCatalog = {};
 
       if (filters.statuses && filters.statuses.length > 0) {
-        whereClause.status = { [Op.in]: filters.statuses };
+        whereListing.status = { [Op.in]: filters.statuses };
       }
-
-      if (filters.category_id) {
-        whereClause.category_id = filters.category_id;
-      }
-
-      if (filters.brand_id) {
-        whereClause.brand_id = filters.brand_id;
-      }
-
-      if (filters.store_id) {
-        whereClause.store_id = filters.store_id;
-      }
-
-      if (filters.seller_id) {
-        whereClause.seller_id = filters.seller_id;
-      }
-
+      if (filters.store_id) whereListing.store_id = filters.store_id;
+      if (filters.seller_id) whereListing.seller_id = filters.seller_id;
       if (filters.min_price || filters.max_price) {
-        whereClause.price = {};
-        if (filters.min_price) {
-          whereClause.price[Op.gte] = filters.min_price;
-        }
-        if (filters.max_price) {
-          whereClause.price[Op.lte] = filters.max_price;
-        }
+        whereListing.price = {};
+        if (filters.min_price) whereListing.price[Op.gte] = filters.min_price;
+        if (filters.max_price) whereListing.price[Op.lte] = filters.max_price;
       }
 
-      if (filters.q) {
-        whereClause.name = { [Op.iLike]: `%${filters.q}%` };
-      }
+      // filters theo catalog
+      if (filters.category_id) whereCatalog.category_id = filters.category_id;
+      if (filters.brand_id) whereCatalog.brand_id = filters.brand_id;
+      if (filters.q) whereCatalog.name = { [Op.iLike]: `%${filters.q}%` };
 
       const { count, rows } = await Product.findAndCountAll({
-        where: whereClause,
+        where: whereListing,
         limit,
         offset,
         distinct: true,
         include: [
           {
-            model: ProductCategory,
-            as: "category",
-            attributes: ["id", "name"],
+            model: ProductCatalog,
+            as: "catalog",
+            required: true,
+            where: whereCatalog,
+            include: [
+              {
+                model: Brand,
+                as: "brand",
+                attributes: ["id", "name", "image"],
+              },
+              {
+                model: ProductCategory,
+                as: "category",
+                attributes: ["id", "name"],
+              },
+            ],
           },
-          {
-            model: Brand,
-            as: "brand",
-            attributes: ["id", "name", "image"],
-          },
-          {
-            model: Store,
-            as: "store",
-            attributes: ["id", "name", "rating"],
-          },
-          {
-            model: User,
-            as: "seller",
-            attributes: ["id", "username"],
-          },
+          { model: Store, as: "store", attributes: ["id", "name", "rating"] },
+          { model: User, as: "seller", attributes: ["id", "username"] },
           {
             model: ProductImage,
             as: "images",
@@ -128,7 +143,7 @@ class ProductService {
       return {
         total: count,
         products: rows,
-        page: Math.floor(offset / limit) + 1,
+        page: safePage,
         totalPages: Math.ceil(count / limit),
       };
     } catch (error) {
@@ -154,14 +169,21 @@ class ProductService {
         where: whereClause,
         include: [
           {
-            model: ProductCategory,
-            as: "category",
-            attributes: ["id", "name"],
-          },
-          {
-            model: Brand,
-            as: "brand",
-            attributes: ["id", "name", "image"],
+            model: ProductCatalog,
+            as: "catalog",
+            required: false,
+            include: [
+              {
+                model: Brand,
+                as: "brand",
+                attributes: ["id", "name", "image"],
+              },
+              {
+                model: ProductCategory,
+                as: "category",
+                attributes: ["id", "name"],
+              },
+            ],
           },
           {
             model: Store,
@@ -206,20 +228,70 @@ class ProductService {
    */
   static async createProduct(userId, payload) {
     const {
-      category_id,
       store_id,
-      brand_id,
-      name,
-      description,
       price,
-      quality,
-      condition_percent,
       quantity,
       images,
-      attributes,
+      catalog_id,
     } = payload;
 
     try {
+      if (catalog_id) {
+        return await ProductService.createListingFromCatalog(userId, {
+          catalog_id,
+          store_id,
+          price,
+          quantity,
+          images,
+        });
+      }
+
+      throw new Error(
+        "Vui lòng chọn sản phẩm từ catalog hoặc gửi yêu cầu tạo sản phẩm mới"
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Shop: Xóa listing của mình (soft delete)
+   * @param {number} userId
+   * @param {number} productId
+   * @returns {Promise<object>}
+   */
+  static async deleteListing(userId, productId) {
+    try {
+      const product = await Product.findByPk(productId);
+      if (!product) {
+        throw new Error("Sản phẩm không tồn tại");
+      }
+
+      if (product.seller_id !== userId) {
+        throw new Error("Không có quyền xóa sản phẩm này");
+      }
+
+      await product.update({ status: "deleted" });
+      return product;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo listing từ catalog
+   * @param {number} userId
+   * @param {object} payload
+   * @returns {Promise<object>}
+   */
+  static async createListingFromCatalog(userId, payload) {
+    const { catalog_id, store_id, price, quantity, images, variant_key } =
+      payload;
+
+    try {
+      const normalizedVariantKey =
+        ProductService.normalizeVariantKey(variant_key);
+
       const store = await Store.findOne({
         where: { id: store_id, owner_id: userId },
       });
@@ -227,33 +299,41 @@ class ProductService {
         throw new Error("Cửa hàng không tồn tại hoặc không thuộc quyền sở hữu");
       }
 
-      const category = await ProductCategory.findByPk(category_id);
-      if (!category) {
-        throw new Error("Danh mục không tồn tại");
+      const catalog = await ProductCatalog.findByPk(catalog_id);
+      if (!catalog) {
+        throw new Error("Catalog không tồn tại");
+      }
+      if (catalog.status !== "active") {
+        throw new Error("Catalog không khả dụng");
       }
 
-      if (brand_id) {
-        const brand = await Brand.findByPk(brand_id);
-        if (!brand) {
-          throw new Error("Thương hiệu không tồn tại");
-        }
+      const existingListing = await Product.findOne({
+        where: {
+          catalog_id: catalog.id,
+          store_id,
+          variant_key: normalizedVariantKey,
+        },
+      });
+      if (existingListing) {
+        throw new Error("Sản phẩm đã tồn tại trong cửa hàng");
       }
 
       return await sequelize.transaction(async (transaction) => {
         const product = await Product.create(
           {
-            category_id,
+            catalog_id: catalog.id,
+            category_id: catalog.category_id,
+            brand_id: catalog.brand_id || null,
+            name: catalog.name,
+            description: catalog.description || null,
             seller_id: userId,
             store_id,
-            brand_id: brand_id || null,
-            name,
-            description: description || null,
             price,
-            quality: quality || null,
-            condition_percent: condition_percent ?? null,
             quantity,
+            variant_key: normalizedVariantKey,
+            status: "active",
           },
-          { transaction }
+          { transaction },
         );
 
         if (Array.isArray(images) && images.length > 0) {
@@ -272,31 +352,23 @@ class ProductService {
           }
         }
 
-        if (Array.isArray(attributes) && attributes.length > 0) {
-          const attributeRows = attributes
-            .map((item) => ({
-              product_id: product.id,
-              attr_key: item.attr_key,
-              attr_value: item.attr_value,
-            }))
-            .filter((item) => item.attr_key && item.attr_value);
-
-          if (attributeRows.length > 0) {
-            await ProductAttribute.bulkCreate(attributeRows, { transaction });
-          }
-        }
-
         const createdProduct = await Product.findByPk(product.id, {
           include: [
             {
-              model: ProductCategory,
-              as: "category",
-              attributes: ["id", "name"],
-            },
-            {
-              model: Brand,
-              as: "brand",
-              attributes: ["id", "name", "image"],
+              model: ProductCatalog,
+              as: "catalog",
+              include: [
+                {
+                  model: Brand,
+                  as: "brand",
+                  attributes: ["id", "name", "image"],
+                },
+                {
+                  model: ProductCategory,
+                  as: "category",
+                  attributes: ["id", "name"],
+                },
+              ],
             },
             {
               model: Store,
@@ -314,11 +386,6 @@ class ProductService {
               attributes: ["id", "url", "sort_order"],
               separate: true,
               order: [["sort_order", "ASC"]],
-            },
-            {
-              model: ProductAttribute,
-              as: "attributes",
-              attributes: ["id", "attr_key", "attr_value"],
             },
           ],
           transaction,
