@@ -150,6 +150,63 @@ export const userInfoHover = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.hover,
 });
 
+export const userMenuButton = (theme: Theme): CSSProperties => ({
+  ...userInfo(theme),
+  color: theme.colors.palette.text.secondary,
+  background: "transparent",
+  border: "none",
+});
+
+export const userMenuButtonHover = (theme: Theme): CSSProperties => ({
+  background: theme.colors.palette.backgrounds.hover,
+  color: theme.colors.palette.text.primary,
+});
+
+export const userMenuWrap = (theme: Theme): CSSProperties => ({
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+});
+
+export const userMenu = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  top: "calc(100% + 8px)",
+  right: 0,
+  minWidth: "200px",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing[2],
+  boxShadow: theme.shadows.lg,
+  padding: theme.spacing[2],
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing[1],
+  zIndex: 200,
+});
+
+export const userMenuItem = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  color: theme.colors.palette.text.primary,
+  textDecoration: "none",
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.medium,
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing[2],
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  textAlign: "left",
+  transition: "background 0.2s ease",
+});
+
+export const userMenuItemDanger = (theme: Theme): CSSProperties => ({
+  ...userMenuItem(theme),
+  color: theme.colors.palette.semantic.error,
+});
+
 export const nav = (theme: Theme): CSSProperties => ({
   maxWidth: "1400px",
   margin: "0 auto",

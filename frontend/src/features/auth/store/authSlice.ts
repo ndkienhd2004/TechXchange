@@ -6,6 +6,7 @@ import {
   SignInService,
   UpdateUserService,
 } from "../services/authApi";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
 /** Error từ axiosConfig đã là plain object { code?, success?, message? }. */
 const initialState: AuthState = {
@@ -22,8 +23,10 @@ export const SignIn = createAsyncThunk(
   async (payload: LoginRequest, thunkAPI) => {
     try {
       const response = await SignInService(payload.email, payload.password);
+      showSuccessToast("Đăng nhập thành công");
       return response.data;
     } catch (error) {
+      showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
     }
   }
@@ -40,8 +43,10 @@ export const SignUp = createAsyncThunk(
         payload.gender,
         payload.phone
       );
+      showSuccessToast("Đăng ký thành công");
       return response.data;
     } catch (error) {
+      showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
     }
   }
@@ -62,8 +67,10 @@ export const UpdateUser = createAsyncThunk(
   ) => {
     try {
       const response = await UpdateUserService(payload);
+      showSuccessToast("Cập nhật thông tin thành công");
       return response.data;
     } catch (error) {
+      showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
     }
   }
@@ -99,6 +106,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
     },
     logout: (state) => {
+      showSuccessToast("Đăng xuất thành công");
       state.token = null;
       state.refreshToken = null;
       state.user = null;

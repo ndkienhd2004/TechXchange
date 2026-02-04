@@ -97,11 +97,11 @@ import { selectIsAuthenticated } from "@/features/auth";
 function MyComponent() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  
+
   const handleLogin = () => {
     dispatch(setCredentials({ token: "...", user: {...} }));
   };
-  
+
   return <div>...</div>;
 }
 ```
@@ -116,7 +116,7 @@ import { useLoginMutation, useGetCurrentUserQuery } from "@/features/auth";
 function LoginForm() {
   const [login, { isLoading, error }] = useLoginMutation();
   const { data: user } = useGetCurrentUserQuery();
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -126,7 +126,7 @@ function LoginForm() {
       // Error handling
     }
   };
-  
+
   return <form onSubmit={handleSubmit}>...</form>;
 }
 ```
@@ -145,7 +145,7 @@ function LoginForm() {
 Create `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
 ## Next Steps

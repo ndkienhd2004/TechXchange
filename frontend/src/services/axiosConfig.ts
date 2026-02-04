@@ -50,7 +50,7 @@ interface RefreshResponse {
   code: string;
   success: boolean;
   message?: string;
-  data?: { token?: string; refreshToken?: string };
+  data?: { accessToken?: string; token?: string; refreshToken?: string };
 }
 
 let axiosInstance: ReturnType<typeof axios.create> | null = null;
@@ -71,15 +71,16 @@ async function tryRefreshToken(): Promise<string | null> {
       })
       .post<RefreshResponse>(REFRESH_URL, { refreshToken });
     const body = res.data;
-    if (body.code === "200" && body.success === true && body.data?.token) {
+    const newAccessToken = body.data?.accessToken ?? body.data?.token ?? null;
+    if (body.code === "200" && body.success === true && newAccessToken) {
       store.dispatch({
         type: AUTH_SET_CREDENTIALS,
         payload: {
-          token: body.data.token,
-          refreshToken: body.data.refreshToken ?? undefined,
+          token: newAccessToken,
+          refreshToken: body.data?.refreshToken ?? undefined,
         },
       });
-      return body.data.token;
+      return newAccessToken;
     }
     return null;
   } catch {
@@ -89,6 +90,17 @@ async function tryRefreshToken(): Promise<string | null> {
 
 function isRefreshEndpoint(url: string): boolean {
   return url === REFRESH_URL || url.endsWith(REFRESH_URL);
+}
+
+/** 401 từ login/register = sai mật khẩu, không refresh/logout. */
+function isAuthCredentialEndpoint(url: string): boolean {
+  const u = url ?? "";
+  return (
+    u === "/auth/login" ||
+    u.endsWith("/auth/login") ||
+    u === "/auth/register" ||
+    u.endsWith("/auth/register")
+  );
 }
 
 /**
@@ -126,7 +138,12 @@ export function createAxiosInstance(
       const url = config?.url ?? "";
       const payload = getErrorPayload(err);
 
-      if (status !== 401 || isRefreshEndpoint(url) || config._retry) {
+      if (
+        status !== 401 ||
+        isRefreshEndpoint(url) ||
+        isAuthCredentialEndpoint(url) ||
+        config._retry
+      ) {
         return rejectWithPayload(err, payload);
       }
       config._retry = true;

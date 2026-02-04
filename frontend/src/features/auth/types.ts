@@ -15,6 +15,7 @@ export interface User {
   username: string;
   gender: string;
   phone: string;
+  role?: "user" | "admin" | "shop";
   avatar?: string;
   address?: string;
   createdAt?: string;

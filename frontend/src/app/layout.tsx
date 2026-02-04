@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "./providers";
-import Header from "@/components/layouts/Header";
-import Footer from "@/components/layouts/Footer";
+import AppShell from "@/components/layouts/AppShell";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import { ThemedToaster } from "@/components/commons/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,18 +32,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              minHeight: "100vh",
-            }}
-          >
-            <Toaster />
-            <Header />
-            <main style={{ flex: 1 }}>{children}</main>
-            <Footer />
-          </div>
+          <ThemedToaster />
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>

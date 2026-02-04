@@ -70,9 +70,9 @@ export default function ProfileView() {
               </div>
             </div>
           </div>
-          <button type="button" style={themed(styles.summaryButton)}>
+          <Link href="/store-request" style={themed(styles.summaryButton)}>
             Đăng ký bán hàng
-          </button>
+          </Link>
         </div>
 
         {/* 4 nút hành động */}

@@ -119,6 +119,7 @@ export const summaryButton = (theme: Theme): CSSProperties => ({
   alignItems: "center",
   gap: theme.spacing[2],
   flexShrink: 0,
+  textDecoration: "none",
 });
 
 export const actionsRow = (theme: Theme): CSSProperties => ({

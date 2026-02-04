@@ -3,10 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties, RefObject } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import type { Theme } from "@/theme";
-import { selectIsAuthenticated, selectUser, User } from "@/features/auth";
-import { useAppSelector } from "@/store/hooks";
+import {
+  selectIsAuthenticated,
+  selectUser,
+  User,
+  logout,
+} from "@/features/auth";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import * as styles from "./styles";
 
 type Themed = (fn: (theme: Theme) => CSSProperties) => CSSProperties;
@@ -76,6 +82,10 @@ const Actions = ({
   windowWidth,
   isAuthenticated,
   user,
+  userMenuOpen,
+  setUserMenuOpen,
+  userMenuRef,
+  onLogout,
 }: {
   themed: Themed;
   hoveredElement: string | null;
@@ -83,15 +93,21 @@ const Actions = ({
   windowWidth: number;
   isAuthenticated: boolean;
   user: User | null;
+  userMenuOpen: boolean;
+  setUserMenuOpen: (v: boolean) => void;
+  userMenuRef: RefObject<HTMLDivElement | null>;
+  onLogout: () => void;
 }) => (
   <div style={themed(styles.actions)}>
-    <button
+    <Link
+      href="/cart"
       style={{
         ...themed(styles.cartButton),
         ...(hoveredElement === "cart" ? themed(styles.cartButtonHover) : {}),
       }}
       onMouseEnter={() => setHoveredElement("cart")}
       onMouseLeave={() => setHoveredElement(null)}
+      aria-label="Giỏ hàng"
     >
       <svg
         width="24"
@@ -108,17 +124,22 @@ const Actions = ({
         <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
       </svg>
       <span style={themed(styles.cartBadge)}>3</span>
-    </button>
+    </Link>
     {isAuthenticated && user ? (
-      <>
-        <Link
-          href="/profile"
+      <div ref={userMenuRef} style={themed(styles.userMenuWrap)}>
+        <button
+          type="button"
           style={{
-            ...themed(styles.userInfo),
-            ...(hoveredElement === "user" ? themed(styles.userInfoHover) : {}),
+            ...themed(styles.userMenuButton),
+            ...(hoveredElement === "user"
+              ? themed(styles.userMenuButtonHover)
+              : {}),
           }}
           onMouseEnter={() => setHoveredElement("user")}
           onMouseLeave={() => setHoveredElement(null)}
+          onClick={() => setUserMenuOpen(!userMenuOpen)}
+          aria-haspopup="menu"
+          aria-expanded={userMenuOpen}
         >
           <svg
             width="20"
@@ -134,8 +155,51 @@ const Actions = ({
             <circle cx="12" cy="7" r="4" />
           </svg>
           {windowWidth > 700 && <span>{user.username}</span>}
-        </Link>
-      </>
+        </button>
+        {userMenuOpen && (
+          <div style={themed(styles.userMenu)} role="menu">
+            <Link
+              href="/orders"
+              style={themed(styles.userMenuItem)}
+              onClick={() => setUserMenuOpen(false)}
+            >
+              Đơn hàng của tôi
+            </Link>
+            <Link
+              href="/profile"
+              style={themed(styles.userMenuItem)}
+              onClick={() => setUserMenuOpen(false)}
+            >
+              Tài khoản
+            </Link>
+            {user.role === "admin" && (
+              <Link
+                href="/admin"
+                style={themed(styles.userMenuItem)}
+                onClick={() => setUserMenuOpen(false)}
+              >
+                Admin
+              </Link>
+            )}
+            {user.role === "shop" && (
+              <Link
+                href="/shop"
+                style={themed(styles.userMenuItem)}
+                onClick={() => setUserMenuOpen(false)}
+              >
+                Cửa hàng của tôi
+              </Link>
+            )}
+            <button
+              type="button"
+              style={themed(styles.userMenuItemDanger)}
+              onClick={onLogout}
+            >
+              Đăng xuất
+            </button>
+          </div>
+        )}
+      </div>
     ) : (
       <>
         <Link
@@ -299,11 +363,15 @@ const BrandList = ({
 
 export default function Header() {
   const { themed } = useAppTheme();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const user = useAppSelector(selectUser);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
@@ -351,6 +419,27 @@ export default function Header() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [categoriesOpen]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [userMenuOpen]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    setUserMenuOpen(false);
+    router.replace("/");
+  };
+
   return (
     <header style={themed(styles.header)}>
       <div style={themed(styles.topBar)}>
@@ -368,6 +457,10 @@ export default function Header() {
           windowWidth={windowWidth}
           isAuthenticated={isAuthenticated}
           user={user}
+          userMenuOpen={userMenuOpen}
+          setUserMenuOpen={setUserMenuOpen}
+          userMenuRef={userMenuRef}
+          onLogout={handleLogout}
         />
       </div>
       <Nav
