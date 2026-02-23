@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
-import ShopLayout from "./ShopLayout";
-import * as styles from "./styles";
+import ShopLayout from "../ShopLayout";
+import * as styles from "../styles";
 
 const requests = [
   { id: 1, name: "TechX Store", status: "pending", date: "18/12/2025" },
@@ -86,7 +86,7 @@ export default function ShopBrandRequestView() {
                       ...themed(styles.statusPill),
                       ...(req.status === "approved"
                         ? themed(styles.statusDelivered)
-                        : themed(styles.statusPending)),
+                        : themed(styles.statusDelivered)),
                     }}
                   >
                     {req.status === "approved" ? "Đã duyệt" : "Chờ duyệt"}

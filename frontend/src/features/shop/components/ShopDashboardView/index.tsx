@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useAppTheme } from "@/theme/ThemeProvider";
-import ShopLayout from "./ShopLayout";
-import * as styles from "./styles";
+import ShopLayout from "../ShopLayout";
+import * as styles from "../styles";
 
 const stats = [
   { label: "Tổng sản phẩm", value: "3", tone: "#7c3aed" },

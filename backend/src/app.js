@@ -13,11 +13,20 @@ const { response } = require("./app/utils/response");
 
 const app = express();
 
+// Disable etag to avoid 304 on API responses during development
+app.set("etag", false);
+
 app.use(cors());
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Disable caching for API responses
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 
 // Swagger Documentation
 app.use("/docs", swaggerUi.serve);

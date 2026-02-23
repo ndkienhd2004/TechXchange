@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
-import * as styles from "./styles";
+import * as styles from "../styles";
 
 export default function ShopLayout({
   children,

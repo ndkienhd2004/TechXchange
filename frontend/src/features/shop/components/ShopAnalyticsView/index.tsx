@@ -1,10 +1,10 @@
 "use client";
 
 import { useAppTheme } from "@/theme/ThemeProvider";
-import ShopLayout from "./ShopLayout";
-import * as styles from "./styles";
-import RevenueDailyChart from "./charts/RevenueDailyChart";
-import RevenueMonthlyChart from "./charts/RevenueMonthlyChart";
+import ShopLayout from "../ShopLayout";
+import * as styles from "../styles";
+import RevenueDailyChart from "../charts/RevenueDailyChart";
+import RevenueMonthlyChart from "../charts/RevenueMonthlyChart";
 
 const kpis = [
   { label: "Doanh thu", value: "$0", trend: "+12.5%", tone: "up", icon: "$" },

@@ -1,8 +1,8 @@
 "use client";
 
 import { useAppTheme } from "@/theme/ThemeProvider";
-import ShopLayout from "./ShopLayout";
-import * as styles from "./styles";
+import ShopLayout from "../ShopLayout";
+import * as styles from "../styles";
 
 const tabs = [
   { key: "all", label: "Tất cả", count: 8 },

@@ -433,6 +433,52 @@ export const primaryButton = (theme: Theme): CSSProperties => ({
   cursor: "pointer",
 });
 
+export const paginationRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginTop: theme.spacing.lg,
+  paddingTop: theme.spacing.lg,
+  borderTop: `1px solid ${theme.colors.palette.borders.dark}`,
+});
+
+export const paginationInfo = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  color: theme.colors.palette.text.secondary,
+});
+
+export const paginationButtons = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+});
+
+export const pageButton = (theme: Theme): CSSProperties => ({
+  minWidth: 36,
+  height: 36,
+  padding: `0 ${theme.spacing[2]}`,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.card,
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.sm.size,
+  cursor: "pointer",
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+});
+
+export const pageButtonActive = (theme: Theme): CSSProperties => ({
+  ...pageButton(theme),
+  background: theme.colors.palette.brand.purple[600],
+  borderColor: theme.colors.palette.brand.purple[600],
+  color: theme.colors.palette.text.primary,
+});
+
+export const pageButtonDisabled = (theme: Theme): CSSProperties => ({
+  ...pageButton(theme),
+  opacity: 0.5,
+  cursor: "not-allowed",
+});
+
 export const formCard = (theme: Theme): CSSProperties => ({
   ...card(theme),
   marginBottom: theme.spacing.xl,
@@ -532,4 +578,173 @@ export const shipButton = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
   fontWeight: theme.typography.fontWeight.semibold,
   cursor: "pointer",
+});
+
+export const modalOverlay = (theme: Theme): CSSProperties => ({
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0, 0, 0, 0.6)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+});
+
+export const modalCard = (theme: Theme): CSSProperties => ({
+  width: "min(720px, 92vw)",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.lg,
+  padding: theme.spacing.lg,
+  boxShadow: theme.shadows.lg,
+});
+
+export const modalHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: theme.spacing.md,
+});
+
+export const modalTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: theme.typography.fontSize.lg.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalClose = (theme: Theme): CSSProperties => ({
+  border: "none",
+  background: "transparent",
+  color: theme.colors.palette.text.secondary,
+  cursor: "pointer",
+  fontSize: theme.typography.fontSize.sm.size,
+});
+
+export const modalTabs = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing.md,
+  marginBottom: theme.spacing.md,
+});
+
+export const modalTab = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.secondary,
+  padding: theme.spacing.md,
+  borderRadius: theme.spacing.md,
+  cursor: "pointer",
+});
+
+export const modalTabActive = (theme: Theme): CSSProperties => ({
+  ...modalTab(theme),
+  border: `1px solid ${theme.colors.palette.brand.purple[500]}`,
+  color: theme.colors.palette.text.primary,
+  background: "rgba(168, 85, 247, 0.12)",
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalBody = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing.md,
+});
+
+export const modalHint = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.secondary,
+});
+
+export const modalList = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const modalListItem = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  padding: theme.spacing.sm,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+});
+
+export const modalActions = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  justifyContent: "flex-end",
+  marginTop: theme.spacing.md,
+});
+
+export const modalForm = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing.md,
+});
+
+export const modalLabel = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+  color: theme.colors.palette.text.secondary,
+});
+
+export const modalInput = (theme: Theme): CSSProperties => ({
+  padding: theme.spacing.md,
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+});
+
+export const modalLink = (theme: Theme): CSSProperties => ({
+  border: "none",
+  background: "transparent",
+  color: theme.colors.palette.brand.purple[400],
+  cursor: "pointer",
+  textAlign: "left",
+});
+
+export const modalSearchRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  gap: theme.spacing.md,
+});
+
+export const modalProductRow = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "24px 48px 1fr auto",
+  gap: theme.spacing.md,
+  alignItems: "center",
+  padding: theme.spacing.sm,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+});
+
+export const modalProductThumb = (theme: Theme): CSSProperties => ({
+  width: "48px",
+  height: "48px",
+  borderRadius: theme.spacing.sm,
+  background: theme.colors.palette.backgrounds.hover,
+});
+
+export const modalProductInfo = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[1],
+});
+
+export const modalProductName = (theme: Theme): CSSProperties => ({
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalProductMeta = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+});
+
+export const modalProductPrice = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.brand.purple[400],
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalTextarea = (theme: Theme): CSSProperties => ({
+  ...modalInput(theme),
+  minHeight: "120px",
+  resize: "vertical",
 });

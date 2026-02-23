@@ -57,6 +57,61 @@ class ProductController {
   }
 
   /**
+   * Lấy danh sách sản phẩm của shop
+   * GET /products/me
+   */
+  static async getMyProducts(req, res) {
+    try {
+      const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+      const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+
+      const parseNumber = (value) => {
+        if (value === undefined) {
+          return undefined;
+        }
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? undefined : parsed;
+      };
+
+      const filters = {
+        statuses: ProductService.parseStatus(req.query.status),
+        category_id: parseNumber(req.query.category_id),
+        brand_id: parseNumber(req.query.brand_id),
+        store_id: parseNumber(req.query.store_id),
+        seller_id: req.user.id,
+        min_price: parseNumber(req.query.min_price),
+        max_price: parseNumber(req.query.max_price),
+        q: req.query.q ? String(req.query.q).trim() : undefined,
+      };
+
+      const allowedSortFields = ["created_at", "updated_at", "price", "rating"];
+      const sortBy = allowedSortFields.includes(req.query.sort_by)
+        ? req.query.sort_by
+        : "created_at";
+      const sortOrder =
+        String(req.query.sort_order || "DESC").toUpperCase() === "ASC"
+          ? "ASC"
+          : "DESC";
+
+      const result = await ProductService.getProducts(
+        filters,
+        limit,
+        page,
+        sortBy,
+        sortOrder,
+      );
+
+      return response.success(
+        res,
+        "Lấy danh sách sản phẩm của shop thành công",
+        result,
+      );
+    } catch (error) {
+      return response.serverError(res, error.message);
+    }
+  }
+
+  /**
    * Lấy chi tiết sản phẩm
    * GET /products/:id
    */
@@ -87,10 +142,7 @@ class ProductController {
         return response.badRequest(res, "ID sản phẩm không hợp lệ");
       }
 
-      const result = await ProductService.deleteListing(
-        req.user.id,
-        productId
-      );
+      const result = await ProductService.deleteListing(req.user.id, productId);
 
       return response.success(res, "Xóa sản phẩm thành công", result);
     } catch (error) {

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const StoreRequestController = require("../app/controller/storeRequestController");
+const StoreController = require("../app/controller/storeController");
 const { authMiddleware } = require("../app/middleware/auth");
 
 /**
@@ -71,5 +72,25 @@ router.get(
   authMiddleware,
   StoreRequestController.getMyRequests
 );
+
+/**
+ * @swagger
+ * /stores/me:
+ *   get:
+ *     tags:
+ *       - Store
+ *     summary: Lấy cửa hàng của user
+ *     description: Lấy danh sách cửa hàng thuộc user hiện tại
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get("/me", authMiddleware, StoreController.getMyStores);
 
 module.exports = router;

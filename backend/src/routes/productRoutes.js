@@ -91,6 +91,87 @@ router.get("/", ProductController.getProducts);
 
 /**
  * @swagger
+ * /products/me:
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Lấy danh sách sản phẩm của shop
+ *     description: Shop lấy danh sách listing của chính mình
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: brand_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: store_id
+ *         schema:
+ *           type: integer
+ *         description: Lọc theo cửa hàng của shop
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: active
+ *         description: Trạng thái sản phẩm (mặc định active, dùng \"all\" để bỏ lọc)
+ *       - in: query
+ *         name: min_price
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: max_price
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sort_by
+ *         schema:
+ *           type: string
+ *           enum: [created_at, updated_at, price, rating]
+ *           default: created_at
+ *       - in: query
+ *         name: sort_order
+ *         schema:
+ *           type: string
+ *           enum: [ASC, DESC]
+ *           default: DESC
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get(
+  "/me",
+  authMiddleware,
+  shopMiddleware,
+  ProductController.getMyProducts
+);
+
+/**
+ * @swagger
  * /products/catalogs:
  *   get:
  *     tags:

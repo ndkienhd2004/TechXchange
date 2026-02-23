@@ -9,15 +9,24 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist";
-import storage from "redux-persist/lib/storage"; // localStorage
+import storage from "redux-persist/lib/storage";
 import rootReducer from "./rootReducer";
 import { createAxiosInstance } from "@/services/axiosConfig";
+
+const noopStorage = {
+  getItem: (_key: string) => Promise.resolve(null as string | null),
+  setItem: (_key: string, value: unknown) => Promise.resolve(value),
+  removeItem: (_key: string) => Promise.resolve(),
+};
+
+const storageSafe =
+  typeof window !== "undefined" ? storage : noopStorage;
 
 // Chỉ persist các slice cần thiết
 const persistConfig = {
   key: "root",
   version: 1,
-  storage,
+  storage: storageSafe,
   whitelist: ["auth", "cart"], // hoặc dùng blacklist
 };
 
