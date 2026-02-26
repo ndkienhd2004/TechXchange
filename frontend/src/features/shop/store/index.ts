@@ -6,19 +6,13 @@ import {
   getShopBrandsService,
   getShopInfoService,
   getShopProductsService,
+  createShopProductService,
+  requestNewProductService,
 } from "../sevices";
 
 const initialState: Shop = {
-  info: {
-    name: "",
-    description: "",
-    logo: "",
-    banner: "",
-    address: "",
-    phone: "",
-    email: "",
-    website: "",
-  },
+  info: null,
+  productsTotal: 0,
   productsTotalPages: 0,
   products: [],
   brands: [],
@@ -30,6 +24,7 @@ const initialState: Shop = {
 
 function normalizeProductsResponse(raw: unknown): {
   products: Product[];
+  total: number;
   page: number;
   totalPages: number;
 } {
@@ -38,13 +33,15 @@ function normalizeProductsResponse(raw: unknown): {
       ? (raw as { data: Record<string, unknown> }).data
       : (raw as Record<string, unknown>);
   if (!d || typeof d !== "object") {
-    return { products: [], page: 1, totalPages: 0 };
+    return { products: [], total: 0, page: 1, totalPages: 0 };
   }
   const items = (d.items ?? d.products ?? d.data ?? []) as Product[];
+  const total = Number(d.total ?? 0);
   const page = Number(d.page ?? 1);
   const totalPages = Number(d.totalPages ?? d.total_pages ?? 0);
   return {
     products: Array.isArray(items) ? items : [],
+    total,
     page,
     totalPages,
   };
@@ -55,7 +52,8 @@ export const getShopInfo = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const response = await getShopInfoService();
-      return response.data;
+      // Lấy phần tử đầu tiên của mảng data từ backend
+      return response.data[0];
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
@@ -64,10 +62,10 @@ export const getShopInfo = createAsyncThunk(
 
 export const getShopProducts = createAsyncThunk(
   "shop/getShopProducts",
-  async (arg: { page: number; size: number; append?: boolean }, thunkAPI) => {
+  async (arg: { page: number; limit: number; append?: boolean }, thunkAPI) => {
     try {
-      const { page, size } = arg;
-      const response = await getShopProductsService({ page, size });
+      const { page, limit } = arg;
+      const response = await getShopProductsService({ page, limit });
       return normalizeProductsResponse(response);
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -89,11 +87,52 @@ export const getShopBrands = createAsyncThunk(
 
 export const getProductCatalogs = createAsyncThunk(
   "shop/getProductCatalogs",
-  async (arg: { page: number; size: number; append?: boolean }, thunkAPI) => {
+  async (arg: { page: number; limit: number; q?: string; append?: boolean }, thunkAPI) => {
     try {
-      const { page, size } = arg;
-      const response = await getProductCatalogsService({ page, size });
-      console.log(response);
+      const { page, limit, q } = arg;
+      const response = await getProductCatalogsService({ page, limit, q });
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+export const createShopProduct = createAsyncThunk(
+  "shop/createProduct",
+  async (
+    payload: {
+      catalog_id: number;
+      store_id: number;
+      price: number;
+      quantity: number;
+    },
+    thunkAPI,
+  ) => {
+    try {
+      const response = await createShopProductService(payload);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+export const requestNewProduct = createAsyncThunk(
+  "shop/requestProduct",
+  async (
+    payload: {
+      name: string;
+      category_id: number;
+      brand_id?: number;
+      brand_name?: string;
+      description?: string;
+      default_image?: string;
+    },
+    thunkAPI,
+  ) => {
+    try {
+      const response = await requestNewProductService(payload);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -107,9 +146,9 @@ const shopSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(getShopInfo.fulfilled, () => {})
-      .addCase(getShopInfo.pending, () => {})
-      .addCase(getShopInfo.rejected, () => {})
+      .addCase(getShopInfo.fulfilled, (state, action) => {
+        state.info = action.payload;
+      })
       .addCase(getShopProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -121,6 +160,7 @@ const shopSlice = createSlice({
         state.products = append
           ? [...state.products, ...action.payload.products]
           : action.payload.products;
+        state.productsTotal = action.payload.total;
         state.productsTotalPages = action.payload.totalPages;
       })
       .addCase(getShopProducts.rejected, (state, action) => {
@@ -168,6 +208,40 @@ const shopSlice = createSlice({
           "message" in action.payload
             ? String((action.payload as { message: string }).message)
             : "Tải catalog thất bại";
+      })
+      .addCase(createShopProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createShopProduct.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(createShopProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload != null &&
+          typeof action.payload === "object" &&
+          "message" in action.payload
+            ? String((action.payload as { message: string }).message)
+            : "Tạo sản phẩm thất bại";
+      })
+      .addCase(requestNewProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(requestNewProduct.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(requestNewProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload != null &&
+          typeof action.payload === "object" &&
+          "message" in action.payload
+            ? String((action.payload as { message: string }).message)
+            : "Gửi yêu cầu thất bại";
       });
   },
 });

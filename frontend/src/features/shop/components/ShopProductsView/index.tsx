@@ -14,17 +14,15 @@ const PAGE_SIZE = 10;
 export default function ShopProductsView() {
   const { themed } = useAppTheme();
   const dispatch = useAppDispatch();
-  const { products, productsTotalPages, loading } = useAppSelector(
-    (state: RootState) => state.shop,
-  );
+  const { products, productsTotalPages, loading, productsTotal } =
+    useAppSelector((state: RootState) => state.shop);
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const totalItems =
-    productsTotalPages > 0 ? productsTotalPages * PAGE_SIZE : products.length;
+  const totalItems = productsTotal;
 
   useEffect(() => {
-    dispatch(getShopProducts({ page: 1, size: PAGE_SIZE, append: false }));
+    dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export default function ShopProductsView() {
         dispatch(
           getShopProducts({
             page: nextPage,
-            size: PAGE_SIZE,
+            limit: PAGE_SIZE,
             append: true,
           }),
         );
@@ -66,7 +64,7 @@ export default function ShopProductsView() {
 
   const handlePageChange = (next: number) => {
     setPage(next);
-    dispatch(getShopProducts({ page: next, size: PAGE_SIZE, append: false }));
+    dispatch(getShopProducts({ page: next, limit: PAGE_SIZE, append: false }));
   };
 
   return (
@@ -74,7 +72,9 @@ export default function ShopProductsView() {
       <header style={themed(styles.pageHeader)}>
         <h1 style={themed(styles.pageTitle)}>Quản lý sản phẩm</h1>
         <p style={themed(styles.pageSubtitle)}>
-          {totalItems > 0 ? `${totalItems} sản phẩm` : "Đang tải..."}
+          {loading && products.length === 0
+            ? "Đang tải..."
+            : `${totalItems} sản phẩm`}
         </p>
       </header>
 
@@ -119,6 +119,19 @@ export default function ShopProductsView() {
                   Đang tải...
                 </td>
               </tr>
+            ) : products.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  style={{
+                    ...themed(styles.td),
+                    textAlign: "center",
+                    padding: 24,
+                  }}
+                >
+                  Chưa có sản phẩm nào.
+                </td>
+              </tr>
             ) : (
               products.map((product) => (
                 <tr key={product.id}>
@@ -139,7 +152,7 @@ export default function ShopProductsView() {
                   </td>
                   <td style={themed(styles.td)}>
                     <div style={themed(styles.price)}>{product.msrp}</div>
-                    <div style={themed(styles.muted)}>{product.msrp}</div>
+                    <div style={themed(styles.muted)}>MSRP: {product.msrp}</div>
                   </td>
                   <td style={themed(styles.td)}>{product.quantity ?? "-"}</td>
                   <td style={themed(styles.td)}>{product.buyturn ?? "-"}</td>

@@ -1,9 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "../styles";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getShopInfo } from "../../store";
+import { RootState } from "@/store";
 
 export default function ShopLayout({
   children,
@@ -12,6 +17,12 @@ export default function ShopLayout({
 }) {
   const { themed } = useAppTheme();
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const { info, loading } = useAppSelector((state: RootState) => state.shop);
+
+  useEffect(() => {
+    dispatch(getShopInfo());
+  }, [dispatch]);
 
   const navItems = [
     { label: "Dashboard", href: "/shop" },
@@ -29,9 +40,23 @@ export default function ShopLayout({
         </Link>
 
         <div style={themed(styles.shopCard)}>
-          <div style={themed(styles.shopAvatar)}>🏪</div>
+          <div style={themed(styles.shopAvatar)}>
+            {info?.logo ? (
+              <Image 
+                src={info.logo} 
+                alt={info.name} 
+                width={40} 
+                height={40} 
+                style={{ borderRadius: "8px", objectFit: "cover" }}
+              />
+            ) : (
+              "🏪"
+            )}
+          </div>
           <div>
-            <div style={themed(styles.shopName)}>UGREEN Vietnam Shop</div>
+            <div style={themed(styles.shopName)}>
+              {loading && !info?.name ? "Đang tải..." : info?.name || "Shop của bạn"}
+            </div>
             <div style={themed(styles.shopSubtitle)}>Seller Center</div>
           </div>
         </div>

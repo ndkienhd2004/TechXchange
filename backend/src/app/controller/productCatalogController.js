@@ -8,7 +8,10 @@ class ProductCatalogController {
    */
   static async getCatalogs(req, res) {
     try {
-      const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+      const limit = Math.min(
+        parseInt(req.query.limit || req.query.size, 10) || 10,
+        100
+      );
       const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
 
       const parseNumber = (value) => {

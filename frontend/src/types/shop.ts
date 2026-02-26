@@ -1,6 +1,7 @@
 export interface Shop {
-  info: ShopInfo;
+  info: ShopInfo | null;
   products: Product[];
+  productsTotal: number;
   productsTotalPages: number;
   brands: ProductBrand[];
   loading: boolean;
@@ -38,19 +39,25 @@ export interface Product {
   quantity: number;
 }
 
-export interface ProductDataResponse {
-  data: Product[];
-}
-
 export interface ShopInfo {
+  id: string;
+  owner_id: string;
   name: string;
   description: string;
-  logo: string;
-  banner: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
+  logo?: string;
+  banner?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  owner: {
+    id: string;
+    username: string;
+    email: string;
+  };
 }
 
 export interface ProductCatalog {

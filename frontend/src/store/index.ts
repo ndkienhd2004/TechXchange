@@ -19,15 +19,13 @@ const noopStorage = {
   removeItem: (_key: string) => Promise.resolve(),
 };
 
-const storageSafe =
-  typeof window !== "undefined" ? storage : noopStorage;
+const storageSafe = typeof window !== "undefined" ? storage : noopStorage;
 
-// Chỉ persist các slice cần thiết
 const persistConfig = {
   key: "root",
   version: 1,
   storage: storageSafe,
-  whitelist: ["auth", "cart"], // hoặc dùng blacklist
+  whitelist: ["auth", "cart"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
