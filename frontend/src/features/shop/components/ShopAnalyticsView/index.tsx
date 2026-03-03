@@ -5,11 +5,12 @@ import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import RevenueDailyChart from "../charts/RevenueDailyChart";
 import RevenueMonthlyChart from "../charts/RevenueMonthlyChart";
+import AppIcon from "@/components/commons/AppIcon";
 
 const kpis = [
   { label: "Doanh thu", value: "$0", trend: "+12.5%", tone: "up", icon: "$" },
-  { label: "Đơn hàng", value: "0", trend: "+8.2%", tone: "up", icon: "🛒" },
-  { label: "Đơn hoàn thành", value: "0", trend: "0% tỷ lệ", tone: "flat", icon: "📦" },
+  { label: "Đơn hàng", value: "0", trend: "+8.2%", tone: "up", icon: "cart" },
+  { label: "Đơn hoàn thành", value: "0", trend: "0% tỷ lệ", tone: "flat", icon: "box" },
   { label: "Giá trị TB", value: "$0", trend: "-3.1%", tone: "down", icon: "$" },
 ];
 
@@ -68,7 +69,15 @@ export default function ShopAnalyticsView() {
               </div>
             </div>
             <div style={themed(styles.statIcon)}>
-              <span>{kpi.icon}</span>
+              <span>
+                {kpi.icon === "cart" ? (
+                  <AppIcon name="cart" />
+                ) : kpi.icon === "box" ? (
+                  <AppIcon name="box" />
+                ) : (
+                  kpi.icon
+                )}
+              </span>
             </div>
           </div>
         ))}

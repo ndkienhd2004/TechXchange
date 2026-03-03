@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
+import AppIcon from "@/components/commons/AppIcon";
 
 export default function AdminLayout({
   children,
@@ -31,7 +32,9 @@ export default function AdminLayout({
         </Link>
 
         <div style={themed(styles.adminCard)}>
-          <div style={themed(styles.adminAvatar)}>⚙️</div>
+          <div style={themed(styles.adminAvatar)}>
+            <AppIcon name="settings" size={18} />
+          </div>
           <div>
             <div style={themed(styles.adminName)}>Admin Panel</div>
             <div style={themed(styles.adminSubtitle)}>TechXchange</div>

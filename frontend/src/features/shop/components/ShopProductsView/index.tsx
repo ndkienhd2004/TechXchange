@@ -5,25 +5,48 @@ import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useEffect, useRef, useState } from "react";
-import { getShopProducts } from "../../store";
+import {
+  getMyCatalogSpecRequests,
+  getMyProductRequests,
+  getShopProducts,
+} from "../../store";
 import { RootState } from "@/store";
 import AddProductModal from "./AddProductModal";
+import AppIcon from "@/components/commons/AppIcon";
 
 const PAGE_SIZE = 10;
 
 export default function ShopProductsView() {
   const { themed } = useAppTheme();
   const dispatch = useAppDispatch();
-  const { products, productsTotalPages, loading, productsTotal } =
+  const {
+    products,
+    productsTotalPages,
+    loading,
+    productsTotal,
+    productRequests,
+    catalogSpecRequests,
+    requestsLoading,
+  } =
     useAppSelector((state: RootState) => state.shop);
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
+  const [requestStatus, setRequestStatus] = useState("all");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const totalItems = productsTotal;
 
   useEffect(() => {
     dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(
+      getMyProductRequests({ page: 1, limit: 10, status: requestStatus }),
+    );
+    dispatch(
+      getMyCatalogSpecRequests({ page: 1, limit: 10, status: requestStatus }),
+    );
+  }, [dispatch, requestStatus]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -160,13 +183,13 @@ export default function ShopProductsView() {
                   <td style={themed(styles.td)}>
                     <div style={themed(styles.rowActions)}>
                       <button type="button" style={themed(styles.iconButton)}>
-                        👁
+                        <AppIcon name="view" />
                       </button>
                       <button type="button" style={themed(styles.iconButton)}>
-                        ✏️
+                        <AppIcon name="edit" />
                       </button>
                       <button type="button" style={themed(styles.iconButton)}>
-                        🗑
+                        <AppIcon name="delete" />
                       </button>
                     </div>
                   </td>
@@ -245,6 +268,81 @@ export default function ShopProductsView() {
       </section>
 
       <AddProductModal open={openModal} onClose={() => setOpenModal(false)} />
+
+      <section style={{ ...themed(styles.tableCard), marginTop: 16 }}>
+        <div style={themed(styles.tableHeader)}>
+          <div>
+            <h3 style={{ margin: 0 }}>Theo dõi yêu cầu của bạn</h3>
+            <p style={themed(styles.pageSubtitle)}>
+              Yêu cầu tạo sản phẩm và yêu cầu thêm thông số catalog
+            </p>
+          </div>
+          <select
+            value={requestStatus}
+            onChange={(e) => setRequestStatus(e.target.value)}
+            style={themed(styles.search)}
+          >
+            <option value="all">Tất cả</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="approved">Đã duyệt</option>
+            <option value="rejected">Từ chối</option>
+          </select>
+        </div>
+
+        <div style={themed(styles.requestGrid)}>
+          <div style={themed(styles.requestBox)}>
+            <h4 style={themed(styles.requestTitle)}>Yêu cầu tạo sản phẩm</h4>
+            {requestsLoading && productRequests.length === 0 ? (
+              <div style={themed(styles.muted)}>Đang tải...</div>
+            ) : productRequests.length === 0 ? (
+              <div style={themed(styles.muted)}>Chưa có yêu cầu.</div>
+            ) : (
+              productRequests.map((item) => (
+                <div key={item.id} style={themed(styles.requestItem)}>
+                  <div style={themed(styles.requestItemMain)}>
+                    <div style={themed(styles.orderName)}>{item.name}</div>
+                    <div style={themed(styles.orderMeta)}>
+                      {item.category?.name ?? "-"} •{" "}
+                      {new Date(item.created_at).toLocaleDateString("vi-VN")}
+                    </div>
+                  </div>
+                  <span style={themed(styles.requestStatusPill)}>
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div style={themed(styles.requestBox)}>
+            <h4 style={themed(styles.requestTitle)}>Yêu cầu thêm thông số</h4>
+            {requestsLoading && catalogSpecRequests.length === 0 ? (
+              <div style={themed(styles.muted)}>Đang tải...</div>
+            ) : catalogSpecRequests.length === 0 ? (
+              <div style={themed(styles.muted)}>Chưa có yêu cầu.</div>
+            ) : (
+              catalogSpecRequests.map((item) => (
+                <div key={item.id} style={themed(styles.requestItem)}>
+                  <div style={themed(styles.requestItemMain)}>
+                    <div style={themed(styles.orderName)}>
+                      {item.catalog?.name ?? `Catalog #${item.catalog_id}`}
+                    </div>
+                    <div style={themed(styles.orderMeta)}>
+                      {item.spec_key}:{" "}
+                      {Array.isArray(item.proposed_values)
+                        ? item.proposed_values.join(" | ")
+                        : "-"}
+                    </div>
+                  </div>
+                  <span style={themed(styles.requestStatusPill)}>
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
     </ShopLayout>
   );
 }

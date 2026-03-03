@@ -45,7 +45,7 @@ export const getProductCatalogsService = async ({
   q?: string;
 }) => {
   const response = await api().get(
-    `/products/catalogs?page=${page}&limit=${limit}${q ? `&q=${q}` : ""}`,
+    `/products/catalogs?page=${page}&limit=${limit}&status=active${q ? `&q=${q}` : ""}`,
   );
   return response.data;
 };
@@ -58,6 +58,7 @@ export const createShopProductService = async (payload: {
   store_id: number;
   price: number;
   quantity: number;
+  description?: string;
   images?: { url: string; sort_order: number }[];
   variant_key?: string;
 }) => {
@@ -71,12 +72,52 @@ export const createShopProductService = async (payload: {
 export const requestNewProductService = async (payload: {
   name: string;
   category_id: number;
-  brand_id?: number;
+  brand_id: number;
   brand_name?: string;
   description?: string;
   specs?: Record<string, string>;
   default_image?: string;
 }) => {
   const response = await api().post("/products/requests", payload);
+  return response.data;
+};
+
+export const requestCatalogSpecService = async (payload: {
+  catalog_id: number;
+  spec_key: string;
+  proposed_values: string[];
+}) => {
+  const response = await api().post("/products/catalog-spec-requests", payload);
+  return response.data;
+};
+
+export const getMyProductRequestsService = async ({
+  page,
+  limit,
+  status,
+}: {
+  page: number;
+  limit: number;
+  status?: string;
+}) => {
+  const offset = Math.max(page - 1, 0) * limit;
+  const response = await api().get(
+    `/products/requests/me?page=${page}&limit=${limit}&offset=${offset}${status ? `&status=${status}` : ""}`,
+  );
+  return response.data;
+};
+
+export const getMyCatalogSpecRequestsService = async ({
+  page,
+  limit,
+  status,
+}: {
+  page: number;
+  limit: number;
+  status?: string;
+}) => {
+  const response = await api().get(
+    `/products/catalog-spec-requests?page=${page}&limit=${limit}${status ? `&status=${status}` : ""}`,
+  );
   return response.data;
 };

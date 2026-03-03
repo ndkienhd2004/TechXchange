@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
           "deleted"
         ),
         allowNull: false,
-        defaultValue: "active",
+        defaultValue: "pending",
       },
       created_at: {
         type: DataTypes.DATE,

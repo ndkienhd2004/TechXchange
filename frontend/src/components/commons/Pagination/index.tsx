@@ -9,6 +9,7 @@ export interface PaginationProps {
   totalPages: number;
   basePath?: string;
   searchParam?: string;
+  queryParams?: Record<string, string | number | undefined>;
 }
 
 export default function Pagination({
@@ -16,11 +17,23 @@ export default function Pagination({
   totalPages,
   basePath = "/products",
   searchParam = "page",
+  queryParams,
 }: PaginationProps) {
   const { themed } = useAppTheme();
 
-  const href = (page: number) =>
-    page <= 1 ? basePath : `${basePath}?${searchParam}=${page}`;
+  const href = (page: number) => {
+    const params = new URLSearchParams();
+    if (queryParams) {
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          params.set(key, String(value));
+        }
+      });
+    }
+    if (page > 1) params.set(searchParam, String(page));
+    const query = params.toString();
+    return query ? `${basePath}?${query}` : basePath;
+  };
 
   const getVisiblePages = () => {
     const delta = 2;

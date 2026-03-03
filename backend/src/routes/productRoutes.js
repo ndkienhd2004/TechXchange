@@ -3,6 +3,7 @@ const router = express.Router();
 const ProductController = require("../app/controller/productController");
 const ProductCatalogController = require("../app/controller/productCatalogController");
 const ProductRequestController = require("../app/controller/productRequestController");
+const CatalogSpecRequestController = require("../app/controller/catalogSpecRequestController");
 const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
 
 /**
@@ -245,6 +246,8 @@ router.get("/catalogs", ProductCatalogController.getCatalogs);
  *                 type: number
  *               quantity:
  *                 type: integer
+ *               description:
+ *                 type: string
  *               images:
  *                 type: array
  *                 items:
@@ -294,6 +297,7 @@ router.post(
  *             required:
  *               - name
  *               - category_id
+ *               - brand_id
  *             properties:
  *               name:
  *                 type: string
@@ -368,6 +372,70 @@ router.get(
   authMiddleware,
   shopMiddleware,
   ProductRequestController.getMyRequests
+);
+
+/**
+ * @swagger
+ * /products/catalog-spec-requests:
+ *   post:
+ *     tags:
+ *       - Product
+ *     summary: Gửi yêu cầu thêm specs cho catalog
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - catalog_id
+ *               - spec_key
+ *               - proposed_values
+ *             properties:
+ *               catalog_id:
+ *                 type: integer
+ *               spec_key:
+ *                 type: string
+ *               proposed_values:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Danh sách yêu cầu specs của shop
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: pending
+ */
+router.post(
+  "/catalog-spec-requests",
+  authMiddleware,
+  shopMiddleware,
+  CatalogSpecRequestController.createRequest
+);
+router.get(
+  "/catalog-spec-requests",
+  authMiddleware,
+  shopMiddleware,
+  CatalogSpecRequestController.getMyRequests
 );
 
 /**

@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useMemo, useEffect } from "react";
+import { Suspense, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ItemCard from "@/components/commons/ItemCard";
 import Pagination from "@/components/commons/Pagination";
-import ProductSideHeader from "@/components/commons/ProductSideHeader";
+import ProductSideHeader, {
+  ProductSideHeaderFilters,
+} from "@/components/commons/ProductSideHeader";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchProducts } from "@/features/products/store/productSlice";
@@ -21,6 +23,7 @@ const ITEMS_PER_PAGE = 8;
 
 function ProductsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { themed } = useAppTheme();
 
@@ -34,15 +37,56 @@ function ProductsContent() {
     return Number.isFinite(n) && n >= 1 ? n : 1;
   }, [searchParams]);
 
+  const categoryId = useMemo(() => {
+    const value = searchParams.get("category_id");
+    const parsed = value ? Number(value) : undefined;
+    return parsed && Number.isFinite(parsed) ? parsed : undefined;
+  }, [searchParams]);
+
+  const searchQuery = useMemo(() => {
+    const value = searchParams.get("q");
+    return value?.trim() || undefined;
+  }, [searchParams]);
+
+  const filters = useMemo<ProductSideHeaderFilters>(
+    () => ({
+      newArrivalsOnly: false,
+      onSale: false,
+      categoryId: categoryId ?? null,
+    }),
+    [categoryId]
+  );
+
+  const onFiltersChange = useCallback(
+    (nextFilters: ProductSideHeaderFilters) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", "1");
+      if (nextFilters.categoryId) {
+        params.set("category_id", String(nextFilters.categoryId));
+      } else {
+        params.delete("category_id");
+      }
+      router.push(`/products?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
+
   useEffect(() => {
-    dispatch(fetchProducts({ page: currentPage, limit: ITEMS_PER_PAGE }));
-  }, [dispatch, currentPage]);
+    dispatch(
+      fetchProducts({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        category_id: categoryId,
+        q: searchQuery,
+      })
+    );
+  }, [dispatch, currentPage, categoryId, searchQuery]);
 
   return (
     <div style={themed(styles.page)}>
       <div style={themed(styles.backdrop)}>
         <div style={themed(styles.contentRow)}>
-          <ProductSideHeader />
+          <ProductSideHeader filters={filters} onFiltersChange={onFiltersChange} />
           <div style={themed(styles.mainContent)}>
             <main style={themed(styles.shell)}>
               <h1 style={themed(styles.title)}>Sản phẩm</h1>
@@ -60,6 +104,7 @@ function ProductsContent() {
                           style={{ textDecoration: "none" }}
                         >
                           <ItemCard
+                            productId={Number(product.id)}
                             title={product.name}
                             price={formatPrice(product.price)}
                             compareAtPrice={
@@ -86,6 +131,10 @@ function ProductsContent() {
                       totalPages={totalPages}
                       basePath="/products"
                       searchParam="page"
+                      queryParams={{
+                        q: searchQuery,
+                        category_id: categoryId,
+                      }}
                     />
                   )}
                 </>

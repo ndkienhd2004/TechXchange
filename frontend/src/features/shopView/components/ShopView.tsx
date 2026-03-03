@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
+import AppIcon from "@/components/commons/AppIcon";
 
 const tabs = ["Đạo", "Tất cả sản phẩm", "Winter Collection", "Áo khoác", "Quần"];
 
@@ -40,27 +41,27 @@ export default function ShopView() {
 
           <div style={themed(styles.stats)}>
             <div style={themed(styles.statItem)}>
-              <span>🛍️ Sản phẩm:</span>
+              <span><AppIcon name="bag" /> Sản phẩm:</span>
               <span style={themed(styles.statValue)}>301</span>
             </div>
             <div style={themed(styles.statItem)}>
-              <span>👥 Người theo dõi:</span>
+              <span><AppIcon name="users" /> Người theo dõi:</span>
               <span style={themed(styles.statValue)}>511,5k</span>
             </div>
             <div style={themed(styles.statItem)}>
-              <span>⭐ Đánh giá:</span>
+              <span><AppIcon name="star" /> Đánh giá:</span>
               <span style={themed(styles.statValue)}>4.9</span>
             </div>
             <div style={themed(styles.statItem)}>
-              <span>👤 Đang theo:</span>
+              <span><AppIcon name="user" /> Đang theo:</span>
               <span style={themed(styles.statValue)}>47</span>
             </div>
             <div style={themed(styles.statItem)}>
-              <span>💬 Phản hồi:</span>
+              <span><AppIcon name="message" /> Phản hồi:</span>
               <span style={themed(styles.statValue)}>100%</span>
             </div>
             <div style={themed(styles.statItem)}>
-              <span>⏱️ Tham gia:</span>
+              <span><AppIcon name="clock" /> Tham gia:</span>
               <span style={themed(styles.statValue)}>5 năm trước</span>
             </div>
           </div>

@@ -3,22 +3,13 @@
 import { useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
-
-const CATEGORIES = [
-  "All",
-  "Smartphones",
-  "Desktop",
-  "Headphones",
-  "Laptop",
-  "Drone",
-  "Camera",
-  "Smart Watch",
-] as const;
+import { useAppSelector } from "@/store/hooks";
+import { selectCatalogCategoriesFlat } from "@/features/catalog/store/catalogSelectors";
 
 export interface ProductSideHeaderFilters {
   newArrivalsOnly: boolean;
   onSale: boolean;
-  category: string;
+  categoryId: number | null;
 }
 
 interface ProductSideHeaderProps {
@@ -33,28 +24,31 @@ export default function ProductSideHeader({
   const { themed } = useAppTheme();
   const [internalNew, setInternalNew] = useState(false);
   const [internalSale, setInternalSale] = useState(false);
-  const [internalCategory, setInternalCategory] = useState("All");
+  const [internalCategoryId, setInternalCategoryId] = useState<number | null>(null);
   const [openNew, setOpenNew] = useState(true);
   const [openSale, setOpenSale] = useState(true);
   const [openCategories, setOpenCategories] = useState(true);
+  const categories = useAppSelector(selectCatalogCategoriesFlat);
 
   const isControlled = controlledFilters !== undefined;
   const newArrivalsOnly = isControlled
     ? controlledFilters.newArrivalsOnly
     : internalNew;
   const onSale = isControlled ? controlledFilters.onSale : internalSale;
-  const category = isControlled ? controlledFilters.category : internalCategory;
+  const categoryId = isControlled
+    ? controlledFilters.categoryId
+    : internalCategoryId;
 
   const updateFilters = (patch: Partial<ProductSideHeaderFilters>) => {
     const next = {
       newArrivalsOnly: patch.newArrivalsOnly ?? newArrivalsOnly,
       onSale: patch.onSale ?? onSale,
-      category: patch.category ?? category,
+      categoryId: patch.categoryId ?? categoryId,
     };
     if (!isControlled) {
       setInternalNew(next.newArrivalsOnly);
       setInternalSale(next.onSale);
-      setInternalCategory(next.category);
+      setInternalCategoryId(next.categoryId);
     }
     onFiltersChange?.(next);
   };
@@ -189,17 +183,28 @@ export default function ProductSideHeader({
         </button>
         {openCategories && (
           <div style={themed(styles.sectionContent)}>
-            {CATEGORIES.map((cat) => (
-              <label key={cat} style={themed(styles.checkboxRow)}>
+            <label key="all" style={themed(styles.checkboxRow)}>
+              <input
+                type="radio"
+                name="category"
+                checked={categoryId == null}
+                onChange={() => updateFilters({ categoryId: null })}
+                style={themed(styles.checkbox)}
+                aria-label="Tất cả"
+              />
+              <span style={themed(styles.checkboxLabel)}>Tất cả</span>
+            </label>
+            {categories.map((cat) => (
+              <label key={cat.id} style={themed(styles.checkboxRow)}>
                 <input
                   type="radio"
                   name="category"
-                  checked={category === cat}
-                  onChange={() => updateFilters({ category: cat })}
+                  checked={categoryId === Number(cat.id)}
+                  onChange={() => updateFilters({ categoryId: Number(cat.id) })}
                   style={themed(styles.checkbox)}
-                  aria-label={cat}
+                  aria-label={cat.name}
                 />
-                <span style={themed(styles.checkboxLabel)}>{cat}</span>
+                <span style={themed(styles.checkboxLabel)}>{cat.name}</span>
               </label>
             ))}
           </div>

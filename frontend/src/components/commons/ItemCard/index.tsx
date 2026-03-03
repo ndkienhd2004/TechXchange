@@ -1,6 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { MouseEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectIsAuthenticated } from "@/features/auth";
+import { addToCart } from "@/features/cart/store/cartSlice";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
 import { ItemCardProps } from "@/types/itemCard";
@@ -9,6 +15,7 @@ import { ItemCardProps } from "@/types/itemCard";
 const clampRating = (value: number) => Math.min(5, Math.max(0, value));
 
 export default function ItemCard({
+  productId,
   title,
   price,
   compareAtPrice,
@@ -19,11 +26,41 @@ export default function ItemCard({
   imageAlt = "Product image",
   ctaLabel = "Buy now",
 }: ItemCardProps) {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [adding, setAdding] = useState(false);
   const { theme, themed } = useAppTheme();
 
   const filledStars = Math.round(clampRating(rating));
   const emptyStarColor = theme.colors.palette.text.muted;
   const filledStarColor = theme.colors.palette.semantic.warning;
+
+  const handleAddToCart = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!productId || !Number.isFinite(productId)) {
+      showErrorToast("Sản phẩm này chưa thể thêm vào giỏ");
+      return;
+    }
+    if (!isAuthenticated) {
+      showErrorToast("Vui lòng đăng nhập để thêm vào giỏ hàng");
+      router.push("/login");
+      return;
+    }
+    if (adding) return;
+
+    try {
+      setAdding(true);
+      await dispatch(addToCart({ product_id: Number(productId), quantity: 1 })).unwrap();
+      showSuccessToast("Đã thêm vào giỏ hàng");
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setAdding(false);
+    }
+  };
 
   return (
     <article style={themed(styles.card)}>
@@ -85,6 +122,8 @@ export default function ItemCard({
           type="button"
           style={themed(styles.iconButton)}
           aria-label="Add to cart"
+          onClick={handleAddToCart}
+          disabled={adding}
         >
           <svg
             width="18"

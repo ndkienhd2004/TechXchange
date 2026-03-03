@@ -1,55 +1,111 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
+import {
+  fetchCart,
+  clearCart,
+  removeCartItem,
+  updateCartItemQuantity,
+} from "../store/cartSlice";
+import {
+  selectCartItems,
+  selectCartLoading,
+  selectCartTotalItems,
+} from "../store/cartSelectors";
 
-const cartGroups = [
-  {
-    shop: "TechMart Store",
-    badge: "Mall",
-    items: [
-      {
-        id: 1,
-        name: "iPhone 15 Pro Max 256GB",
-        meta: "Storage: 256GB, Color: Natural Titanium",
-        price: "$1,199",
-        qty: 1,
-      },
-      {
-        id: 2,
-        name: "iPhone 15 Pro Max 256GB",
-        meta: "Storage: 1TB, Color: Natural Titanium",
-        price: "$1,199",
-        qty: 1,
-      },
-    ],
-  },
-  {
-    shop: "UGREEN Vietnam Shop",
-    badge: "Yêu thích",
-    items: [
-      {
-        id: 3,
-        name: "Sony WH-1000XM5 Wireless Headphones",
-        meta: "Color: Midnight",
-        price: "$349",
-        qty: 1,
-      },
-    ],
-  },
-];
+const currency = (value: number) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+    Number(value || 0)
+  );
 
 export default function CartView() {
+  const router = useRouter();
   const { themed } = useAppTheme();
+  const dispatch = useAppDispatch();
+  const items = useAppSelector(selectCartItems);
+  const loading = useAppSelector(selectCartLoading);
+  const totalItems = useAppSelector(selectCartTotalItems);
+  const [deselectedIds, setDeselectedIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof items>();
+    items.forEach((item) => {
+      const key = item.product?.store?.name || "Cửa hàng";
+      const arr = map.get(key) || [];
+      arr.push(item);
+      map.set(key, arr);
+    });
+    return Array.from(map.entries());
+  }, [items]);
+
+  const onChangeQty = (id: number, quantity: number) => {
+    dispatch(updateCartItemQuantity({ id, quantity }));
+  };
+
+  const selectedItems = useMemo(
+    () => items.filter((item) => !deselectedIds.includes(item.id)),
+    [items, deselectedIds],
+  );
+
+  const selectedTotalItems = useMemo(
+    () => selectedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    [selectedItems],
+  );
+
+  const selectedSubtotal = useMemo(
+    () => selectedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0),
+    [selectedItems],
+  );
+
+  const selectedIds = selectedItems.map((item) => item.id);
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
+
+  const onToggleAll = () => {
+    if (allSelected) {
+      setDeselectedIds((prev) => {
+        const next = new Set(prev);
+        items.forEach((item) => next.add(item.id));
+        return Array.from(next);
+      });
+      return;
+    }
+    setDeselectedIds((prev) => prev.filter((id) => !items.some((item) => item.id === id)));
+  };
+
+  const onToggleOne = (id: number) => {
+    setDeselectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+    );
+  };
+
+  const onCheckoutSelected = () => {
+    if (selectedIds.length === 0) return;
+    router.push(`/checkout?cart_item_ids=${selectedIds.join(",")}`);
+  };
 
   return (
     <div style={themed(styles.page)}>
       <div style={themed(styles.container)}>
-        <h1 style={themed(styles.title)}>Giỏ hàng (3 sản phẩm)</h1>
+        <h1 style={themed(styles.title)}>Giỏ hàng ({totalItems} sản phẩm)</h1>
 
         <div style={themed(styles.layout)}>
           <div style={themed(styles.tableHeader)}>
-            <span />
+            <label style={themed(styles.checkboxCell)}>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={onToggleAll}
+                style={themed(styles.checkboxInput)}
+              />
+            </label>
             <span>Mặt hàng</span>
             <span>Đơn giá</span>
             <span>Số lượng</span>
@@ -57,71 +113,98 @@ export default function CartView() {
             <span>Thao tác</span>
           </div>
 
-          <div style={themed(styles.selectAll)}>
-            <input type="checkbox" checked readOnly />
-            Chọn tất cả (3 sản phẩm)
-          </div>
-
-          {cartGroups.map((group) => (
-            <div key={group.shop} style={themed(styles.groupCard)}>
-              <div style={themed(styles.shopHeader)}>
-                <input type="checkbox" checked readOnly />
-                <span>{group.shop}</span>
-                <span style={themed(styles.shopPill)}>{group.badge}</span>
-              </div>
-              {group.items.map((item) => (
-                <div key={item.id} style={themed(styles.itemRow)}>
-                  <input type="checkbox" checked readOnly />
-                  <div style={themed(styles.productCell)}>
-                    <div style={themed(styles.thumb)} />
-                    <div>
-                      <div style={themed(styles.itemName)}>{item.name}</div>
-                      <div style={themed(styles.itemMeta)}>{item.meta}</div>
-                    </div>
-                  </div>
-                  <div style={themed(styles.itemPrice)}>{item.price}</div>
-                  <div style={themed(styles.qtyWrap)}>
-                    <button type="button" style={themed(styles.qtyButton)}>
-                      –
-                    </button>
-                    <span style={themed(styles.qtyValue)}>{item.qty}</span>
-                    <button type="button" style={themed(styles.qtyButton)}>
-                      +
-                    </button>
-                  </div>
-                  <div style={themed(styles.itemPrice)}>{item.price}</div>
-                  <button type="button" style={themed(styles.removeButton)}>
-                    Xóa
-                  </button>
+          {loading && items.length === 0 ? (
+            <div style={themed(styles.emptyState)}>Đang tải giỏ hàng...</div>
+          ) : items.length === 0 ? (
+            <div style={themed(styles.emptyState)}>Giỏ hàng đang trống.</div>
+          ) : (
+            grouped.map(([shopName, shopItems]) => (
+              <div key={shopName} style={themed(styles.groupCard)}>
+                <div style={themed(styles.shopHeader)}>
+                  <span>{shopName}</span>
                 </div>
-              ))}
-            </div>
-          ))}
+                {shopItems.map((item) => {
+                  const price = Number(item.product?.price || 0);
+                  return (
+                    <div key={item.id} style={themed(styles.itemRow)}>
+                      <label style={themed(styles.checkboxCell)}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => onToggleOne(item.id)}
+                          style={themed(styles.checkboxInput)}
+                        />
+                      </label>
+                      <div style={themed(styles.productCell)}>
+                        <div style={themed(styles.thumb)} />
+                        <div>
+                          <div style={themed(styles.itemName)}>
+                            {item.product?.name ?? `#${item.product_id}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={themed(styles.itemPrice)}>{currency(price)}</div>
+                      <div style={themed(styles.qtyWrap)}>
+                        <button
+                          type="button"
+                          style={themed(styles.qtyButton)}
+                          onClick={() =>
+                            onChangeQty(item.id, Math.max(1, item.quantity - 1))
+                          }
+                        >
+                          –
+                        </button>
+                        <span style={themed(styles.qtyValue)}>{item.quantity}</span>
+                        <button
+                          type="button"
+                          style={themed(styles.qtyButton)}
+                          onClick={() => onChangeQty(item.id, item.quantity + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div style={themed(styles.itemPrice)}>
+                        {currency(Number(item.subtotal || 0))}
+                      </div>
+                      <button
+                        type="button"
+                        style={themed(styles.removeButton)}
+                        onClick={() => dispatch(removeCartItem(item.id))}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          )}
 
           <div style={themed(styles.cartFooter)}>
             <div style={themed(styles.footerLeft)}>
-              <input type="checkbox" checked readOnly />
-              Chọn tất cả (3)
-              <span>·</span>
-              <span>Xóa</span>
-              <span>·</span>
-              <span>Lưu vào mục đã thích</span>
-              <div style={themed(styles.couponRow)}>
-                <input
-                  type="text"
-                  placeholder="Mã giảm giá"
-                  style={themed(styles.couponInput)}
-                />
-                <button type="button" style={themed(styles.applyButton)}>
-                  Áp dụng
-                </button>
-              </div>
+              <button
+                type="button"
+                style={themed(styles.removeButton)}
+                onClick={() => dispatch(clearCart())}
+              >
+                Xóa tất cả
+              </button>
             </div>
             <div style={themed(styles.footerTotal)}>
-              <span>Tổng cộng (3 sản phẩm):</span>
-              <span style={themed(styles.summaryTotal)}>$3,597</span>
-              <button type="button" style={themed(styles.primaryButton)}>
-                Mua hàng (3)
+              <span>Đã chọn ({selectedTotalItems}/{totalItems} sản phẩm):</span>
+              <span style={themed(styles.summaryTotal)}>
+                {currency(selectedSubtotal)}
+              </span>
+              <button
+                type="button"
+                style={{
+                  ...themed(styles.primaryButton),
+                  ...(selectedIds.length === 0 ? { opacity: 0.5, cursor: "not-allowed" } : {}),
+                }}
+                disabled={selectedIds.length === 0}
+                onClick={onCheckoutSelected}
+              >
+                Mua hàng
               </button>
             </div>
           </div>

@@ -312,3 +312,71 @@ export const primaryButton = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
   cursor: "pointer",
 });
+
+export const paginationRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: theme.spacing[3],
+  marginTop: theme.spacing.lg,
+});
+
+export const modalOverlay = (_theme: Theme): CSSProperties => ({
+  position: "fixed",
+  inset: 0,
+  background: "rgba(2, 6, 23, 0.72)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "16px",
+  zIndex: 1100,
+});
+
+export const modalCard = (theme: Theme): CSSProperties => ({
+  width: "min(620px, 92vw)",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.lg,
+  boxShadow: theme.shadows.lg,
+  overflow: "hidden",
+  display: "grid",
+});
+
+export const modalHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+  borderBottom: `1px solid ${theme.colors.palette.borders.dark}`,
+  background:
+    "linear-gradient(180deg, rgba(236,72,153,0.14) 0%, rgba(236,72,153,0.02) 100%)",
+});
+
+export const modalTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: theme.typography.fontSize.lg.size,
+  fontWeight: theme.typography.fontWeight.bold,
+});
+
+export const modalBody = (theme: Theme): CSSProperties => ({
+  padding: theme.spacing.lg,
+  display: "grid",
+  gap: theme.spacing.md,
+});
+
+export const modalSection = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+  borderRadius: theme.spacing.md,
+  padding: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+});
+
+export const modalFooter = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: theme.spacing[2],
+  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+  borderTop: `1px solid ${theme.colors.palette.borders.dark}`,
+});

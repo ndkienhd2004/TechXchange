@@ -172,6 +172,18 @@ class ProductController {
       const variant_key = req.body.variant_key
         ? String(req.body.variant_key).trim()
         : null;
+      const variant_options =
+        req.body.variant_options &&
+        typeof req.body.variant_options === "object" &&
+        !Array.isArray(req.body.variant_options)
+          ? req.body.variant_options
+          : null;
+      const serial_code = req.body.serial_code
+        ? String(req.body.serial_code).trim()
+        : null;
+      const description = req.body.description
+        ? String(req.body.description).trim()
+        : null;
 
       if (!catalog_id || !store_id || price === undefined) {
         return response.badRequest(res, "Thiếu thông tin bắt buộc");
@@ -197,7 +209,11 @@ class ProductController {
         store_id,
         price,
         quantity,
+        description,
         images,
+        variant_key,
+        variant_options,
+        serial_code,
       });
 
       return response.created(res, "Tạo sản phẩm thành công", product);
@@ -225,6 +241,18 @@ class ProductController {
       const store_id = parseNumber(req.body.store_id);
       const price = parseNumber(req.body.price);
       const quantity = parseNumber(req.body.quantity);
+      const variant_key = req.body.variant_key
+        ? String(req.body.variant_key).trim()
+        : null;
+      const variant_options =
+        req.body.variant_options &&
+        typeof req.body.variant_options === "object" &&
+        !Array.isArray(req.body.variant_options)
+          ? req.body.variant_options
+          : null;
+      const serial_code = req.body.serial_code
+        ? String(req.body.serial_code).trim()
+        : null;
 
       if (!catalog_id || !store_id || price === undefined) {
         return response.badRequest(res, "Thiếu thông tin bắt buộc");
@@ -252,6 +280,8 @@ class ProductController {
         quantity,
         images,
         variant_key,
+        variant_options,
+        serial_code,
       });
 
       return response.created(res, "Tạo listing thành công", listing);

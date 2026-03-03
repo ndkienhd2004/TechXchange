@@ -4,10 +4,12 @@ const UserController = require("../app/controller/userController");
 const StoreRequestController = require("../app/controller/storeRequestController");
 const ProductController = require("../app/controller/productController");
 const ProductCatalogController = require("../app/controller/productCatalogController");
+const CatalogSpecRequestController = require("../app/controller/catalogSpecRequestController");
 const BrandController = require("../app/controller/brandController");
 const BrandRequestController = require("../app/controller/brandRequestController");
 const ProductRequestController = require("../app/controller/productRequestController");
 const BannerController = require("../app/controller/bannerController");
+const CategoryController = require("../app/controller/categoryController");
 const { authMiddleware, adminMiddleware } = require("../app/middleware/auth");
 
 /**
@@ -169,6 +171,62 @@ router.get(
 
 /**
  * @swagger
+ * /admin/catalog-products:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Lấy danh sách catalog sản phẩm
+ *     description: Lấy danh sách catalog để admin quản lý và duyệt (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: all
+ *         description: all | pending | active | rejected | success
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: brand_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
+ */
+router.get(
+  "/catalog-products",
+  authMiddleware,
+  adminMiddleware,
+  ProductCatalogController.getAdminCatalogs
+);
+
+/**
+ * @swagger
  * /admin/catalog-products/{id}:
  *   delete:
  *     tags:
@@ -199,6 +257,71 @@ router.delete(
   authMiddleware,
   adminMiddleware,
   ProductCatalogController.deleteCatalog
+);
+
+router.put(
+  "/catalog-products/:id",
+  authMiddleware,
+  adminMiddleware,
+  ProductCatalogController.updateCatalog
+);
+
+/**
+ * @swagger
+ * /admin/catalog-products/{id}/approve:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Duyệt catalog sản phẩm
+ *     description: Cập nhật trạng thái catalog sang active (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ */
+router.put(
+  "/catalog-products/:id/approve",
+  authMiddleware,
+  adminMiddleware,
+  ProductCatalogController.approveCatalog
+);
+
+/**
+ * @swagger
+ * /admin/catalog-products/{id}/reject:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Từ chối catalog sản phẩm
+ *     description: Cập nhật trạng thái catalog sang rejected (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/Ok200'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ */
+router.put(
+  "/catalog-products/:id/reject",
+  authMiddleware,
+  adminMiddleware,
+  ProductCatalogController.rejectCatalog
 );
 
 /**
@@ -370,6 +493,77 @@ router.put(
 
 /**
  * @swagger
+ * /admin/catalog-spec-requests:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Lấy danh sách yêu cầu specs catalog
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           example: pending
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ */
+router.get(
+  "/catalog-spec-requests",
+  authMiddleware,
+  adminMiddleware,
+  CatalogSpecRequestController.getRequests
+);
+
+/**
+ * @swagger
+ * /admin/catalog-spec-requests/{id}/approve:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Duyệt yêu cầu specs catalog
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put(
+  "/catalog-spec-requests/:id/approve",
+  authMiddleware,
+  adminMiddleware,
+  CatalogSpecRequestController.approveRequest
+);
+
+/**
+ * @swagger
+ * /admin/catalog-spec-requests/{id}/reject:
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Từ chối yêu cầu specs catalog
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put(
+  "/catalog-spec-requests/:id/reject",
+  authMiddleware,
+  adminMiddleware,
+  CatalogSpecRequestController.rejectRequest
+);
+
+/**
+ * @swagger
  * /admin/store-requests/{id}/approve:
  *   put:
  *     tags:
@@ -442,6 +636,34 @@ router.put(
   authMiddleware,
   adminMiddleware,
   StoreRequestController.rejectRequest
+);
+
+router.get(
+  "/categories",
+  authMiddleware,
+  adminMiddleware,
+  CategoryController.getCategories
+);
+
+router.post(
+  "/categories",
+  authMiddleware,
+  adminMiddleware,
+  CategoryController.createCategory
+);
+
+router.put(
+  "/categories/:id",
+  authMiddleware,
+  adminMiddleware,
+  CategoryController.updateCategory
+);
+
+router.delete(
+  "/categories/:id",
+  authMiddleware,
+  adminMiddleware,
+  CategoryController.deleteCategory
 );
 
 /**

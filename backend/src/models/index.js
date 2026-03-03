@@ -8,6 +8,7 @@ const ProductCategory = require("./productCategory")(sequelize, DataTypes);
 const Brand = require("./brand")(sequelize, DataTypes);
 const BrandRequest = require("./brandRequest")(sequelize, DataTypes);
 const ProductRequest = require("./productRequest")(sequelize, DataTypes);
+const CatalogSpecRequest = require("./catalogSpecRequest")(sequelize, DataTypes);
 const ProductCatalog = require("./productCatalog")(sequelize, DataTypes);
 const Product = require("./product")(sequelize, DataTypes);
 const AdminReview = require("./adminReview")(sequelize, DataTypes);
@@ -26,6 +27,8 @@ const BannerDetail = require("./bannerDetail")(sequelize, DataTypes);
 const UserProductEvent = require("./userProductEvent")(sequelize, DataTypes);
 const ProductImage = require("./productImage")(sequelize, DataTypes);
 const ProductAttribute = require("./productAttribute")(sequelize, DataTypes);
+const ProductSerial = require("./productSerial")(sequelize, DataTypes);
+const ProductInventory = require("./productInventory")(sequelize, DataTypes);
 const RefreshToken = require("./refreshToken")(sequelize, DataTypes);
 const StoreRequest = require("./storeRequest")(sequelize, DataTypes);
 
@@ -63,6 +66,15 @@ ProductCatalog.belongsTo(ProductCategory, {
   as: "category",
 });
 
+ProductCategory.belongsTo(ProductCategory, {
+  foreignKey: "parent_id",
+  as: "parent",
+});
+ProductCategory.hasMany(ProductCategory, {
+  foreignKey: "parent_id",
+  as: "children",
+});
+
 User.hasMany(BrandRequest, {
   foreignKey: "requester_id",
   as: "brandRequests",
@@ -83,6 +95,21 @@ ProductRequest.belongsTo(ProductCategory, {
   as: "category",
 });
 ProductRequest.belongsTo(ProductCatalog, {
+  foreignKey: "catalog_id",
+  as: "catalog",
+});
+
+User.hasMany(CatalogSpecRequest, {
+  foreignKey: "requester_id",
+  as: "catalogSpecRequests",
+});
+CatalogSpecRequest.belongsTo(User, { foreignKey: "requester_id", as: "requester" });
+CatalogSpecRequest.belongsTo(User, { foreignKey: "admin_id", as: "admin" });
+ProductCatalog.hasMany(CatalogSpecRequest, {
+  foreignKey: "catalog_id",
+  as: "specRequests",
+});
+CatalogSpecRequest.belongsTo(ProductCatalog, {
   foreignKey: "catalog_id",
   as: "catalog",
 });
@@ -194,6 +221,33 @@ ProductAttribute.belongsTo(Product, {
   as: "product",
 });
 
+Product.hasMany(ProductSerial, {
+  foreignKey: "product_id",
+  as: "serials",
+});
+ProductSerial.belongsTo(Product, {
+  foreignKey: "product_id",
+  as: "product",
+});
+
+Product.hasMany(ProductInventory, {
+  foreignKey: "product_id",
+  as: "inventories",
+});
+ProductInventory.belongsTo(Product, {
+  foreignKey: "product_id",
+  as: "product",
+});
+
+ProductSerial.hasMany(ProductInventory, {
+  foreignKey: "serial_id",
+  as: "inventories",
+});
+ProductInventory.belongsTo(ProductSerial, {
+  foreignKey: "serial_id",
+  as: "serial",
+});
+
 User.hasMany(RefreshToken, { foreignKey: "user_id", as: "refreshTokens" });
 RefreshToken.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
@@ -206,6 +260,7 @@ module.exports = {
   Brand,
   BrandRequest,
   ProductRequest,
+  CatalogSpecRequest,
   ProductCatalog,
   Product,
   AdminReview,
@@ -224,6 +279,8 @@ module.exports = {
   UserProductEvent,
   ProductImage,
   ProductAttribute,
+  ProductSerial,
+  ProductInventory,
   RefreshToken,
   StoreRequest,
 };

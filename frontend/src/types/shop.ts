@@ -3,8 +3,15 @@ export interface Shop {
   products: Product[];
   productsTotal: number;
   productsTotalPages: number;
+  productRequests: ShopProductRequest[];
+  productRequestsTotal: number;
+  productRequestsTotalPages: number;
+  catalogSpecRequests: ShopCatalogSpecRequest[];
+  catalogSpecRequestsTotal: number;
+  catalogSpecRequestsTotalPages: number;
   brands: ProductBrand[];
   loading: boolean;
+  requestsLoading: boolean;
   error: string | null;
   productCatalogs: ProductCatalog[];
   productCatalogsTotalPages: number;
@@ -37,6 +44,25 @@ export interface Product {
   category: ProductCategory;
   buyturn: number;
   quantity: number;
+}
+
+export interface ShopProductRequest {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  category?: { id: string; name: string };
+  catalog?: { id: string; name: string };
+}
+
+export interface ShopCatalogSpecRequest {
+  id: string;
+  catalog_id: string;
+  spec_key: string;
+  proposed_values: string[];
+  status: string;
+  created_at: string;
+  catalog?: { id: string; name: string };
 }
 
 export interface ShopInfo {

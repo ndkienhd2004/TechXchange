@@ -106,6 +106,7 @@ export default function HomeView() {
                   style={{ textDecoration: "none" }}
                 >
                   <ItemCard
+                    productId={Number(product.id)}
                     title={product.title}
                     price={product.price}
                     compareAtPrice={product.compareAtPrice}

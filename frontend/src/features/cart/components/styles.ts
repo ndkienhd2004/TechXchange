@@ -58,6 +58,22 @@ export const selectAll = (theme: Theme): CSSProperties => ({
   marginBottom: theme.spacing.lg,
 });
 
+export const checkboxCell = (_theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+export const checkboxInput = (theme: Theme): CSSProperties => ({
+  width: "18px",
+  height: "18px",
+  borderRadius: "6px",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  accentColor: theme.colors.palette.brand.pink[600],
+  cursor: "pointer",
+  background: theme.colors.palette.backgrounds.secondary,
+});
+
 export const shopHeader = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
@@ -222,5 +238,13 @@ export const applyButton = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.brand.purple[300],
   background: "transparent",
   cursor: "pointer",
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const emptyState = (theme: Theme): CSSProperties => ({
+  textAlign: "center",
+  padding: theme.spacing.lg,
+  color: theme.colors.palette.text.secondary,
+  fontSize: theme.typography.fontSize.lg.size,
   fontWeight: theme.typography.fontWeight.semibold,
 });

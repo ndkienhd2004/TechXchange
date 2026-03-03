@@ -9,13 +9,147 @@ const {
   User,
   ProductImage,
   ProductAttribute,
+  ProductSerial,
+  ProductInventory,
   AdminReview,
 } = require("../../models");
+const CategoryService = require("./categoryService");
 
 /**
  * Product Service - Xử lý nghiệp vụ liên quan đến sản phẩm
  */
 class ProductService {
+  static parseVariantKey(raw) {
+    if (!raw || typeof raw !== "string") return {};
+    return raw
+      .split("|")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .reduce((acc, item) => {
+        const [key, ...rest] = item.split("=");
+        const normalizedKey = (key || "").trim().toLowerCase();
+        const value = rest.join("=").trim();
+        if (!normalizedKey || !value) return acc;
+        acc[normalizedKey] = value;
+        return acc;
+      }, {});
+  }
+
+  static normalizeVariantOptions(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      return {};
+    }
+    const entries = Object.entries(raw)
+      .map(([key, value]) => [
+        String(key || "").trim().toLowerCase(),
+        String(value ?? "").trim(),
+      ])
+      .filter(([key, value]) => key && value)
+      .sort(([a], [b]) => a.localeCompare(b));
+    return entries.reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {});
+  }
+
+  static buildVariantKeyFromOptions(options = {}) {
+    const normalized = ProductService.normalizeVariantOptions(options);
+    const entries = Object.entries(normalized);
+    if (entries.length === 0) return null;
+    return entries.map(([k, v]) => `${k}=${v}`).join("|");
+  }
+
+  static buildVariantSummary(rows = []) {
+    const optionMap = new Map();
+    const variantMap = new Map();
+
+    rows.forEach((row) => {
+      const attrs = ProductService.parseVariantKey(row.variant_key);
+      const quantity = Number(row.quantity || 0);
+      const price = Number(row.price || 0);
+      const normalizedKey = ProductService.normalizeVariantKey(row.variant_key);
+      if (!normalizedKey || quantity <= 0) return;
+
+      if (!variantMap.has(normalizedKey)) {
+        variantMap.set(normalizedKey, {
+          variant_key: normalizedKey,
+          attributes: attrs,
+          quantity: 0,
+          min_price: price,
+          max_price: price,
+          listing_ids: [],
+        });
+      }
+      const variant = variantMap.get(normalizedKey);
+      variant.quantity += quantity;
+      variant.min_price = Math.min(variant.min_price, price);
+      variant.max_price = Math.max(variant.max_price, price);
+      variant.listing_ids.push(Number(row.id));
+
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (!optionMap.has(key)) optionMap.set(key, new Map());
+        const valueMap = optionMap.get(key);
+        valueMap.set(value, Number(valueMap.get(value) || 0) + quantity);
+      });
+    });
+
+    const spec_options = Array.from(optionMap.entries()).map(([key, values]) => ({
+      key,
+      values: Array.from(values.entries())
+        .map(([value, quantity]) => ({ value, quantity }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+    }));
+
+    const variant_inventory = Array.from(variantMap.values()).sort((a, b) =>
+      a.variant_key.localeCompare(b.variant_key)
+    );
+
+    return { spec_options, variant_inventory };
+  }
+
+  static buildVariantSummaryFromSerials(serialRows = [], fallbackProductId) {
+    const optionMap = new Map();
+    const variantInventory = [];
+
+    serialRows.forEach((serial) => {
+      const specs = ProductService.normalizeVariantOptions(serial.serial_specs || {});
+      const entries = Object.entries(specs);
+      const variantKey = entries.length
+        ? entries.map(([k, v]) => `${k}=${v}`).join("|")
+        : serial.serial_code;
+      const quantity = (serial.inventories || []).reduce(
+        (sum, inv) => sum + Math.max(0, Number(inv.on_hand || 0) - Number(inv.reserved || 0)),
+        0,
+      );
+
+      entries.forEach(([key, value]) => {
+        if (!optionMap.has(key)) optionMap.set(key, new Map());
+        const valueMap = optionMap.get(key);
+        valueMap.set(value, Number(valueMap.get(value) || 0) + quantity);
+      });
+
+      variantInventory.push({
+        serial_id: Number(serial.id),
+        serial_code: serial.serial_code,
+        variant_key: variantKey,
+        attributes: specs,
+        quantity,
+        min_price: null,
+        max_price: null,
+        listing_ids: fallbackProductId ? [Number(fallbackProductId)] : [],
+      });
+    });
+
+    const specOptions = Array.from(optionMap.entries()).map(([key, values]) => ({
+      key,
+      values: Array.from(values.entries())
+        .map(([value, quantity]) => ({ value, quantity }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+    }));
+
+    return { spec_options: specOptions, variant_inventory: variantInventory };
+  }
+
   static normalizeVariantKey(raw) {
     if (!raw || typeof raw !== "string") {
       return null;
@@ -99,7 +233,16 @@ class ProductService {
       }
 
       // filters theo catalog
-      if (filters.category_id) whereCatalog.category_id = filters.category_id;
+      if (filters.category_id) {
+        const scopedIds = await CategoryService.getDescendantCategoryIds(
+          filters.category_id
+        );
+        if (scopedIds.length > 0) {
+          whereCatalog.category_id = { [Op.in]: scopedIds };
+        } else {
+          whereCatalog.category_id = filters.category_id;
+        }
+      }
       if (filters.brand_id) whereCatalog.brand_id = filters.brand_id;
       if (filters.q) whereCatalog.name = { [Op.iLike]: `%${filters.q}%` };
 
@@ -214,6 +357,44 @@ class ProductService {
         throw new Error("Sản phẩm không tồn tại");
       }
 
+      const serialRows = await ProductSerial.findAll({
+        where: { product_id: product.id },
+        include: [
+          {
+            model: ProductInventory,
+            as: "inventories",
+            required: false,
+            attributes: ["id", "on_hand", "reserved"],
+          },
+        ],
+        order: [["id", "ASC"]],
+      });
+
+      if (serialRows.length > 0) {
+        const serialSummary = ProductService.buildVariantSummaryFromSerials(
+          serialRows,
+          product.id,
+        );
+        product.setDataValue("spec_options", serialSummary.spec_options);
+        product.setDataValue("variant_inventory", serialSummary.variant_inventory);
+      } else if (product.catalog_id) {
+        const variantRows = await Product.findAll({
+          where: {
+            catalog_id: product.catalog_id,
+            status: "active",
+            quantity: { [Op.gt]: 0 },
+            variant_key: { [Op.ne]: null },
+          },
+          attributes: ["id", "variant_key", "quantity", "price"],
+        });
+        const summary = ProductService.buildVariantSummary(variantRows);
+        product.setDataValue("spec_options", summary.spec_options);
+        product.setDataValue("variant_inventory", summary.variant_inventory);
+      } else {
+        product.setDataValue("spec_options", []);
+        product.setDataValue("variant_inventory", []);
+      }
+
       return product;
     } catch (error) {
       throw error;
@@ -231,8 +412,10 @@ class ProductService {
       store_id,
       price,
       quantity,
+      description,
       images,
       catalog_id,
+      variant_key,
     } = payload;
 
     try {
@@ -242,7 +425,9 @@ class ProductService {
           store_id,
           price,
           quantity,
+          description,
           images,
+          variant_key,
         });
       }
 
@@ -285,11 +470,24 @@ class ProductService {
    * @returns {Promise<object>}
    */
   static async createListingFromCatalog(userId, payload) {
-    const { catalog_id, store_id, price, quantity, images, variant_key } =
-      payload;
+    const {
+      catalog_id,
+      store_id,
+      price,
+      quantity,
+      description,
+      images,
+      variant_key,
+      variant_options,
+      serial_code,
+    } = payload;
 
     try {
+      const normalizedOptions = ProductService.normalizeVariantOptions(
+        variant_options,
+      );
       const normalizedVariantKey =
+        ProductService.buildVariantKeyFromOptions(normalizedOptions) ||
         ProductService.normalizeVariantKey(variant_key);
 
       const store = await Store.findOne({
@@ -325,13 +523,37 @@ class ProductService {
             category_id: catalog.category_id,
             brand_id: catalog.brand_id || null,
             name: catalog.name,
-            description: catalog.description || null,
+            description: description || catalog.description || null,
             seller_id: userId,
             store_id,
             price,
             quantity,
             variant_key: normalizedVariantKey,
             status: "active",
+          },
+          { transaction },
+        );
+
+        const generatedSerialCode =
+          serial_code && String(serial_code).trim()
+            ? String(serial_code).trim()
+            : `SER-${product.id}-${Date.now()}`;
+
+        const serial = await ProductSerial.create(
+          {
+            product_id: product.id,
+            serial_code: generatedSerialCode,
+            serial_specs: normalizedOptions,
+          },
+          { transaction },
+        );
+
+        await ProductInventory.create(
+          {
+            product_id: product.id,
+            serial_id: serial.id,
+            on_hand: Number(quantity || 0),
+            reserved: 0,
           },
           { transaction },
         );

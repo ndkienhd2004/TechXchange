@@ -7,7 +7,10 @@ import {
   getShopInfoService,
   getShopProductsService,
   createShopProductService,
+  getMyCatalogSpecRequestsService,
+  getMyProductRequestsService,
   requestNewProductService,
+  requestCatalogSpecService,
 } from "../sevices";
 
 const initialState: Shop = {
@@ -15,8 +18,15 @@ const initialState: Shop = {
   productsTotal: 0,
   productsTotalPages: 0,
   products: [],
+  productRequests: [],
+  productRequestsTotal: 0,
+  productRequestsTotalPages: 0,
+  catalogSpecRequests: [],
+  catalogSpecRequestsTotal: 0,
+  catalogSpecRequestsTotalPages: 0,
   brands: [],
   loading: false,
+  requestsLoading: false,
   error: null,
   productCatalogs: [],
   productCatalogsTotalPages: 0,
@@ -87,7 +97,10 @@ export const getShopBrands = createAsyncThunk(
 
 export const getProductCatalogs = createAsyncThunk(
   "shop/getProductCatalogs",
-  async (arg: { page: number; limit: number; q?: string; append?: boolean }, thunkAPI) => {
+  async (
+    arg: { page: number; limit: number; q?: string; append?: boolean },
+    thunkAPI,
+  ) => {
     try {
       const { page, limit, q } = arg;
       const response = await getProductCatalogsService({ page, limit, q });
@@ -106,6 +119,8 @@ export const createShopProduct = createAsyncThunk(
       store_id: number;
       price: number;
       quantity: number;
+      variant_key?: string;
+      description?: string;
     },
     thunkAPI,
   ) => {
@@ -124,7 +139,7 @@ export const requestNewProduct = createAsyncThunk(
     payload: {
       name: string;
       category_id: number;
-      brand_id?: number;
+      brand_id: number;
       brand_name?: string;
       description?: string;
       default_image?: string;
@@ -133,6 +148,49 @@ export const requestNewProduct = createAsyncThunk(
   ) => {
     try {
       const response = await requestNewProductService(payload);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+export const requestCatalogSpec = createAsyncThunk(
+  "shop/requestCatalogSpec",
+  async (
+    payload: {
+      catalog_id: number;
+      spec_key: string;
+      proposed_values: string[];
+    },
+    thunkAPI,
+  ) => {
+    try {
+      const response = await requestCatalogSpecService(payload);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+export const getMyProductRequests = createAsyncThunk(
+  "shop/getMyProductRequests",
+  async (arg: { page: number; limit: number; status?: string }, thunkAPI) => {
+    try {
+      const response = await getMyProductRequestsService(arg);
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+export const getMyCatalogSpecRequests = createAsyncThunk(
+  "shop/getMyCatalogSpecRequests",
+  async (arg: { page: number; limit: number; status?: string }, thunkAPI) => {
+    try {
+      const response = await getMyCatalogSpecRequestsService(arg);
       return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -179,7 +237,14 @@ const shopSlice = createSlice({
       .addCase(getShopBrands.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        state.brands = action.payload;
+        const payload = action.payload as unknown;
+        const wrapped =
+          payload &&
+          typeof payload === "object" &&
+          "data" in (payload as Record<string, unknown>)
+            ? (payload as { data?: unknown }).data
+            : payload;
+        state.brands = Array.isArray(wrapped) ? wrapped : [];
       })
       .addCase(getShopBrands.rejected, (state, action) => {
         state.loading = false;
@@ -242,6 +307,48 @@ const shopSlice = createSlice({
           "message" in action.payload
             ? String((action.payload as { message: string }).message)
             : "Gửi yêu cầu thất bại";
+      })
+      .addCase(requestCatalogSpec.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(requestCatalogSpec.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(requestCatalogSpec.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload != null &&
+          typeof action.payload === "object" &&
+          "message" in action.payload
+            ? String((action.payload as { message: string }).message)
+            : "Gửi yêu cầu thêm thông số thất bại";
+      })
+      .addCase(getMyProductRequests.pending, (state) => {
+        state.requestsLoading = true;
+      })
+      .addCase(getMyProductRequests.fulfilled, (state, action) => {
+        state.requestsLoading = false;
+        state.productRequests = action.payload?.data?.requests ?? [];
+        state.productRequestsTotal = action.payload?.data?.total ?? 0;
+        state.productRequestsTotalPages = action.payload?.data?.totalPages ?? 0;
+      })
+      .addCase(getMyProductRequests.rejected, (state) => {
+        state.requestsLoading = false;
+      })
+      .addCase(getMyCatalogSpecRequests.pending, (state) => {
+        state.requestsLoading = true;
+      })
+      .addCase(getMyCatalogSpecRequests.fulfilled, (state, action) => {
+        state.requestsLoading = false;
+        state.catalogSpecRequests = action.payload?.data?.requests ?? [];
+        state.catalogSpecRequestsTotal = action.payload?.data?.total ?? 0;
+        state.catalogSpecRequestsTotalPages =
+          action.payload?.data?.totalPages ?? 0;
+      })
+      .addCase(getMyCatalogSpecRequests.rejected, (state) => {
+        state.requestsLoading = false;
       });
   },
 });

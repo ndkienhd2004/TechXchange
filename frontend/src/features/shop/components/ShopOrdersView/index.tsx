@@ -3,6 +3,7 @@
 import { useAppTheme } from "@/theme/ThemeProvider";
 import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
+import AppIcon from "@/components/commons/AppIcon";
 
 const tabs = [
   { key: "all", label: "Tất cả", count: 8 },
@@ -98,7 +99,9 @@ export default function ShopOrdersView() {
 
       <section style={themed(styles.ordersToolbar)}>
         <div style={themed(styles.searchWrap)}>
-          <span style={themed(styles.searchIcon)}>🔍</span>
+          <span style={themed(styles.searchIcon)}>
+            <AppIcon name="search" />
+          </span>
           <input
             type="text"
             placeholder="Tìm theo mã đơn, tên khách hàng..."
@@ -174,7 +177,7 @@ export default function ShopOrdersView() {
                 <td style={themed(styles.td)}>
                   <div style={themed(styles.rowActions)}>
                     <button type="button" style={themed(styles.iconButton)}>
-                      👁
+                      <AppIcon name="view" />
                     </button>
                     {order.status === "confirmed" && (
                       <button type="button" style={themed(styles.shipButton)}>

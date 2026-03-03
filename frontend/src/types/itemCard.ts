@@ -1,4 +1,5 @@
 export interface ItemCardProps {
+  productId?: number;
   title: string;
   price: string;
   compareAtPrice?: string;

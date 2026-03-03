@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties, RefObject } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import type { Theme } from "@/theme";
 import {
@@ -14,6 +14,9 @@ import {
 } from "@/features/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import * as styles from "./styles";
+import { selectCatalogCategoriesTree } from "@/features/catalog/store/catalogSelectors";
+import type { CatalogCategory } from "@/features/catalog/store/catalogSlice";
+import { selectCartTotalItems } from "@/features/cart/store/cartSelectors";
 
 type Themed = (fn: (theme: Theme) => CSSProperties) => CSSProperties;
 
@@ -29,16 +32,36 @@ const SearchBar = ({
   hoveredElement,
   setHoveredElement,
   items,
+  initialCategory,
+  initialQuery,
+  onSubmit,
 }: {
   themed: Themed;
   hoveredElement: string | null;
   setHoveredElement: (v: string | null) => void;
-  items: { name: string; label: string }[];
+  items: { name: string; value: string }[];
+  initialCategory: string;
+  initialQuery: string;
+  onSubmit: (payload: { category: string; query: string }) => void;
 }) => (
-  <div style={themed(styles.searchContainer)}>
-    <select style={themed(styles.categorySelect)}>
+  <form
+    style={themed(styles.searchContainer)}
+    onSubmit={(e) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      onSubmit({
+        category: String(formData.get("category_id") ?? "all"),
+        query: String(formData.get("q") ?? ""),
+      });
+    }}
+  >
+    <select
+      style={themed(styles.categorySelect)}
+      name="category_id"
+      defaultValue={initialCategory}
+    >
       {items.map((category) => (
-        <option key={category.label} value={category.label}>
+        <option key={category.value} value={category.value}>
           {category.name}
         </option>
       ))}
@@ -47,12 +70,17 @@ const SearchBar = ({
       type="text"
       placeholder="Tìm kiếm sản phẩm..."
       style={themed(styles.searchInput)}
+      name="q"
+      defaultValue={initialQuery}
     />
     <button
-      type="button"
+      type="submit"
       style={
         hoveredElement === "search"
-          ? themed(styles.searchButtonHover)
+          ? {
+              ...themed(styles.searchButton),
+              ...themed(styles.searchButtonHover),
+            }
           : themed(styles.searchButton)
       }
       onMouseEnter={() => setHoveredElement("search")}
@@ -72,7 +100,7 @@ const SearchBar = ({
         <path d="m21 21-4.35-4.35" />
       </svg>
     </button>
-  </div>
+  </form>
 );
 
 const Actions = ({
@@ -86,6 +114,7 @@ const Actions = ({
   setUserMenuOpen,
   userMenuRef,
   onLogout,
+  cartTotalItems,
 }: {
   themed: Themed;
   hoveredElement: string | null;
@@ -97,6 +126,7 @@ const Actions = ({
   setUserMenuOpen: (v: boolean) => void;
   userMenuRef: RefObject<HTMLDivElement | null>;
   onLogout: () => void;
+  cartTotalItems: number;
 }) => (
   <div style={themed(styles.actions)}>
     <Link
@@ -123,7 +153,7 @@ const Actions = ({
         <circle cx="20" cy="21" r="1" />
         <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
       </svg>
-      <span style={themed(styles.cartBadge)}>3</span>
+      <span style={themed(styles.cartBadge)}>{cartTotalItems}</span>
     </Link>
     {isAuthenticated && user ? (
       <div ref={userMenuRef} style={themed(styles.userMenuWrap)}>
@@ -243,7 +273,7 @@ const Nav = ({
   themed: Themed;
   hoveredElement: string | null;
   setHoveredElement: (v: string | null) => void;
-  items: { name: string; label: string }[];
+  items: { name: string; value: string }[];
   categoriesOpen: boolean;
   setCategoriesOpen: (v: boolean) => void;
   categoriesRef: RefObject<HTMLDivElement | null>;
@@ -301,11 +331,11 @@ const Nav = ({
         <div style={themed(styles.navDropdownMenu)}>
           {items.map((category) => (
             <Link
-              key={category.label}
+              key={category.value}
               href={
-                category.label === "all"
+                category.value === "all"
                   ? "/products"
-                  : `/products?category=${category.label}`
+                  : `/products?category_id=${category.value}`
               }
               style={themed(styles.navDropdownItem)}
               onClick={() => setCategoriesOpen(false)}
@@ -364,6 +394,8 @@ const BrandList = ({
 export default function Header() {
   const { themed } = useAppTheme();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const user = useAppSelector(selectUser);
@@ -375,18 +407,30 @@ export default function Header() {
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
+  const categoryTree = useAppSelector(selectCatalogCategoriesTree);
+  const cartTotalItems = useAppSelector(selectCartTotalItems);
+
+  const flattenWithDepth = (
+    nodes: CatalogCategory[],
+    depth = 0
+  ): Array<{ id: number; name: string; depth: number }> =>
+    nodes.flatMap((node) => [
+      { id: node.id, name: node.name, depth },
+      ...(Array.isArray(node.children)
+        ? flattenWithDepth(node.children, depth + 1)
+        : []),
+    ]);
 
   const categories = [
-    { name: "Tất cả danh mục", label: "all" },
-    { name: "Điện thoại", label: "phone" },
-    { name: "Laptop", label: "laptop" },
-    { name: "Tablet", label: "tablet" },
-    { name: "Phụ kiện", label: "accessories" },
-    { name: "Âm thanh", label: "audio" },
+    { name: "Tất cả danh mục", value: "all" },
+    ...flattenWithDepth(categoryTree).map((item) => ({
+      name: `${item.depth > 0 ? "— ".repeat(item.depth) : ""}${item.name}`,
+      value: String(item.id),
+    })),
   ];
 
   const brands = [
-    { name: "🍎", label: "Apple" },
+    { name: "Apple", label: "Apple" },
     { name: "Nikon", label: "Nikon" },
     { name: "hp", label: "HP" },
     { name: "realme", label: "Realme" },
@@ -440,15 +484,36 @@ export default function Header() {
     router.replace("/");
   };
 
+  const handleSearchSubmit = ({
+    category,
+    query,
+  }: {
+    category: string;
+    query: string;
+  }) => {
+    const params = new URLSearchParams();
+    const q = query.trim();
+    if (q) params.set("q", q);
+    if (category && category !== "all") {
+      params.set("category_id", category);
+    }
+    params.set("page", "1");
+    router.push(`/products${params.toString() ? `?${params.toString()}` : ""}`);
+  };
+
   return (
     <header style={themed(styles.header)}>
       <div style={themed(styles.topBar)}>
         <Logo themed={themed} />
         <SearchBar
+          key={`${pathname}?${searchParams.toString()}`}
           themed={themed}
           hoveredElement={hoveredElement}
           setHoveredElement={setHoveredElement}
           items={categories}
+          initialCategory={searchParams.get("category_id") ?? "all"}
+          initialQuery={searchParams.get("q") ?? ""}
+          onSubmit={handleSearchSubmit}
         />
         <Actions
           themed={themed}
@@ -461,6 +526,7 @@ export default function Header() {
           setUserMenuOpen={setUserMenuOpen}
           userMenuRef={userMenuRef}
           onLogout={handleLogout}
+          cartTotalItems={cartTotalItems}
         />
       </div>
       <Nav

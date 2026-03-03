@@ -2,6 +2,7 @@
 
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "../styles";
+import AppIcon from "@/components/commons/AppIcon";
 
 interface BrandRequestModalProps {
   open: boolean;
@@ -19,7 +20,7 @@ export default function BrandRequestModal({ open, onClose }: BrandRequestModalPr
         <div style={themed(styles.modalHeader)}>
           <h3 style={themed(styles.modalTitle)}>Yêu cầu tạo thương hiệu</h3>
           <button type="button" style={themed(styles.modalClose)} onClick={onClose}>
-            ✕
+            <AppIcon name="close" />
           </button>
         </div>
 

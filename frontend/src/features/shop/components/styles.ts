@@ -696,11 +696,27 @@ export const modalProductContainerSelected = (theme: Theme): CSSProperties => ({
 
 export const modalProductExpanded = (theme: Theme): CSSProperties => ({
   padding: "0 16px 16px",
-  display: "flex",
+  display: "grid",
   gap: theme.spacing.md,
   background: theme.colors.palette.backgrounds.secondary,
   boxSizing: "border-box",
   width: "100%",
+});
+
+export const modalExpandedGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: theme.spacing.md,
+  width: "100%",
+});
+
+export const modalPanel = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+  borderRadius: theme.spacing.md,
+  background: "rgba(0,0,0,0.12)",
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
 });
 
 export const modalProductField = (theme: Theme): CSSProperties => ({
@@ -823,4 +839,168 @@ export const modalTextarea = (theme: Theme): CSSProperties => ({
   ...modalInput(theme),
   minHeight: "120px",
   resize: "vertical",
+});
+
+export const modalSpecGrid = (_theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "8px",
+});
+
+export const modalSpecItem = (_theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: "4px",
+});
+
+export const modalVariantPreview = (theme: Theme): CSSProperties => ({
+  marginTop: theme.spacing[2],
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+  wordBreak: "break-word",
+});
+
+export const modalExtraSpecRow = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+  gap: theme.spacing[2],
+  alignItems: "center",
+});
+
+export const modalGhostButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: "transparent",
+  color: theme.colors.palette.text.secondary,
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing.md,
+  cursor: "pointer",
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalTagWrap = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: theme.spacing[2],
+  marginTop: theme.spacing[2],
+});
+
+export const modalTag = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.brand.purple[600]}`,
+  background: "rgba(168, 85, 247, 0.12)",
+  color: theme.colors.palette.text.primary,
+  borderRadius: "999px",
+  padding: `${theme.spacing[1]} ${theme.spacing[3]}`,
+  cursor: "pointer",
+  fontSize: theme.typography.fontSize.xs.size,
+});
+
+export const modalRequestPanel = (theme: Theme): CSSProperties => ({
+  marginTop: theme.spacing.sm,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.md,
+  background: "rgba(168, 85, 247, 0.08)",
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const modalRequestHeader = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  color: theme.colors.palette.text.primary,
+});
+
+export const modalRequestSub = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.xs.size,
+  color: theme.colors.palette.text.secondary,
+});
+
+export const requestGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: theme.spacing.md,
+});
+
+export const requestBox = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const requestTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const requestItem = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: theme.spacing[2],
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing.sm,
+  background: "rgba(255,255,255,0.02)",
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+});
+
+export const requestItemMain = (_theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: "2px",
+  minWidth: 0,
+});
+
+export const requestStatusPill = (theme: Theme): CSSProperties => ({
+  borderRadius: "999px",
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  fontSize: theme.typography.fontSize.xs.size,
+  border: `1px solid ${theme.colors.palette.brand.purple[600]}`,
+  color: theme.colors.palette.text.primary,
+  background: "rgba(168, 85, 247, 0.16)",
+  textTransform: "capitalize",
+  whiteSpace: "nowrap",
+});
+
+export const specRequestModalCard = (theme: Theme): CSSProperties => ({
+  width: "min(560px, 92vw)",
+  maxHeight: "80vh",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.lg,
+  boxShadow: theme.shadows.lg,
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+});
+
+export const specRequestBody = (theme: Theme): CSSProperties => ({
+  padding: theme.spacing.lg,
+  display: "grid",
+  gap: theme.spacing.md,
+  overflowY: "auto",
+});
+
+export const specRequestTabs = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing[2],
+});
+
+export const specRequestTab = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.secondary,
+  borderRadius: theme.spacing.md,
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  cursor: "pointer",
+  fontWeight: theme.typography.fontWeight.medium,
+});
+
+export const specRequestTabActive = (theme: Theme): CSSProperties => ({
+  ...specRequestTab(theme),
+  borderColor: theme.colors.palette.brand.purple[500],
+  color: theme.colors.palette.text.primary,
+  background: "rgba(168, 85, 247, 0.15)",
 });

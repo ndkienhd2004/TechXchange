@@ -8,6 +8,7 @@ import * as styles from "../styles";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { RootState } from "@/store";
 import { getShopProducts } from "../../store";
+import AppIcon from "@/components/commons/AppIcon";
 
 export default function ShopDashboardView() {
   const { themed } = useAppTheme();
@@ -29,7 +30,12 @@ export default function ShopDashboardView() {
   ], [productsTotal, info]);
 
   // Dữ liệu giả cho đơn hàng gần đây cho đến khi có API
-  const orders: any[] = []; 
+  const orders: Array<{
+    id: string;
+    items: string;
+    status: "confirmed" | "shipping" | "delivered";
+    date: string;
+  }> = [];
 
   return (
     <ShopLayout>
@@ -47,12 +53,20 @@ export default function ShopDashboardView() {
               <div style={themed(styles.statLabel)}>{stat.label}</div>
               <div style={themed(styles.statValue)}>{loading ? "..." : stat.value}</div>
               {stat.sub && (
-                <div style={{ color: stat.tone, marginTop: 4 }}>★ {stat.sub}</div>
+                <div style={{ color: stat.tone, marginTop: 4 }}>{stat.sub}</div>
               )}
             </div>
             <div style={{ ...themed(styles.statIcon), background: `${stat.tone}22` }}>
               <span style={{ color: stat.tone }}>
-                {stat.label === "Doanh thu" ? "$" : stat.label === "Đơn hàng" ? "📦" : stat.label === "Tổng sản phẩm" ? "🛒" : "⭐"}
+                {stat.label === "Đơn hàng" ? (
+                  <AppIcon name="box" />
+                ) : stat.label === "Tổng sản phẩm" ? (
+                  <AppIcon name="cart" />
+                ) : stat.label === "Đánh giá" ? (
+                  <AppIcon name="star" />
+                ) : (
+                  "$"
+                )}
               </span>
             </div>
           </div>

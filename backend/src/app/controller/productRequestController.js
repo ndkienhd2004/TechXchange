@@ -23,8 +23,11 @@ class ProductRequestController {
         ? String(req.body.default_image).trim()
         : null;
 
-      if (!name || !category_id) {
-        return response.badRequest(res, "Thiếu thông tin bắt buộc");
+      if (!name || !category_id || (!brand_id && !brand_name)) {
+        return response.badRequest(
+          res,
+          "Thiếu thông tin bắt buộc (tên, danh mục, thương hiệu)"
+        );
       }
 
       const request = await ProductRequestService.createRequest(requesterId, {
