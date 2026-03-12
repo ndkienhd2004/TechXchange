@@ -26,7 +26,7 @@ export const pageButton = (theme: Theme): CSSProperties => ({
 export const pageButtonActive = (theme: Theme): CSSProperties => ({
   ...pageButton(theme),
   background: theme.colors.palette.brand.purple[600],
-  borderColor: theme.colors.palette.brand.purple[600],
+  border: `1px solid ${theme.colors.palette.brand.purple[600]}`,
   color: "#fff",
 });
 

@@ -4,7 +4,11 @@ const ProductController = require("../app/controller/productController");
 const ProductCatalogController = require("../app/controller/productCatalogController");
 const ProductRequestController = require("../app/controller/productRequestController");
 const CatalogSpecRequestController = require("../app/controller/catalogSpecRequestController");
-const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
+const {
+  authMiddleware,
+  shopMiddleware,
+  optionalAuthMiddleware,
+} = require("../app/middleware/auth");
 
 /**
  * @swagger
@@ -88,7 +92,7 @@ const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
  *       500:
  *         $ref: '#/components/responses/ServerError500'
  */
-router.get("/", ProductController.getProducts);
+router.get("/", optionalAuthMiddleware, ProductController.getProducts);
 
 /**
  * @swagger
@@ -467,7 +471,7 @@ router.get(
  *       404:
  *         $ref: '#/components/responses/NotFound404'
  */
-router.get("/:id", ProductController.getProductById);
+router.get("/:id", optionalAuthMiddleware, ProductController.getProductById);
 
 /**
  * @swagger

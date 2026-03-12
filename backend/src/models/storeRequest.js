@@ -24,6 +24,33 @@ module.exports = (sequelize, DataTypes) => {
       store_description: {
         type: DataTypes.TEXT,
       },
+      contact_phone: {
+        type: DataTypes.STRING(32),
+      },
+      address_line: {
+        type: DataTypes.TEXT,
+      },
+      ward: {
+        type: DataTypes.STRING(120),
+      },
+      district: {
+        type: DataTypes.STRING(120),
+      },
+      city: {
+        type: DataTypes.STRING(120),
+      },
+      province: {
+        type: DataTypes.STRING(120),
+      },
+      ghn_province_id: {
+        type: DataTypes.INTEGER,
+      },
+      ghn_district_id: {
+        type: DataTypes.INTEGER,
+      },
+      ghn_ward_code: {
+        type: DataTypes.STRING(20),
+      },
       status: {
         type: DataTypes.ENUM("pending", "approved", "rejected"),
         allowNull: false,

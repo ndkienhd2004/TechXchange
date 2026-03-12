@@ -1,10 +1,14 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import HeroCarousel from "@/components/commons/HeroCarousel";
 import SaleBanner from "@/components/commons/SaleBanner";
 import ItemCard from "@/components/commons/ItemCard";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { useAppSelector } from "@/store/hooks";
+import { selectIsAuthenticated } from "@/features/auth";
+import { getAxiosInstance } from "@/services/axiosConfig";
 import * as styles from "./styles";
 
 const saleBanners = [
@@ -32,47 +36,55 @@ const saleBanners = [
   },
 ];
 
-const featuredProducts = [
-  {
-    id: "1",
-    title: "iPhone 15 Pro Max 256GB",
-    price: "$1,199",
-    compareAtPrice: "$1,299",
-    rating: 4,
-    reviewCount: 120,
-    badgeText: "-8%",
-  },
-  {
-    id: "2",
-    title: "DJI Mini 3 Pro Drone",
-    price: "$759",
-    compareAtPrice: "$859",
-    rating: 4,
-    reviewCount: 32,
-    badgeText: "-12%",
-  },
-  {
-    id: "3",
-    title: "DELL Gaming G15 5520",
-    price: "$1,170",
-    compareAtPrice: "$1,300",
-    rating: 4,
-    reviewCount: 45,
-    badgeText: "-10%",
-  },
-  {
-    id: "4",
-    title: "Sony WH-1000XM5 Wireless Headphones",
-    price: "$349",
-    compareAtPrice: "$399",
-    rating: 4,
-    reviewCount: 89,
-    badgeText: "-13%",
-  },
-];
+type ProductRow = {
+  id: number;
+  name: string;
+  price: number;
+  rating?: number;
+  images?: { id: number; url: string }[];
+  default_image?: string | null;
+};
 
 export default function HomeView() {
   const { themed } = useAppTheme();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [featuredProducts, setFeaturedProducts] = useState<ProductRow[]>([]);
+  const [forYouProducts, setForYouProducts] = useState<ProductRow[]>([]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const api = getAxiosInstance();
+        const res = await api.get("/products", { params: { limit: 8, page: 1 } });
+        const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
+        setFeaturedProducts(rows);
+      } catch {
+        setFeaturedProducts([]);
+      }
+    };
+    void run();
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!isAuthenticated) {
+        setForYouProducts([]);
+        return;
+      }
+      try {
+        const api = getAxiosInstance();
+        const res = await api.get("/recommendations/home", { params: { limit: 8 } });
+        const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
+        setForYouProducts(rows);
+      } catch {
+        setForYouProducts([]);
+      }
+    };
+    void run();
+  }, [isAuthenticated]);
+
+  const shownForYou = useMemo(() => forYouProducts.slice(0, 4), [forYouProducts]);
+  const shownFeatured = useMemo(() => featuredProducts.slice(0, 4), [featuredProducts]);
 
   return (
     <div style={themed(styles.page)}>
@@ -91,6 +103,34 @@ export default function HomeView() {
             </div>
           </section>
 
+          {shownForYou.length > 0 && (
+            <section style={themed(styles.section)}>
+              <div style={themed(styles.sectionHeader)}>
+                <h2 style={themed(styles.sectionTitle)}>For You</h2>
+                <Link href="/products" style={themed(styles.viewAllLink)}>
+                  Xem tất cả →
+                </Link>
+              </div>
+              <div style={themed(styles.productGrid)}>
+                {shownForYou.map((product) => (
+                  <Link
+                    key={product.id}
+                    href={`/products/${product.id}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <ItemCard
+                      productId={Number(product.id)}
+                      title={product.name}
+                      price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
+                      rating={Number(product.rating || 0)}
+                      imageSrc={product.images?.[0]?.url || product.default_image || undefined}
+                    />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section style={themed(styles.section)}>
             <div style={themed(styles.sectionHeader)}>
               <h2 style={themed(styles.sectionTitle)}>Featured Products</h2>
@@ -99,7 +139,7 @@ export default function HomeView() {
               </Link>
             </div>
             <div style={themed(styles.productGrid)}>
-              {featuredProducts.map((product) => (
+              {shownFeatured.map((product) => (
                 <Link
                   key={product.id}
                   href={`/products/${product.id}`}
@@ -107,12 +147,10 @@ export default function HomeView() {
                 >
                   <ItemCard
                     productId={Number(product.id)}
-                    title={product.title}
-                    price={product.price}
-                    compareAtPrice={product.compareAtPrice}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
-                    badgeText={product.badgeText}
+                    title={product.name}
+                    price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
+                    rating={Number(product.rating || 0)}
+                    imageSrc={product.images?.[0]?.url || product.default_image || undefined}
                   />
                 </Link>
               ))}

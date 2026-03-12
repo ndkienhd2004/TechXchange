@@ -18,6 +18,18 @@ export default function NProgressProvider({
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
+      const clicked = e.target as Element | null;
+      if (!clicked) return;
+      if (clicked.closest('[data-nprogress-ignore="true"]')) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (e.button !== 0) return;
+
+      // Ignore action controls rendered inside links (e.g. add-to-cart button in product card)
+      const actionControl = clicked.closest(
+        'button,[role="button"],input,select,textarea'
+      );
+      if (actionControl && actionControl.closest("a")) return;
+
       const target = (e.target as Element).closest("a");
       if (!target?.href) return;
       try {

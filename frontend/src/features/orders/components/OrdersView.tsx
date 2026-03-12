@@ -46,6 +46,12 @@ export default function OrdersView() {
   const [openId, setOpenId] = useState<number | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewProductId, setReviewProductId] = useState<number | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const loadOrders = async () => {
     try {
@@ -73,22 +79,48 @@ export default function OrdersView() {
     return orders.filter((o) => o.status === activeTab);
   }, [orders, activeTab]);
 
-  const onReview = async (productId: number) => {
-    const ratingRaw = window.prompt("Đánh giá từ 1-5");
-    const comment = window.prompt("Nhận xét của bạn") || "";
-    const rating = Number(ratingRaw);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      showErrorToast("Rating không hợp lệ");
-      return;
-    }
+  const openReviewModal = (productId: number) => {
+    setReviewProductId(productId);
+    setReviewRating(5);
+    setHoverRating(null);
+    setReviewComment("");
+    setReviewModalOpen(true);
+  };
+
+  const closeReviewModal = () => {
+    if (reviewSubmitting) return;
+    setReviewModalOpen(false);
+    setReviewProductId(null);
+    setHoverRating(null);
+  };
+
+  const onSubmitReview = async () => {
+    if (!reviewProductId) return;
     try {
+      setReviewSubmitting(true);
       const api = getAxiosInstance();
       await api.post("/reviews", {
-        product_id: productId,
-        rating,
-        comment,
+        product_id: reviewProductId,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
       });
       showSuccessToast("Đánh giá thành công");
+      closeReviewModal();
+      await loadOrders();
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const displayRating = hoverRating ?? reviewRating;
+
+  const onMarkReceived = async (orderId: number) => {
+    try {
+      const api = getAxiosInstance();
+      await api.put(`/orders/${orderId}/received`);
+      showSuccessToast("Đã xác nhận nhận hàng");
       await loadOrders();
     } catch (error) {
       showErrorToast(error);
@@ -155,6 +187,15 @@ export default function OrdersView() {
                 </div>
                 <div style={themed(styles.orderMeta)}>
                   {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                  {order.status === "shipping" && (
+                    <button
+                      type="button"
+                      style={themed(styles.outlineButton)}
+                      onClick={() => onMarkReceived(Number(order.id))}
+                    >
+                      Đã nhận hàng
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -206,7 +247,7 @@ export default function OrdersView() {
                         <button
                           type="button"
                           style={themed(styles.outlineButton)}
-                          onClick={() => onReview(item.product_id)}
+                          onClick={() => openReviewModal(item.product_id)}
                         >
                           Đánh giá
                         </button>
@@ -221,6 +262,86 @@ export default function OrdersView() {
           );
         })}
       </div>
+
+      {reviewModalOpen && (
+        <div style={themed(styles.modalOverlay)} onClick={closeReviewModal}>
+          <div
+            style={themed(styles.modalCard)}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={themed(styles.modalHeader)}>
+              <h3 style={themed(styles.modalTitle)}>Đánh giá sản phẩm</h3>
+              <button
+                type="button"
+                style={themed(styles.modalClose)}
+                onClick={closeReviewModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={themed(styles.starRow)}>
+              {[1, 2, 3, 4, 5].map((star) => {
+                const fillPercent = Math.max(
+                  0,
+                  Math.min(100, (displayRating - (star - 1)) * 100),
+                );
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    style={themed(styles.starButton)}
+                    onMouseMove={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const ratio = (event.clientX - rect.left) / rect.width;
+                      const half = ratio <= 0.5 ? 0.5 : 1;
+                      setHoverRating((star - 1) + half);
+                    }}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onClick={() => setReviewRating(hoverRating ?? star)}
+                  >
+                    <span style={themed(styles.starBase)}>★</span>
+                    <span
+                      style={{
+                        ...themed(styles.starFill),
+                        width: `${fillPercent}%`,
+                      }}
+                    >
+                      ★
+                    </span>
+                  </button>
+                );
+              })}
+              <span style={themed(styles.ratingText)}>{displayRating.toFixed(1)} sao</span>
+            </div>
+
+            <textarea
+              style={themed(styles.reviewTextarea)}
+              placeholder="Viết đánh giá của bạn..."
+              value={reviewComment}
+              onChange={(event) => setReviewComment(event.target.value)}
+            />
+
+            <div style={themed(styles.modalActions)}>
+              <button
+                type="button"
+                style={themed(styles.outlineButton)}
+                onClick={closeReviewModal}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                style={themed(styles.button)}
+                onClick={onSubmitReview}
+                disabled={reviewSubmitting}
+              >
+                {reviewSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

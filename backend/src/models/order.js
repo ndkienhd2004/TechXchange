@@ -14,8 +14,24 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
+      store_id: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
+      },
       total_price: {
         type: DataTypes.DECIMAL(10, 2),
+      },
+      currency: {
+        type: DataTypes.STRING(3),
+        allowNull: false,
+        defaultValue: "VND",
+      },
+      payment_method: {
+        type: DataTypes.ENUM("credit_card", "paypal", "bank_transfer", "cod"),
+        defaultValue: "cod",
+      },
+      shipping_address: {
+        type: DataTypes.JSONB,
       },
       status: {
         type: DataTypes.ENUM("pending", "completed", "canceled"),
@@ -38,6 +54,10 @@ module.exports = (sequelize, DataTypes) => {
         {
           name: "idx_orders_customer_status_created",
           fields: ["customer_id", "status", "created_at"],
+        },
+        {
+          name: "idx_orders_store_status_created",
+          fields: ["store_id", "status", "created_at"],
         },
       ],
     }

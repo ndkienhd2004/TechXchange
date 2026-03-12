@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const StoreRequestController = require("../app/controller/storeRequestController");
 const StoreController = require("../app/controller/storeController");
-const { authMiddleware } = require("../app/middleware/auth");
+const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
 
 /**
  * @swagger
@@ -92,5 +92,18 @@ router.get(
  *         $ref: '#/components/responses/ServerError500'
  */
 router.get("/me", authMiddleware, StoreController.getMyStores);
+router.put(
+  "/:id/address",
+  authMiddleware,
+  shopMiddleware,
+  StoreController.updateMyStoreAddress,
+);
+router.post(
+  "/:id/ghn/register",
+  authMiddleware,
+  shopMiddleware,
+  StoreController.registerMyStoreWithGhn,
+);
+router.get("/:id", StoreController.getStoreById);
 
 module.exports = router;

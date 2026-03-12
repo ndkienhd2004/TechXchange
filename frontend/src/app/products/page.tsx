@@ -16,7 +16,6 @@ import {
   selectProductLoading,
   selectProductTotalPages,
 } from "@/features/products/store/productSelectors";
-import { formatPrice } from "@/utils/formatPrice";
 import * as styles from "./styles";
 
 const ITEMS_PER_PAGE = 8;
@@ -106,10 +105,10 @@ function ProductsContent() {
                           <ItemCard
                             productId={Number(product.id)}
                             title={product.name}
-                            price={formatPrice(product.price)}
+                            price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
                             compareAtPrice={
                               product.compareAtPrice
-                                ? formatPrice(product.compareAtPrice)
+                                ? `${Number(product.compareAtPrice || 0).toLocaleString("vi-VN")} đ`
                                 : undefined
                             }
                             rating={product.rating}

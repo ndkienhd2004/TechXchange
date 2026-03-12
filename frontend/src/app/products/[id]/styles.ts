@@ -340,7 +340,9 @@ export const tab = (theme: Theme): CSSProperties => ({
   padding: `${theme.spacing[3]} ${theme.spacing[5]}`,
   background: "none",
   border: "none",
-  borderBottom: `2px solid transparent`,
+  borderBottomWidth: 2,
+  borderBottomStyle: "solid",
+  borderBottomColor: "transparent",
   color: theme.colors.palette.text.secondary,
   fontSize: theme.typography.fontSize.sm.size,
   fontWeight: theme.typography.fontWeight.medium,
@@ -431,4 +433,28 @@ export const reviewBody = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.secondary,
   lineHeight: 1.6,
   margin: 0,
+});
+
+export const reviewFilterRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: theme.spacing[2],
+  marginBottom: theme.spacing.md,
+});
+
+export const reviewFilterButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.card,
+  color: theme.colors.palette.text.secondary,
+  borderRadius: theme.spacing.md,
+  padding: `${theme.spacing[1]} ${theme.spacing[3]}`,
+  fontSize: theme.typography.fontSize.sm.size,
+  cursor: "pointer",
+});
+
+export const reviewFilterButtonActive = (theme: Theme): CSSProperties => ({
+  ...reviewFilterButton(theme),
+  border: `1px solid ${theme.colors.palette.brand.purple[500]}`,
+  color: theme.colors.palette.brand.purple[300],
+  background: `${theme.colors.palette.brand.purple[700]}33`,
 });

@@ -79,6 +79,14 @@ export interface ShopInfo {
   phone?: string;
   email?: string;
   website?: string;
+  address_line?: string | null;
+  ward?: string | null;
+  district?: string | null;
+  city?: string | null;
+  province?: string | null;
+  ghn_province_id?: number | null;
+  ghn_district_id?: number | null;
+  ghn_ward_code?: string | null;
   owner: {
     id: string;
     username: string;

@@ -61,6 +61,46 @@ export const emptyText = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.secondary,
 });
 
+export const addressGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing.md,
+});
+
+export const input = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+});
+
+export const addressCard = (theme: Theme): CSSProperties => ({
+  background: theme.colors.palette.backgrounds.secondary,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.md,
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const addressNameRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
+});
+
+export const defaultBadge = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.xs.size,
+  color: theme.colors.palette.status.delivered.text,
+  background: theme.colors.palette.status.delivered.bg,
+  borderRadius: theme.spacing.sm,
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+});
+
 export const productRow = (theme: Theme): CSSProperties => ({
   display: "grid",
   gridTemplateColumns: "64px 1fr auto",
@@ -153,4 +193,53 @@ export const primaryButton = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
   cursor: "pointer",
   marginTop: theme.spacing.md,
+});
+
+export const transferWrap = (theme: Theme): CSSProperties => ({
+  marginTop: theme.spacing.lg,
+  borderTop: `1px solid ${theme.colors.palette.borders.default}`,
+  paddingTop: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing.md,
+});
+
+export const transferTitle = (theme: Theme): CSSProperties => ({
+  fontWeight: theme.typography.fontWeight.semibold,
+  color: theme.colors.palette.text.primary,
+});
+
+export const transferCard = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 120px",
+  gap: theme.spacing.md,
+  alignItems: "center",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  padding: theme.spacing.md,
+});
+
+export const transferText = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[1],
+  fontSize: theme.typography.fontSize.sm.size,
+  color: theme.colors.palette.text.secondary,
+});
+
+export const inlineCopyButton = (theme: Theme): CSSProperties => ({
+  marginLeft: theme.spacing[2],
+  padding: `2px ${theme.spacing[2]}`,
+  borderRadius: theme.spacing.sm,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.card,
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.xs.size,
+  cursor: "pointer",
+});
+
+export const transferQr = (): CSSProperties => ({
+  width: "120px",
+  height: "120px",
+  borderRadius: "12px",
+  objectFit: "cover",
 });

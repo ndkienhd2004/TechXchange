@@ -16,6 +16,47 @@ class StoreController {
       return response.serverError(res, error.message);
     }
   }
+
+  static async getStoreById(req, res) {
+    try {
+      const store = await StoreService.getStoreById(req.params.id);
+      return response.success(res, "Lấy thông tin cửa hàng thành công", store);
+    } catch (error) {
+      if (error.message === "Cửa hàng không tồn tại") {
+        return response.notFound(res, error.message);
+      }
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  static async updateMyStoreAddress(req, res) {
+    try {
+      const store = await StoreService.updateMyStoreAddress(
+        req.user.id,
+        req.params.id,
+        req.body,
+      );
+      return response.success(res, "Cập nhật địa chỉ shop thành công", store);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  static async registerMyStoreWithGhn(req, res) {
+    try {
+      const result = await StoreService.registerMyStoreWithGhn(
+        req.user.id,
+        req.params.id,
+      );
+      return response.success(
+        res,
+        result.created ? "Tạo GHN shop thành công" : "Shop đã có GHN shop_id",
+        result,
+      );
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
 }
 
 module.exports = StoreController;

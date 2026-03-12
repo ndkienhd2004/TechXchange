@@ -5,6 +5,19 @@ const { response } = require("../utils/response");
  * Store Request Controller - Xử lý requests mở cửa hàng
  */
 class StoreRequestController {
+  static mapErrorMessage(error) {
+    if (!error) return "Lỗi không xác định";
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const fields = Array.isArray(error.errors)
+        ? error.errors.map((item) => item.path).filter(Boolean)
+        : [];
+      if (fields.includes("phone")) {
+        return "Số điện thoại đã được dùng bởi tài khoản khác";
+      }
+      return "Dữ liệu bị trùng, vui lòng kiểm tra lại";
+    }
+    return error.message || "Lỗi không xác định";
+  }
   /**
    * Tạo yêu cầu mở cửa hàng
    * POST /stores/requests
@@ -12,7 +25,19 @@ class StoreRequestController {
   static async createRequest(req, res) {
     try {
       const userId = req.user.id;
-      const { store_name, store_description } = req.body;
+      const {
+        store_name,
+        store_description,
+        contact_phone,
+        address_line,
+        ward,
+        district,
+        city,
+        province,
+        ghn_province_id,
+        ghn_district_id,
+        ghn_ward_code,
+      } = req.body;
 
       if (!store_name || !String(store_name).trim()) {
         return response.badRequest(res, "Tên cửa hàng là bắt buộc");
@@ -23,6 +48,15 @@ class StoreRequestController {
         store_description: store_description
           ? String(store_description).trim()
           : null,
+        contact_phone: contact_phone ? String(contact_phone).trim() : null,
+        address_line: address_line ? String(address_line).trim() : "",
+        ward: ward ? String(ward).trim() : null,
+        district: district ? String(district).trim() : "",
+        city: city ? String(city).trim() : null,
+        province: province ? String(province).trim() : "",
+        ghn_province_id: ghn_province_id ? Number(ghn_province_id) : null,
+        ghn_district_id: ghn_district_id ? Number(ghn_district_id) : null,
+        ghn_ward_code: ghn_ward_code ? String(ghn_ward_code).trim() : null,
       });
 
       return response.created(
@@ -31,7 +65,10 @@ class StoreRequestController {
         request
       );
     } catch (error) {
-      return response.badRequest(res, error.message);
+      return response.badRequest(
+        res,
+        StoreRequestController.mapErrorMessage(error)
+      );
     }
   }
 
@@ -99,7 +136,10 @@ class StoreRequestController {
 
       return response.success(res, "Duyệt yêu cầu thành công", result);
     } catch (error) {
-      return response.badRequest(res, error.message);
+      return response.badRequest(
+        res,
+        StoreRequestController.mapErrorMessage(error)
+      );
     }
   }
 
@@ -124,7 +164,10 @@ class StoreRequestController {
 
       return response.success(res, "Từ chối yêu cầu thành công", request);
     } catch (error) {
-      return response.badRequest(res, error.message);
+      return response.badRequest(
+        res,
+        StoreRequestController.mapErrorMessage(error)
+      );
     }
   }
 }

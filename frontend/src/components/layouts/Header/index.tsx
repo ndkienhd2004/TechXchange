@@ -202,6 +202,13 @@ const Actions = ({
             >
               Tài khoản
             </Link>
+            <Link
+              href="/messages"
+              style={themed(styles.userMenuItem)}
+              onClick={() => setUserMenuOpen(false)}
+            >
+              Tin nhắn
+            </Link>
             {user.role === "admin" && (
               <Link
                 href="/admin"

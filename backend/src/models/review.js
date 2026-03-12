@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BIGINT,
       },
       rating: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(2, 1),
       },
       comment: {
         type: DataTypes.TEXT,

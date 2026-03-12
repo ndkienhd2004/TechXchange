@@ -7,6 +7,7 @@ const {
   ProductCategory,
   Store,
 } = require("../../models");
+const UserEventService = require("./userEventService");
 
 class CartService {
   static async getCart(userId) {
@@ -77,6 +78,12 @@ class CartService {
     if (!product || product.status !== "active") {
       throw new Error("Sản phẩm không khả dụng");
     }
+    const store = await Store.findByPk(Number(product.store_id), {
+      attributes: ["id", "owner_id"],
+    });
+    if (store && Number(store.owner_id) === Number(userId)) {
+      throw new Error("Không thể mua sản phẩm của chính cửa hàng của bạn");
+    }
     if (Number(product.quantity || 0) <= 0) {
       throw new Error("Sản phẩm đã hết hàng");
     }
@@ -98,6 +105,16 @@ class CartService {
         product_id: productId,
         quantity: safeQty,
       });
+    }
+
+    try {
+      await UserEventService.track(userId, {
+        product_id: productId,
+        event_type: "add_to_cart",
+        meta: { quantity },
+      });
+    } catch (error) {
+      console.error("[Event] track add_to_cart failed:", error.message);
     }
 
     return CartService.getCart(userId);

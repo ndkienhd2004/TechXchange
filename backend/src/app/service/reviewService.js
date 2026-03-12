@@ -8,8 +8,11 @@ class ReviewService {
     const comment = payload.comment ? String(payload.comment).trim() : null;
 
     if (!productId) throw new Error("product_id không hợp lệ");
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    if (Number.isNaN(rating) || rating < 1 || rating > 5) {
       throw new Error("rating phải từ 1 đến 5");
+    }
+    if (Math.round(rating * 2) !== rating * 2) {
+      throw new Error("rating phải theo bước 0.5");
     }
 
     const delivered = await Order.findOne({

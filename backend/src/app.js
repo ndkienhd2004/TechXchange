@@ -12,6 +12,11 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
+const ghnRoutes = require("./routes/ghnRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes");
 const swaggerSpecs = require("./config/swagger");
 const { response } = require("./app/utils/response");
 
@@ -59,6 +64,11 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/webhooks", webhookRoutes);
+app.use("/api/ghn", ghnRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // Global error handler - 500
 app.use((err, req, res, next) => {

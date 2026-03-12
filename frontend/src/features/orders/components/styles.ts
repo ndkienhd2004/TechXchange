@@ -186,3 +186,101 @@ export const outlineButton = (theme: Theme): CSSProperties => ({
   border: `1px solid ${theme.colors.palette.brand.purple[500]}`,
   color: theme.colors.palette.brand.purple[300],
 });
+
+export const modalOverlay = (theme: Theme): CSSProperties => ({
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0, 0, 0, 0.55)",
+  display: "grid",
+  placeItems: "center",
+  zIndex: 1200,
+  padding: theme.spacing.lg,
+});
+
+export const modalCard = (theme: Theme): CSSProperties => ({
+  width: "min(560px, 100%)",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.lg,
+  padding: theme.spacing.lg,
+});
+
+export const modalHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: theme.spacing.md,
+});
+
+export const modalTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: theme.typography.fontSize.lg.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalClose = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: "transparent",
+  color: theme.colors.palette.text.secondary,
+  borderRadius: theme.spacing.sm,
+  width: 32,
+  height: 32,
+  cursor: "pointer",
+});
+
+export const starRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  marginBottom: theme.spacing.md,
+});
+
+export const starButton = (): CSSProperties => ({
+  position: "relative",
+  width: 28,
+  height: 28,
+  border: "none",
+  background: "transparent",
+  padding: 0,
+  cursor: "pointer",
+  fontSize: 28,
+  lineHeight: "28px",
+});
+
+export const starBase = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  inset: 0,
+  color: theme.colors.palette.text.muted,
+});
+
+export const starFill = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  inset: 0,
+  overflow: "hidden",
+  color: theme.colors.palette.brand.pink[500],
+  whiteSpace: "nowrap",
+});
+
+export const ratingText = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.secondary,
+  fontSize: theme.typography.fontSize.sm.size,
+});
+
+export const reviewTextarea = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  minHeight: 120,
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  padding: theme.spacing.md,
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+  resize: "vertical",
+  marginBottom: theme.spacing.md,
+});
+
+export const modalActions = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: theme.spacing[2],
+});

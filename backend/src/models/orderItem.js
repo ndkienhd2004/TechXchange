@@ -18,6 +18,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
+      serial_id: {
+        type: DataTypes.BIGINT,
+      },
       quantity: {
         type: DataTypes.INTEGER,
       },

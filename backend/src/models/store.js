@@ -23,6 +23,33 @@ module.exports = (sequelize, DataTypes) => {
       rating: {
         type: DataTypes.DOUBLE,
       },
+      address_line: {
+        type: DataTypes.TEXT,
+      },
+      ward: {
+        type: DataTypes.STRING(120),
+      },
+      district: {
+        type: DataTypes.STRING(120),
+      },
+      city: {
+        type: DataTypes.STRING(120),
+      },
+      province: {
+        type: DataTypes.STRING(120),
+      },
+      ghn_province_id: {
+        type: DataTypes.INTEGER,
+      },
+      ghn_district_id: {
+        type: DataTypes.INTEGER,
+      },
+      ghn_ward_code: {
+        type: DataTypes.STRING(20),
+      },
+      ghn_shop_id: {
+        type: DataTypes.INTEGER,
+      },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

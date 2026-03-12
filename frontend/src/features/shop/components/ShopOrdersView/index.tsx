@@ -1,100 +1,129 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import AppIcon from "@/components/commons/AppIcon";
+import { getAxiosInstance } from "@/services/axiosConfig";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
-const tabs = [
-  { key: "all", label: "Tất cả", count: 8 },
-  { key: "confirmed", label: "Chờ xác nhận", count: 0 },
-  { key: "shipping", label: "Đang giao", count: 1 },
-  { key: "delivered", label: "Đã giao", count: 6 },
-];
+type ShopOrderItem = {
+  id: number;
+  quantity: number;
+  price: number | string;
+  product?: {
+    id: number;
+    name: string;
+    images?: Array<{ id: number; url: string }>;
+  };
+};
 
-const orders = [
-  {
-    id: "ORD2025121903",
-    customer: "Lê Văn C",
-    phone: "0923456789",
-    items: "1 sản phẩm",
-    total: "$789",
-    status: "confirmed",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121902",
-    customer: "Trần Thị B",
-    phone: "0912345678",
-    items: "1 sản phẩm",
-    total: "$713",
-    status: "shipping",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121901",
-    customer: "Nguyễn Văn A",
-    phone: "0901234567",
-    items: "1 sản phẩm",
-    total: "$1,195",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121904",
-    customer: "Phạm Văn D",
-    phone: "0934567890",
-    items: "2 sản phẩm",
-    total: "$1,544",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121605",
-    customer: "Đỗ Thị G",
-    phone: "0967890123",
-    items: "1 sản phẩm",
-    total: "$2,365",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121801",
-    customer: "Hoàng Thị E",
-    phone: "0945678901",
-    items: "1 sản phẩm",
-    total: "$364",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121701",
-    customer: "Vũ Văn F",
-    phone: "0956789012",
-    items: "1 sản phẩm",
-    total: "$789",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-  {
-    id: "ORD2025121501",
-    customer: "Bùi Văn H",
-    phone: "0978901234",
-    items: "1 sản phẩm",
-    total: "$1,062",
-    status: "delivered",
-    date: "19/12/2025",
-  },
-];
+type ShopOrder = {
+  id: number;
+  status: "pending" | "shipping" | "completed" | "canceled";
+  total_price: number | string;
+  shipment_fee?: number | string | null;
+  shipment_provider?: string | null;
+  created_at: string;
+  customer?: {
+    id: number;
+    username?: string;
+    phone?: string;
+    email?: string;
+  };
+  items: ShopOrderItem[];
+};
+
+const statusTabs = [
+  { key: "all", label: "Tất cả" },
+  { key: "pending", label: "Chờ xác nhận" },
+  { key: "shipping", label: "Đang giao" },
+  { key: "completed", label: "Đã giao" },
+  { key: "canceled", label: "Đã hủy" },
+] as const;
+
+const currency = (value: number | string) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+    Number(value || 0),
+  );
 
 export default function ShopOrdersView() {
   const { themed } = useAppTheme();
+  const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<(typeof statusTabs)[number]["key"]>("all");
+  const [search, setSearch] = useState("");
+
+  const loadOrders = async (status: string) => {
+    try {
+      setLoading(true);
+      const api = getAxiosInstance();
+      const res = await api.get("/orders/shop/me", {
+        params: status === "all" ? undefined : { status },
+      });
+      const rows = Array.isArray(res?.data?.data?.orders) ? res.data.data.orders : [];
+      setOrders(rows);
+    } catch (error) {
+      showErrorToast(error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders(activeTab);
+  }, [activeTab]);
+
+  const counts = useMemo(() => {
+    const total = orders.length;
+    return {
+      all: total,
+      pending: orders.filter((o) => o.status === "pending").length,
+      shipping: orders.filter((o) => o.status === "shipping").length,
+      completed: orders.filter((o) => o.status === "completed").length,
+      canceled: orders.filter((o) => o.status === "canceled").length,
+    };
+  }, [orders]);
+
+  const visibleOrders = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter((order) => {
+      const haystack = [
+        String(order.id),
+        order.customer?.username || "",
+        order.customer?.phone || "",
+        ...(order.items || []).map((i) => i.product?.name || ""),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [orders, search]);
+
+  const onApprove = async (orderId: number) => {
+    try {
+      const api = getAxiosInstance();
+      const res = await api.put(`/orders/shop/${orderId}/approve`);
+      const shippingFee = Number(res?.data?.data?.shipment?.shipping_fee || 0);
+      showSuccessToast(
+        shippingFee > 0
+          ? `Đã duyệt đơn. Phí GHN: ${currency(shippingFee)}`
+          : "Đã duyệt đơn, trạng thái chuyển sang đang giao",
+      );
+      await loadOrders(activeTab);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
 
   return (
     <ShopLayout>
       <header style={themed(styles.pageHeader)}>
         <h1 style={themed(styles.pageTitle)}>Quản lý đơn hàng</h1>
-        <p style={themed(styles.pageSubtitle)}>8 đơn hàng</p>
+        <p style={themed(styles.pageSubtitle)}>{counts.all} đơn hàng</p>
       </header>
 
       <section style={themed(styles.ordersToolbar)}>
@@ -104,22 +133,25 @@ export default function ShopOrdersView() {
           </span>
           <input
             type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm theo mã đơn, tên khách hàng..."
             style={themed(styles.searchInput)}
           />
         </div>
         <div style={themed(styles.tabGroup)}>
-          {tabs.map((tab) => (
+          {statusTabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               style={
-                tab.key === "all"
+                tab.key === activeTab
                   ? themed(styles.tabButtonActive)
                   : themed(styles.tabButton)
               }
+              onClick={() => setActiveTab(tab.key)}
             >
-              {tab.label} ({tab.count})
+              {tab.label} ({counts[tab.key]})
             </button>
           ))}
         </div>
@@ -139,55 +171,91 @@ export default function ShopOrdersView() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td style={themed(styles.td)}>{order.id}</td>
-                <td style={themed(styles.td)}>
-                  <div style={themed(styles.orderName)}>{order.customer}</div>
-                  <div style={themed(styles.orderMeta)}>{order.phone}</div>
-                </td>
-                <td style={themed(styles.td)}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={themed(styles.orderThumb)} />
-                    <div style={themed(styles.orderMeta)}>{order.items}</div>
-                  </div>
-                </td>
-                <td style={themed(styles.td)}>
-                  <span style={themed(styles.price)}>{order.total}</span>
-                </td>
-                <td style={themed(styles.td)}>
-                  <span
-                    style={{
-                      ...themed(styles.statusPill),
-                      ...(order.status === "confirmed"
-                        ? themed(styles.statusConfirmed)
-                        : order.status === "shipping"
-                        ? themed(styles.statusShipping)
-                        : themed(styles.statusDelivered)),
-                    }}
-                  >
-                    {order.status === "confirmed"
-                      ? "Đã xác nhận"
-                      : order.status === "shipping"
-                      ? "Đang giao"
-                      : "Đã giao"}
-                  </span>
-                </td>
-                <td style={themed(styles.td)}>{order.date}</td>
-                <td style={themed(styles.td)}>
-                  <div style={themed(styles.rowActions)}>
-                    <button type="button" style={themed(styles.iconButton)}>
-                      <AppIcon name="view" />
-                    </button>
-                    {order.status === "confirmed" && (
-                      <button type="button" style={themed(styles.shipButton)}>
-                        Giao hàng
-                      </button>
-                    )}
-                  </div>
+            {loading ? (
+              <tr>
+                <td style={themed(styles.td)} colSpan={7}>
+                  Đang tải...
                 </td>
               </tr>
-            ))}
+            ) : visibleOrders.length === 0 ? (
+              <tr>
+                <td style={themed(styles.td)} colSpan={7}>
+                  Không có đơn hàng
+                </td>
+              </tr>
+            ) : (
+              visibleOrders.map((order) => {
+                const firstItem = order.items?.[0];
+                return (
+                  <tr key={order.id}>
+                    <td style={themed(styles.td)}>#{order.id}</td>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.orderName)}>
+                        {order.customer?.username || "Khách hàng"}
+                      </div>
+                      <div style={themed(styles.orderMeta)}>
+                        {order.customer?.phone || order.customer?.email || "-"}
+                      </div>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={themed(styles.orderThumb)} />
+                        <div style={themed(styles.orderMeta)}>
+                          {(order.items || []).length} sản phẩm
+                          {firstItem?.product?.name ? ` • ${firstItem.product.name}` : ""}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span style={themed(styles.price)}>{currency(order.total_price)}</span>
+                      {Number(order.shipment_fee || 0) > 0 ? (
+                        <div style={themed(styles.orderMeta)}>
+                          GHN: {currency(Number(order.shipment_fee || 0))}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span
+                        style={{
+                          ...themed(styles.statusPill),
+                          ...(order.status === "pending"
+                            ? themed(styles.statusConfirmed)
+                            : order.status === "shipping"
+                              ? themed(styles.statusShipping)
+                              : themed(styles.statusDelivered)),
+                        }}
+                      >
+                        {order.status === "pending"
+                          ? "Chờ xác nhận"
+                          : order.status === "shipping"
+                            ? "Đang giao"
+                            : order.status === "completed"
+                              ? "Đã giao"
+                              : "Đã hủy"}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.rowActions)}>
+                        {order.status === "pending" ? (
+                          <button
+                            type="button"
+                            style={themed(styles.shipButton)}
+                            onClick={() => onApprove(Number(order.id))}
+                          >
+                            Duyệt giao hàng
+                          </button>
+                        ) : (
+                          <span style={themed(styles.orderMeta)}>—</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </section>

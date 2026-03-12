@@ -1,8 +1,10 @@
 require("dotenv").config();
 
+const http = require("http");
 const app = require("./app");
 const sequelize = require("../config/db");
 const { User, RefreshToken } = require("./models");
+const { createSocketServer } = require("./socket");
 
 const port = Number(process.env.PORT || 3000);
 
@@ -73,10 +75,14 @@ async function start() {
 
     // Step 5: Start Express server
     console.log("🌐 Starting Express server...");
-    app.listen(port, () => {
+    const server = http.createServer(app);
+    createSocketServer(server);
+
+    server.listen(port, () => {
       console.log(`✅ Server listening on port ${port}`);
       console.log(`📚 API Documentation: http://localhost:${port}/docs`);
       console.log(`❤️ Health Check: http://localhost:${port}/health\n`);
+      console.log(`💬 Socket.IO enabled on ws://localhost:${port}\n`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

@@ -29,7 +29,19 @@ const initialState: StoreRequestState = {
 export const createStoreRequest = createAsyncThunk(
   "storeRequest/create",
   async (
-    payload: { store_name: string; store_description?: string },
+    payload: {
+      store_name: string;
+      store_description?: string;
+      contact_phone: string;
+      address_line: string;
+      ward?: string;
+      district: string;
+      city?: string;
+      province: string;
+      ghn_province_id?: number | null;
+      ghn_district_id?: number | null;
+      ghn_ward_code?: string | null;
+    },
     thunkAPI
   ) => {
     try {

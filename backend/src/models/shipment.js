@@ -24,6 +24,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM("pending", "shipped", "delivered", "failed"),
         defaultValue: "pending",
       },
+      shipping_provider: {
+        type: DataTypes.STRING(30),
+      },
+      shipping_service_id: {
+        type: DataTypes.INTEGER,
+      },
+      shipping_service_type_id: {
+        type: DataTypes.INTEGER,
+      },
+      shipping_fee: {
+        type: DataTypes.DECIMAL(10, 2),
+      },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

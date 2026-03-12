@@ -29,7 +29,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [address, setAddress] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -39,7 +38,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
       setGender(user.gender ?? "");
       setPhone(user.phone ?? "");
       setAvatar(user.avatar ?? "");
-      setAddress(user.address ?? "");
     }
   }, [user]);
 
@@ -52,7 +50,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
         gender,
         phone,
         ...(avatar && { avatar }),
-        ...(address && { address }),
       })
     );
   };
@@ -144,17 +141,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
               }}
             />
           )}
-        </div>
-
-        <div style={themed(styles.field)}>
-          <label style={themed(styles.label)}>Địa chỉ</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Địa chỉ"
-            style={themed(styles.input)}
-          />
         </div>
 
         {/* Chỉ hiển thị nếu backend trả về */}

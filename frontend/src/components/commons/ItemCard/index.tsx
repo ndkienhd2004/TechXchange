@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { MouseEvent, useState } from "react";
+import { MouseEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsAuthenticated } from "@/features/auth";
 import { addToCart } from "@/features/cart/store/cartSlice";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { getAxiosInstance } from "@/services/axiosConfig";
 import * as styles from "./styles";
 import { ItemCardProps } from "@/types/itemCard";
 
@@ -30,6 +31,7 @@ export default function ItemCard({
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [adding, setAdding] = useState(false);
+  const lastClickTrackRef = useRef(0);
   const { theme, themed } = useAppTheme();
 
   const filledStars = Math.round(clampRating(rating));
@@ -62,8 +64,24 @@ export default function ItemCard({
     }
   };
 
+  const trackCardClick = () => {
+    if (!isAuthenticated) return;
+    if (!productId || !Number.isFinite(productId)) return;
+    const now = Date.now();
+    if (now - lastClickTrackRef.current < 500) return;
+    lastClickTrackRef.current = now;
+    const api = getAxiosInstance();
+    void api
+      .post("/events/product", {
+        product_id: Number(productId),
+        event_type: "click",
+        meta: { source: "item_card" },
+      })
+      .catch(() => {});
+  };
+
   return (
-    <article style={themed(styles.card)}>
+    <article style={themed(styles.card)} onClick={trackCardClick}>
       <div style={themed(styles.media)}>
         {imageSrc ? (
           <Image
@@ -122,6 +140,7 @@ export default function ItemCard({
           type="button"
           style={themed(styles.iconButton)}
           aria-label="Add to cart"
+          data-nprogress-ignore="true"
           onClick={handleAddToCart}
           disabled={adding}
         >

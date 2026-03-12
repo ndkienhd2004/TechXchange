@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
 import type { Theme } from "@/theme";
 
+const fs = (theme: Theme, key: keyof Theme["typography"]["fontSize"]) =>
+  theme.typography?.fontSize?.[key]?.size || "1rem";
+
 export const page = (theme: Theme): CSSProperties => ({
   minHeight: "100vh",
   background: theme.colors.palette.backgrounds.primary,
@@ -9,8 +12,8 @@ export const page = (theme: Theme): CSSProperties => ({
   padding: theme.spacing.xl,
 });
 
-export const container = (theme: Theme): CSSProperties => ({
-  maxWidth: "900px",
+export const container = (): CSSProperties => ({
+  maxWidth: "980px",
   margin: "0 auto",
 });
 
@@ -18,15 +21,15 @@ export const section = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.card,
   border: `1px solid ${theme.colors.palette.borders.dark}`,
   borderRadius: theme.spacing.xl,
-  padding: theme.spacing["2xl"],
+  padding: theme.spacing[6],
   marginBottom: theme.spacing.xl,
   boxShadow: theme.shadows.lg,
 });
 
 export const sectionTitle = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.xl.size,
+  fontSize: fs(theme, "xl"),
   fontWeight: theme.typography.fontWeight.semibold,
-  margin: `0 0 ${theme.spacing.xl}`,
+  margin: 0,
   color: theme.colors.palette.text.primary,
 });
 
@@ -55,13 +58,13 @@ export const summaryAvatar = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: theme.typography.fontSize["2xl"].size,
+  fontSize: fs(theme, "2xl"),
   fontWeight: theme.typography.fontWeight.bold,
   color: theme.colors.palette.text.primary,
   flexShrink: 0,
 });
 
-export const summaryAvatarImg = (theme: Theme): CSSProperties => ({
+export const summaryAvatarImg = (): CSSProperties => ({
   width: 80,
   height: 80,
   borderRadius: "50%",
@@ -77,14 +80,14 @@ export const summaryInfo = (theme: Theme): CSSProperties => ({
 });
 
 export const summaryName = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.xl.size,
+  fontSize: fs(theme, "xl"),
   fontWeight: theme.typography.fontWeight.semibold,
   color: theme.colors.palette.text.primary,
   margin: 0,
 });
 
 export const summaryEmail = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.sm.size,
+  fontSize: fs(theme, "sm"),
   color: theme.colors.palette.text.secondary,
   margin: 0,
 });
@@ -96,7 +99,7 @@ export const summaryStats = (theme: Theme): CSSProperties => ({
 });
 
 export const summaryStat = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.sm.size,
+  fontSize: fs(theme, "sm"),
   color: theme.colors.palette.text.secondary,
 });
 
@@ -106,20 +109,20 @@ export const button = (theme: Theme): CSSProperties => ({
   border: "none",
   borderRadius: theme.spacing.md,
   color: theme.colors.palette.text.primary,
-  fontSize: theme.typography.fontSize.sm.size,
+  fontSize: fs(theme, "sm"),
   fontWeight: theme.typography.fontWeight.semibold,
   fontFamily: theme.typography.fontFamily.sans.join(", "),
   cursor: "pointer",
   alignSelf: "flex-start",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
 });
 
 export const summaryButton = (theme: Theme): CSSProperties => ({
   ...button(theme),
-  display: "inline-flex",
-  alignItems: "center",
-  gap: theme.spacing[2],
-  flexShrink: 0,
   textDecoration: "none",
+  flexShrink: 0,
 });
 
 export const actionsRow = (theme: Theme): CSSProperties => ({
@@ -162,13 +165,13 @@ export const actionContent = (theme: Theme): CSSProperties => ({
 });
 
 export const actionTitle = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.sm.size,
+  fontSize: fs(theme, "sm"),
   fontWeight: theme.typography.fontWeight.semibold,
   color: theme.colors.palette.text.primary,
 });
 
 export const actionSub = (theme: Theme): CSSProperties => ({
-  fontSize: theme.typography.fontSize.xs.size,
+  fontSize: fs(theme, "xs"),
   color: theme.colors.palette.text.secondary,
 });
 
@@ -183,13 +186,11 @@ export const tabsRow = (theme: Theme): CSSProperties => ({
 
 export const tab = (theme: Theme): CSSProperties => ({
   padding: `${theme.spacing[3]} ${theme.spacing[4]}`,
-  fontSize: theme.typography.fontSize.sm.size,
+  fontSize: fs(theme, "sm"),
   fontWeight: theme.typography.fontWeight.medium,
   color: theme.colors.palette.text.secondary,
   background: "none",
-  borderWidth: 0,
-  borderStyle: "none",
-  borderColor: "transparent",
+  border: "none",
   borderBottomWidth: 2,
   borderBottomStyle: "solid",
   borderBottomColor: "transparent",
@@ -202,4 +203,187 @@ export const tabActive = (theme: Theme): CSSProperties => ({
   ...tab(theme),
   color: theme.colors.palette.brand.purple[400],
   borderBottomColor: theme.colors.palette.brand.purple[500],
+});
+
+export const addressSectionHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
+  marginBottom: theme.spacing.lg,
+  flexWrap: "wrap",
+});
+
+export const addAddressButton = (theme: Theme): CSSProperties => ({
+  ...button(theme),
+  padding: `${theme.spacing[3]} ${theme.spacing[4]}`,
+});
+
+export const addressPanel = (theme: Theme): CSSProperties => ({
+  borderTop: `1px solid ${theme.colors.palette.borders.default}`,
+});
+
+export const addressRow = (theme: Theme): CSSProperties => ({
+  position: "relative",
+  display: "grid",
+  gridTemplateColumns: "1fr auto",
+  gap: theme.spacing.lg,
+  padding: `${theme.spacing.lg} 0`,
+});
+
+export const addressMain = (): CSSProperties => ({
+  display: "grid",
+  gap: 6,
+});
+
+export const addressNameLine = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing.md,
+  flexWrap: "wrap",
+});
+
+export const addressName = (theme: Theme): CSSProperties => ({
+  fontSize: fs(theme, "lg"),
+  fontWeight: theme.typography.fontWeight.semibold,
+  color: theme.colors.palette.text.primary,
+});
+
+export const addressPhone = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.secondary,
+  fontSize: fs(theme, "lg"),
+});
+
+export const addressText = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.secondary,
+  fontSize: fs(theme, "base"),
+  lineHeight: 1.45,
+});
+
+export const defaultBadge = (theme: Theme): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  border: `1px solid ${theme.colors.palette.brand.pink[500]}`,
+  color: theme.colors.palette.brand.pink[500],
+  borderRadius: theme.spacing.sm,
+  width: "fit-content",
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  fontSize: fs(theme, "xs"),
+  fontWeight: theme.typography.fontWeight.medium,
+});
+
+export const addressActionCol = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  alignContent: "start",
+  justifyItems: "end",
+  gap: theme.spacing[3],
+});
+
+export const addressLinkActions = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+});
+
+export const linkActionButton = (theme: Theme): CSSProperties => ({
+  border: "none",
+  background: "transparent",
+  color: theme.colors.palette.brand.purple[300],
+  cursor: "pointer",
+  fontSize: fs(theme, "base"),
+  padding: 0,
+});
+
+export const ghostButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: "transparent",
+  color: theme.colors.palette.text.secondary,
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing.sm,
+  cursor: "pointer",
+  fontSize: fs(theme, "sm"),
+});
+
+export const addressDivider = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  height: 1,
+  background: theme.colors.palette.borders.default,
+});
+
+export const modalOverlay = (theme: Theme): CSSProperties => ({
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0, 0, 0, 0.55)",
+  display: "grid",
+  placeItems: "center",
+  zIndex: 1000,
+  padding: theme.spacing.lg,
+});
+
+export const modalCard = (theme: Theme): CSSProperties => ({
+  width: "min(720px, 100%)",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.xl,
+  padding: theme.spacing.lg,
+  boxShadow: theme.shadows.xl,
+});
+
+export const modalHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: theme.spacing.md,
+});
+
+export const modalTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: fs(theme, "lg"),
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const modalCloseButton = (theme: Theme): CSSProperties => ({
+  width: 36,
+  height: 36,
+  borderRadius: theme.spacing.sm,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: "transparent",
+  color: theme.colors.palette.text.secondary,
+  display: "grid",
+  placeItems: "center",
+  cursor: "pointer",
+});
+
+export const addressFormGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing.md,
+  marginBottom: theme.spacing.lg,
+});
+
+export const input = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+});
+
+export const checkboxRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  color: theme.colors.palette.text.secondary,
+  fontSize: fs(theme, "sm"),
+});
+
+export const modalActions = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: theme.spacing[2],
 });

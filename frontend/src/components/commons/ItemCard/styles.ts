@@ -71,6 +71,13 @@ export const title = (theme: Theme): CSSProperties => ({
   margin: 0,
   fontSize: theme.typography.fontSize.lg.size,
   fontWeight: theme.typography.fontWeight.semibold,
+  lineHeight: 1.3,
+  minHeight: "2.6em",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
 });
 
 export const priceRow = (theme: Theme): CSSProperties => ({
@@ -114,21 +121,24 @@ export const ratingCount = (theme: Theme): CSSProperties => ({
 });
 
 export const actions = (theme: Theme): CSSProperties => ({
-  display: "flex",
+  display: "grid",
+  gridTemplateColumns: "1fr 68px",
   alignItems: "center",
   gap: theme.spacing[2],
+  width: "100%",
 });
 
 export const primaryButton = (theme: Theme): CSSProperties => {
   const gradients = getGradients(theme.colors);
   return {
-    flex: 1,
     border: "none",
     borderRadius: theme.spacing[2],
+    width: "100%",
+    minHeight: "48px",
     padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
     background: gradients.primary,
     color: theme.colors.palette.text.primary,
-    fontSize: theme.typography.fontSize.sm.size,
+    fontSize: theme.typography.fontSize.lg.size,
     fontWeight: theme.typography.fontWeight.semibold,
     cursor: "pointer",
   };
@@ -137,8 +147,8 @@ export const primaryButton = (theme: Theme): CSSProperties => {
 export const iconButton = (theme: Theme): CSSProperties => ({
   border: "none",
   borderRadius: theme.spacing[2],
-  width: "44px",
-  height: "40px",
+  width: "68px",
+  minHeight: "48px",
   background: theme.colors.palette.brand.pink[600],
   color: theme.colors.palette.text.primary,
   display: "inline-flex",

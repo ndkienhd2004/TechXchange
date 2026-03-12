@@ -11,43 +11,59 @@ import type { Theme } from "@/theme";
 import { fetchProductById, clearSelectedProduct } from "@/features/products/store/productSlice";
 import { 
   selectSelectedProduct, 
-  selectProductDetailLoading,
-  selectProducts 
+  selectProductDetailLoading
 } from "@/features/products/store/productSelectors";
 import { addToCart } from "@/features/cart/store/cartSlice";
 import { selectIsAuthenticated } from "@/features/auth";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { getAxiosInstance } from "@/services/axiosConfig";
-import { formatPrice } from "@/utils/formatPrice";
+import { openChatWithStore } from "@/features/chat/utils/openChat";
 import * as styles from "./styles";
 
 function renderStars(
   rating: number,
   theme: Theme
 ) {
-  const safeRating = rating || 0;
-  const full = Math.floor(safeRating);
-  const half = safeRating % 1 >= 0.5;
+  const safeRating = Number.isFinite(Number(rating)) ? Number(rating) : 0;
   const stars = [];
-  for (let i = 0; i < full; i++)
+  for (let i = 1; i <= 5; i++) {
+    const fillPercent = Math.max(0, Math.min(100, (safeRating - (i - 1)) * 100));
     stars.push(
-      <span key={`full-${i}`} style={{ color: theme.colors.palette.semantic.warning }}>
-        ★
+      <span
+        key={`star-${i}`}
+        style={{
+          position: "relative",
+          width: 16,
+          height: 16,
+          display: "inline-block",
+          lineHeight: "16px",
+        }}
+      >
+        <span style={{ color: theme.colors.palette.text.muted, position: "absolute", inset: 0 }}>
+          ★
+        </span>
+        <span
+          style={{
+            color: theme.colors.palette.semantic.warning,
+            position: "absolute",
+            inset: 0,
+            overflow: "hidden",
+            width: `${fillPercent}%`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ★
+        </span>
       </span>
     );
-  if (half)
-    stars.push(
-      <span key="half" style={{ color: theme.colors.palette.semantic.warning }}>
-        ★
-      </span>
-    );
-  for (let i = stars.length; i < 5; i++)
-    stars.push(
-      <span key={`empty-${i}`} style={{ color: theme.colors.palette.text.muted }}>
-        ☆
-      </span>
-    );
+  }
   return stars;
+}
+
+function toHalfStep(value: number) {
+  const v = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const clamped = Math.max(0, Math.min(5, v));
+  return Math.round(clamped * 2) / 2;
 }
 
 function parseVariantKey(raw?: string | null) {
@@ -76,7 +92,19 @@ export default function ProductDetailPage() {
   
   const product = useAppSelector(selectSelectedProduct);
   const loading = useAppSelector(selectProductDetailLoading);
-  const allProducts = useAppSelector(selectProducts);
+  const [relatedProducts, setRelatedProducts] = useState<
+    Array<{
+      id: number;
+      name: string;
+      price: number;
+      compareAtPrice?: number;
+      rating?: number;
+      images?: { id: number; url: string }[];
+      default_image?: string | null;
+      reviewCount?: number;
+      badgeText?: string;
+    }>
+  >([]);
 
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<
@@ -94,6 +122,7 @@ export default function ProductDetailPage() {
       reviewer?: { id: number; username: string };
     }>
   >([]);
+  const [reviewFilter, setReviewFilter] = useState<"all" | number>("all");
 
   useEffect(() => {
     if (id) {
@@ -111,7 +140,13 @@ export default function ProductDetailPage() {
       try {
         const api = getAxiosInstance();
         const res = await api.get(`/reviews/product/${id}`);
-        setReviews(Array.isArray(res?.data?.data?.reviews) ? res.data.data.reviews : []);
+        const rows = Array.isArray(res?.data?.data?.reviews) ? res.data.data.reviews : [];
+        setReviews(
+          rows.map((item) => ({
+            ...item,
+            rating: toHalfStep(Number(item.rating || 0)),
+          })),
+        );
       } catch {
         setReviews([]);
       }
@@ -119,30 +154,84 @@ export default function ProductDetailPage() {
     run();
   }, [id]);
 
-  const recommended = useMemo(
-    () => allProducts.filter((p) => String(p.id) !== id).slice(0, 4),
-    [id, allProducts]
-  );
+  useEffect(() => {
+    if (!id) return;
+    const run = async () => {
+      try {
+        const api = getAxiosInstance();
+        const res = await api.get(`/recommendations/related/${id}`, {
+          params: { limit: 8 },
+        });
+        const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
+        setRelatedProducts(rows);
+      } catch {
+        setRelatedProducts([]);
+      }
+    };
+    void run();
+  }, [id]);
+
+  const recommended = useMemo(() => relatedProducts.slice(0, 4), [relatedProducts]);
 
   const specOptions = useMemo(() => product?.spec_options ?? [], [product]);
   const variantInventory = useMemo(
     () => product?.variant_inventory ?? [],
     [product],
   );
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return Number(product?.rating || 0);
+    const total = reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+    return toHalfStep(total / reviews.length);
+  }, [reviews, product?.rating]);
+  const ratingSteps = useMemo(() => {
+    const rows: number[] = [];
+    for (let value = 5; value >= 1; value -= 0.5) {
+      rows.push(Number(value.toFixed(1)));
+    }
+    return rows;
+  }, []);
+  const reviewBuckets = useMemo(() => {
+    const bucket: Record<string, number> = {};
+    ratingSteps.forEach((step) => {
+      bucket[String(step)] = 0;
+    });
+    reviews.forEach((item) => {
+      const key = String(toHalfStep(Number(item.rating || 0)));
+      bucket[key] = (bucket[key] || 0) + 1;
+    });
+    return bucket;
+  }, [reviews, ratingSteps]);
+  const filteredReviews = useMemo(() => {
+    if (reviewFilter === "all") return reviews;
+    return reviews.filter((item) => toHalfStep(Number(item.rating || 0)) === reviewFilter);
+  }, [reviews, reviewFilter]);
 
   useEffect(() => {
     if (!product) return;
     const fromVariant = parseVariantKey(
       typeof product.variant_key === "string" ? product.variant_key : null,
     );
-    const defaults: Record<string, string> = { ...fromVariant };
+    const defaultsFromFirstAvailable =
+      variantInventory.length > 0 ? { ...(variantInventory[0].attributes || {}) } : {};
+    const defaults: Record<string, string> = {
+      ...defaultsFromFirstAvailable,
+      ...fromVariant,
+    };
     specOptions.forEach((opt) => {
       if (!defaults[opt.key] && opt.values.length > 0) {
         defaults[opt.key] = opt.values[0].value;
       }
     });
+
+    const matched = variantInventory.find((variant) =>
+      specOptions.every((opt) => defaults[opt.key] === variant.attributes?.[opt.key]),
+    );
+    if (!matched && variantInventory[0]?.attributes) {
+      setSelectedSpecs({ ...(variantInventory[0].attributes || {}) });
+      return;
+    }
     setSelectedSpecs(defaults);
-  }, [product, specOptions]);
+  }, [product, specOptions, variantInventory]);
 
   if (loading && !product) {
     return (
@@ -338,18 +427,21 @@ export default function ProductDetailPage() {
               <h1 style={themed(styles.productTitle)}>{product.name}</h1>
               <div style={themed(styles.ratingRow)}>
                 <span style={{ display: "flex", gap: 2 }}>
-                  {renderStars(product.rating, theme)}
+                  {renderStars(averageRating, theme)}
                 </span>
+                <span>{averageRating.toFixed(1)}</span>
                 <span>({reviews.length || product.reviewCount || 0} đánh giá)</span>
                 {product.buyturn && (
                   <span>| {product.buyturn} đã bán</span>
                 )}
               </div>
               <div style={themed(styles.priceRow)}>
-                <span style={themed(styles.price)}>{formatPrice(product.price)}</span>
+                <span style={themed(styles.price)}>
+                  {`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
+                </span>
                 {product.compareAtPrice && (
                   <span style={themed(styles.comparePrice)}>
-                    {formatPrice(product.compareAtPrice)}
+                    {`${Number(product.compareAtPrice || 0).toLocaleString("vi-VN")} đ`}
                   </span>
                 )}
                 {product.badgeText && (
@@ -486,7 +578,7 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   style={themed(styles.outlineButton)}
-                  onClick={() => showSuccessToast("Tính năng chat đang được cập nhật")}
+                  onClick={() => openChatWithStore(Number(product.store_id))}
                 >
                   Chat ngay
                 </button>
@@ -570,11 +662,41 @@ export default function ProductDetailPage() {
             
             {activeTab === "reviews" && (
               <div style={themed(styles.tabContent)}>
+                <div style={themed(styles.reviewFilterRow)}>
+                  <button
+                    type="button"
+                    style={
+                      reviewFilter === "all"
+                        ? themed(styles.reviewFilterButtonActive)
+                        : themed(styles.reviewFilterButton)
+                    }
+                    onClick={() => setReviewFilter("all")}
+                  >
+                    Tất cả ({reviews.length})
+                  </button>
+                  {ratingSteps.map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      style={
+                        reviewFilter === star
+                          ? themed(styles.reviewFilterButtonActive)
+                          : themed(styles.reviewFilterButton)
+                      }
+                      onClick={() => setReviewFilter(star)}
+                    >
+                      {star.toFixed(1)} sao ({reviewBuckets[String(star)] || 0})
+                    </button>
+                  ))}
+                </div>
+
                 {reviews.length === 0 ? (
                   <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+                ) : filteredReviews.length === 0 ? (
+                  <p>Không có đánh giá ở mức {reviewFilter === "all" ? "này" : `${Number(reviewFilter).toFixed(1)} sao`}.</p>
                 ) : (
                   <div style={{ display: "grid", gap: 12 }}>
-                    {reviews.map((review) => (
+                    {filteredReviews.map((review) => (
                       <div
                         key={review.id}
                         style={{
@@ -599,6 +721,9 @@ export default function ProductDetailPage() {
                         </div>
                         <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
                           {renderStars(review.rating, theme)}
+                          <span style={{ color: theme.colors.palette.text.secondary }}>
+                            {Number(review.rating || 0).toFixed(1)}
+                          </span>
                         </div>
                         <div>{review.comment || "(Không có nhận xét)"}</div>
                       </div>
@@ -611,19 +736,23 @@ export default function ProductDetailPage() {
 
           {recommended.length > 0 && (
             <section style={{ marginTop: theme.spacing["3xl"] }}>
-              <h2 style={themed(styles.sectionTitle)}>Gợi ý cho bạn</h2>
+              <h2 style={themed(styles.sectionTitle)}>Related Items</h2>
               <div style={themed(styles.recommendedGrid)}>
                 {recommended.map((p) => (
                   <Link key={p.id} href={`/products/${p.id}`} style={{ textDecoration: "none" }}>
                     <ItemCard
                       productId={Number(p.id)}
                       title={p.name}
-                      price={formatPrice(p.price)}
-                      compareAtPrice={p.compareAtPrice ? formatPrice(p.compareAtPrice) : undefined}
+                      price={`${Number(p.price || 0).toLocaleString("vi-VN")} đ`}
+                      compareAtPrice={
+                        p.compareAtPrice
+                          ? `${Number(p.compareAtPrice || 0).toLocaleString("vi-VN")} đ`
+                          : undefined
+                      }
                       rating={p.rating}
                       reviewCount={p.reviewCount}
                       badgeText={p.badgeText}
-                      imageSrc={p.default_image}
+                      imageSrc={p.images?.[0]?.url || p.default_image || undefined}
                     />
                   </Link>
                 ))}

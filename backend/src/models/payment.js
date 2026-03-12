@@ -21,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
       amount: {
         type: DataTypes.DECIMAL(10, 2),
       },
+      currency: {
+        type: DataTypes.STRING(3),
+        allowNull: false,
+        defaultValue: "VND",
+      },
       payment_method: {
         type: DataTypes.ENUM("credit_card", "paypal", "bank_transfer", "cod"),
       },

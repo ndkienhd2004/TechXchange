@@ -17,6 +17,15 @@ export interface StoreRequest {
   store_id?: number | null;
   store_name: string;
   store_description?: string | null;
+  contact_phone?: string | null;
+  address_line?: string | null;
+  ward?: string | null;
+  district?: string | null;
+  city?: string | null;
+  province?: string | null;
+  ghn_province_id?: number | null;
+  ghn_district_id?: number | null;
+  ghn_ward_code?: string | null;
   status: StoreRequestStatus;
   admin_id?: number | null;
   admin_note?: string | null;

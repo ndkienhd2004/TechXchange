@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Header from "@/components/layouts/Header";
 import Footer from "@/components/layouts/Footer";
+import GlobalChatWidget from "@/components/layouts/GlobalChatWidget";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {!hideChrome && <Header />}
       <main style={{ flex: 1 }}>{children}</main>
       {!hideChrome && <Footer />}
+      <GlobalChatWidget />
     </div>
   );
 }

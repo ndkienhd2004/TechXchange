@@ -31,6 +31,8 @@ const ProductSerial = require("./productSerial")(sequelize, DataTypes);
 const ProductInventory = require("./productInventory")(sequelize, DataTypes);
 const RefreshToken = require("./refreshToken")(sequelize, DataTypes);
 const StoreRequest = require("./storeRequest")(sequelize, DataTypes);
+const UserAddress = require("./userAddress")(sequelize, DataTypes);
+const SepayWebhookEvent = require("./sepayWebhookEvent")(sequelize, DataTypes);
 
 User.hasMany(Message, { foreignKey: "sender_id", as: "sentMessages" });
 User.hasMany(Message, { foreignKey: "receiver_id", as: "receivedMessages" });
@@ -130,11 +132,15 @@ AdminReview.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 
 User.hasMany(Order, { foreignKey: "customer_id", as: "orders" });
 Order.belongsTo(User, { foreignKey: "customer_id", as: "customer" });
+Store.hasMany(Order, { foreignKey: "store_id", as: "orders" });
+Order.belongsTo(Store, { foreignKey: "store_id", as: "store" });
 
 Order.hasMany(OrderItem, { foreignKey: "order_id", as: "items" });
 OrderItem.belongsTo(Order, { foreignKey: "order_id", as: "order" });
 Product.hasMany(OrderItem, { foreignKey: "product_id", as: "orderItems" });
 OrderItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
+ProductSerial.hasMany(OrderItem, { foreignKey: "serial_id", as: "orderItems" });
+OrderItem.belongsTo(ProductSerial, { foreignKey: "serial_id", as: "serial" });
 
 News.hasMany(NewsDetail, { foreignKey: "news_id", as: "details" });
 NewsDetail.belongsTo(News, { foreignKey: "news_id", as: "news" });
@@ -168,6 +174,11 @@ Report.belongsTo(Store, {
 
 Order.hasMany(Payment, { foreignKey: "order_id", as: "payments" });
 Payment.belongsTo(Order, { foreignKey: "order_id", as: "order" });
+Order.hasMany(SepayWebhookEvent, {
+  foreignKey: "order_id",
+  as: "sepayWebhookEvents",
+});
+SepayWebhookEvent.belongsTo(Order, { foreignKey: "order_id", as: "order" });
 
 Order.hasMany(Shipment, { foreignKey: "order_id", as: "shipments" });
 Shipment.belongsTo(Order, { foreignKey: "order_id", as: "order" });
@@ -251,6 +262,9 @@ ProductInventory.belongsTo(ProductSerial, {
 User.hasMany(RefreshToken, { foreignKey: "user_id", as: "refreshTokens" });
 RefreshToken.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+User.hasMany(UserAddress, { foreignKey: "user_id", as: "addresses" });
+UserAddress.belongsTo(User, { foreignKey: "user_id", as: "user" });
+
 module.exports = {
   sequelize,
   User,
@@ -283,4 +297,6 @@ module.exports = {
   ProductInventory,
   RefreshToken,
   StoreRequest,
+  UserAddress,
+  SepayWebhookEvent,
 };

@@ -11,6 +11,28 @@ export const getShopInfoService = async () => {
   return response.data;
 };
 
+export const updateShopAddressService = async (
+  storeId: number,
+  payload: {
+    address_line: string;
+    ward?: string;
+    district: string;
+    city?: string;
+    province: string;
+    ghn_province_id?: number | null;
+    ghn_district_id?: number | null;
+    ghn_ward_code?: string | null;
+  },
+) => {
+  const response = await api().put(`/stores/${storeId}/address`, payload);
+  return response.data;
+};
+
+export const registerShopGhnService = async (storeId: number) => {
+  const response = await api().post(`/stores/${storeId}/ghn/register`);
+  return response.data;
+};
+
 /**
  * Lấy sản phẩm của cửa hàng
  * @returns Sản phẩm của cửa hàng
