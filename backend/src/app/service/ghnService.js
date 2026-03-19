@@ -202,6 +202,100 @@ class GhnService {
     });
   }
 
+  static extractOrderDetailData(rawData) {
+    if (Array.isArray(rawData)) {
+      return rawData[0] || null;
+    }
+    if (rawData && typeof rawData === "object") {
+      return rawData;
+    }
+    return null;
+  }
+
+  static async getOrderDetail(payload = {}) {
+    const orderCode = String(payload.order_code || "").trim();
+    if (!orderCode) {
+      throw new Error("Thiếu order_code để lấy chi tiết đơn GHN");
+    }
+    const shopId = Number(payload.shop_id || this.getShopId() || 0);
+    const headers = {};
+    if (shopId) {
+      headers.ShopId = String(shopId);
+    }
+    const data = await this.request(
+      "/shiip/public-api/v2/shipping-order/detail",
+      {
+        order_code: orderCode,
+      },
+      headers,
+    );
+    return this.extractOrderDetailData(data);
+  }
+
+  static async createOrder(payload = {}) {
+    const shopId = Number(payload.shop_id || this.getShopId());
+    if (!shopId) throw new Error("Thiếu shop_id để tạo đơn GHN");
+
+    const toName = String(payload.to_name || "").trim();
+    const toPhone = this.normalizeVnPhone(payload.to_phone);
+    const toAddress = String(payload.to_address || "").trim();
+    const toWardCode = String(payload.to_ward_code || "").trim();
+    const toDistrictId = Number(payload.to_district_id || 0);
+
+    if (!toName || !toPhone || !toAddress || !toWardCode || !toDistrictId) {
+      throw new Error(
+        "Thiếu thông tin người nhận GHN (to_name/to_phone/to_address/to_ward_code/to_district_id)",
+      );
+    }
+
+    const body = {
+      payment_type_id: Number(payload.payment_type_id || 1),
+      required_note: String(payload.required_note || "KHONGCHOXEMHANG"),
+      note: String(payload.note || "").trim() || "",
+      client_order_code: String(payload.client_order_code || "").trim() || "",
+      to_name: toName,
+      to_phone: toPhone,
+      to_address: toAddress,
+      to_ward_code: toWardCode,
+      to_district_id: toDistrictId,
+      cod_amount: Number(payload.cod_amount || 0),
+      content: String(payload.content || "").trim() || "TechXchange Order",
+      weight: Number(payload.weight || 200),
+      length: Number(payload.length || 20),
+      width: Number(payload.width || 20),
+      height: Number(payload.height || 10),
+      insurance_value: Number(payload.insurance_value || 0),
+      service_id: payload.service_id ? Number(payload.service_id) : undefined,
+      service_type_id: payload.service_type_id
+        ? Number(payload.service_type_id)
+        : undefined,
+      items: Array.isArray(payload.items) ? payload.items : [],
+    };
+
+    if (payload.return_phone) {
+      body.return_phone = this.normalizeVnPhone(payload.return_phone);
+    }
+    if (payload.return_address) {
+      body.return_address = String(payload.return_address).trim();
+    }
+    if (payload.return_ward_code) {
+      body.return_ward_code = String(payload.return_ward_code).trim();
+    }
+    if (payload.return_district_id) {
+      body.return_district_id = Number(payload.return_district_id);
+    }
+    if (payload.coupon) {
+      body.coupon = String(payload.coupon).trim();
+    }
+    if (Array.isArray(payload.pick_shift) && payload.pick_shift.length > 0) {
+      body.pick_shift = payload.pick_shift.map((item) => Number(item)).filter(Boolean);
+    }
+
+    return this.request("/shiip/public-api/v2/shipping-order/create", body, {
+      ShopId: String(shopId),
+    });
+  }
+
   static async registerShop(payload = {}) {
     const normalizedPhone = this.normalizeVnPhone(payload.phone);
     const fullAddress = this.buildRegisterAddress(payload);

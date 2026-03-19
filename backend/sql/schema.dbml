@@ -1,0 +1,411 @@
+// Generated from Sequelize models
+
+Table admin_reviews {
+  id bigint [pk, increment]
+  admin_id bigint [not null]
+  product_id bigint [not null]
+  status enum('pending', 'approved', 'rejected') [default: 'pending']
+  review_comment text
+  reviewed_at timestamp
+}
+
+Table banners {
+  id bigint [pk, increment]
+  name varchar(255)
+  image text
+  status int
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table banner_detail {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  banner_id bigint [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table brand {
+  id bigint [pk, increment]
+  name varchar(255) [unique]
+  image text
+}
+
+Table brand_requests {
+  id bigint [pk, increment]
+  requester_id bigint [not null]
+  admin_id bigint
+  brand_id bigint
+  name varchar(255) [not null]
+  image text
+  status enum('pending', 'approved', 'rejected') [default: 'pending']
+  admin_note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table cart_items {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  product_id bigint [not null]
+  quantity int
+  added_at timestamp [default: `now()`]
+}
+
+Table catalog_spec_requests {
+  id bigint [pk, increment]
+  requester_id bigint [not null]
+  admin_id bigint
+  catalog_id bigint [not null]
+  spec_key varchar(100) [not null]
+  proposed_values jsonb [not null]
+  status enum('pending', 'approved', 'rejected') [not null, default: 'pending']
+  admin_note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table messages {
+  id bigint [pk, increment]
+  sender_id bigint [not null]
+  receiver_id bigint [not null]
+  message text
+  is_read boolean [default: false]
+  sent_at timestamp [default: `now()`]
+}
+
+Table orders {
+  id bigint [pk, increment]
+  customer_id bigint [not null]
+  store_id bigint
+  total_price decimal(10,2)
+  currency varchar(3) [not null, default: 'VND']
+  payment_method enum('credit_card', 'paypal', 'bank_transfer', 'cod') [default: 'cod']
+  shipping_address jsonb
+  status enum('pending', 'completed', 'canceled') [default: 'pending']
+  created_at timestamp [default: `now()`]
+  note text
+}
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  serial_id bigint
+  quantity int
+  price decimal(10,2)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  transaction_id varchar(100) [unique]
+  amount decimal(10,2)
+  currency varchar(3) [not null, default: 'VND']
+  payment_method enum('credit_card', 'paypal', 'bank_transfer', 'cod')
+  status enum('pending', 'completed', 'failed', 'refunded') [default: 'pending']
+  created_at timestamp [default: `now()`]
+}
+
+Table products {
+  id bigint [pk, increment]
+  category_id bigint [not null]
+  seller_id bigint [not null]
+  store_id bigint [not null]
+  brand_id bigint
+  catalog_id bigint
+  name varchar(100)
+  description text
+  price decimal(10,2)
+  quality varchar(20)
+  condition_percent int
+  rating double
+  buyturn int
+  quantity int
+  status enum('draft', 'pending', 'active', 'inactive', 'rejected', 'sold_out', 'deleted') [not null, default: 'pending']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table product_catalog {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  brand_id bigint
+  category_id bigint
+  description text
+  specs jsonb
+  default_image text
+  msrp decimal(10,2)
+  status enum('draft', 'pending', 'active', 'inactive', 'rejected', 'sold_out', 'deleted') [not null, default: 'pending']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table product_categories {
+  id bigint [pk, increment]
+  name varchar(100) [unique]
+  slug varchar(120)
+  parent_id bigint
+  level int [not null, default: 1]
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  url text
+  sort_order int [default: 0]
+  created_at timestamp [default: `now()`]
+}
+
+Table product_inventory {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  serial_id bigint [not null]
+  on_hand int [not null, default: 0]
+  reserved int [not null, default: 0]
+  updated_at timestamp [default: `now()`]
+}
+
+Table product_requests {
+  id bigint [pk, increment]
+  requester_id bigint [not null]
+  admin_id bigint
+  catalog_id bigint
+  category_id bigint [not null]
+  brand_id bigint
+  brand_name varchar(255)
+  name varchar(255) [not null]
+  description text
+  specs jsonb
+  default_image text
+  status enum('pending', 'approved', 'rejected') [default: 'pending']
+  admin_note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table product_serials {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  serial_code varchar(64) [not null]
+  serial_specs jsonb [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table refresh_tokens {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  token text [not null]
+  expires_at timestamp [not null]
+  is_revoked boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table reports {
+  id bigint [pk, increment]
+  reporter_id bigint [not null]
+  reported_user_id bigint
+  reported_product_id bigint
+  reported_store_id bigint
+  reason text
+  status enum('pending', 'resolved', 'rejected') [default: 'pending']
+  reviewed_at timestamp
+  created_at timestamp [default: `now()`]
+}
+
+Table reviews {
+  id bigint [pk, increment]
+  reviewer_id bigint [not null]
+  product_id bigint
+  store_id bigint
+  rating decimal(2,1)
+  comment text
+  images text
+  created_at timestamp [default: `now()`]
+}
+
+Table sepay_webhook_events {
+  id bigint [pk, increment]
+  sepay_id bigint [not null, unique]
+  order_id bigint
+  gateway varchar(100)
+  transaction_date timestamp
+  account_number varchar(100)
+  code varchar(255)
+  content text
+  transfer_type enum('in', 'out') [not null]
+  transfer_amount decimal(18,2)
+  accumulated decimal(18,2)
+  sub_account varchar(255)
+  reference_code varchar(255)
+  description text
+  raw_payload jsonb [not null]
+  process_status enum('processed', 'ignored', 'failed') [not null, default: 'ignored']
+  process_message text
+  processed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table shipments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  estimated_delivery timestamp
+  actual_delivery timestamp
+  status enum('pending', 'shipped', 'delivered', 'failed') [default: 'pending']
+  shipping_provider varchar(30)
+  shipping_service_id int
+  shipping_service_type_id int
+  shipping_fee decimal(10,2)
+  ghn_order_code varchar(64)
+  ghn_status varchar(64)
+  ghn_last_sync_at timestamp
+  ghn_payload text
+  created_at timestamp [default: `now()`]
+}
+
+Table stores {
+  id bigint [pk, increment]
+  owner_id bigint [not null]
+  name varchar(100)
+  description text
+  rating double
+  logo text
+  banner text
+  address_line text
+  ward varchar(120)
+  district varchar(120)
+  city varchar(120)
+  province varchar(120)
+  ghn_province_id int
+  ghn_district_id int
+  ghn_ward_code varchar(20)
+  ghn_shop_id int
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table store_requests {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  store_id bigint
+  store_name varchar(100) [not null]
+  store_description text
+  contact_phone varchar(32)
+  address_line text
+  ward varchar(120)
+  district varchar(120)
+  city varchar(120)
+  province varchar(120)
+  ghn_province_id int
+  ghn_district_id int
+  ghn_ward_code varchar(20)
+  status enum('pending', 'approved', 'rejected') [not null, default: 'pending']
+  admin_id bigint
+  admin_note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table users {
+  id bigint [pk, increment]
+  username varchar(255)
+  email varchar(100) [unique]
+  gender enum('male', 'female', 'other')
+  phone varchar(255) [unique]
+  avatar text
+  password_hash varchar(255)
+  role enum('user', 'shop', 'admin')
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table user_addresses {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  full_name varchar(120)
+  phone varchar(32)
+  address_line text [not null]
+  ward varchar(120)
+  district varchar(120)
+  city varchar(120)
+  province varchar(120) [not null]
+  ghn_province_id int
+  ghn_district_id int
+  ghn_ward_code varchar(20)
+  is_default boolean [not null, default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table user_product_events {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  product_id bigint [not null]
+  event_type enum('impression', 'view', 'click', 'add_to_cart', 'purchase', 'wishlist')
+  session_id varchar(255)
+  created_at timestamp [default: `now()`]
+  meta jsonb
+}
+
+Ref: admin_reviews.admin_id > users.id
+Ref: admin_reviews.product_id > products.id
+Ref: banner_detail.banner_id > banners.id
+Ref: banner_detail.product_id > products.id
+Ref: brand_requests.admin_id > users.id
+Ref: brand_requests.brand_id > brand.id
+Ref: brand_requests.requester_id > users.id
+Ref: cart_items.product_id > products.id
+Ref: cart_items.user_id > users.id
+Ref: catalog_spec_requests.admin_id > users.id
+Ref: catalog_spec_requests.catalog_id > product_catalog.id
+Ref: catalog_spec_requests.requester_id > users.id
+Ref: messages.receiver_id > users.id
+Ref: messages.sender_id > users.id
+Ref: order_items.order_id > orders.id
+Ref: order_items.product_id > products.id
+Ref: order_items.serial_id > product_serials.id
+Ref: orders.customer_id > users.id
+Ref: orders.store_id > stores.id
+Ref: payments.order_id > orders.id
+Ref: product_catalog.brand_id > brand.id
+Ref: product_catalog.category_id > product_categories.id
+Ref: product_categories.parent_id > product_categories.id
+Ref: product_images.product_id > products.id
+Ref: product_inventory.product_id > products.id
+Ref: product_inventory.serial_id > product_serials.id
+Ref: product_requests.admin_id > users.id
+Ref: product_requests.brand_id > brand.id
+Ref: product_requests.catalog_id > product_catalog.id
+Ref: product_requests.category_id > product_categories.id
+Ref: product_requests.requester_id > users.id
+Ref: product_serials.product_id > products.id
+Ref: products.brand_id > brand.id
+Ref: products.catalog_id > product_catalog.id
+Ref: products.category_id > product_categories.id
+Ref: products.seller_id > users.id
+Ref: products.store_id > stores.id
+Ref: refresh_tokens.user_id > users.id
+Ref: reports.reported_product_id > products.id
+Ref: reports.reported_store_id > stores.id
+Ref: reports.reported_user_id > users.id
+Ref: reports.reporter_id > users.id
+Ref: reviews.product_id > products.id
+Ref: reviews.reviewer_id > users.id
+Ref: reviews.store_id > stores.id
+Ref: sepay_webhook_events.order_id > orders.id
+Ref: shipments.order_id > orders.id
+Ref: store_requests.admin_id > users.id
+Ref: store_requests.store_id > stores.id
+Ref: store_requests.user_id > users.id
+Ref: stores.owner_id > users.id
+Ref: user_addresses.user_id > users.id
+Ref: user_product_events.product_id > products.id
+Ref: user_product_events.user_id > users.id

@@ -18,13 +18,20 @@ const initialState: AuthState = {
   isAuthenticated: false,
 };
 
+const normalizeToken = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const token = value.trim();
+  if (!token || token === "undefined" || token === "null") return null;
+  return token;
+};
+
 export const SignIn = createAsyncThunk(
   "auth/signIn",
   async (payload: LoginRequest, thunkAPI) => {
     try {
       const response = await SignInService(payload.email, payload.password);
       showSuccessToast("Đăng nhập thành công");
-      return response.data;
+      return response;
     } catch (error) {
       showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
@@ -44,7 +51,7 @@ export const SignUp = createAsyncThunk(
         payload.phone
       );
       showSuccessToast("Đăng ký thành công");
-      return response.data;
+      return response;
     } catch (error) {
       showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
@@ -68,7 +75,7 @@ export const UpdateUser = createAsyncThunk(
     try {
       const response = await UpdateUserService(payload);
       showSuccessToast("Cập nhật thông tin thành công");
-      return response.data;
+      return response;
     } catch (error) {
       showErrorToast(error as string);
       return thunkAPI.rejectWithValue(error);
@@ -81,7 +88,7 @@ export const GetUserProfile = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const response = await GetUserProfileService();
-      return response.data;
+      return response;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
@@ -99,11 +106,11 @@ const authSlice = createSlice({
         refreshToken?: string | null;
       }>
     ) => {
-      state.token = action.payload.token;
+      state.token = normalizeToken(action.payload.token);
       if (action.payload.user != null) state.user = action.payload.user;
       if (action.payload.refreshToken !== undefined)
-        state.refreshToken = action.payload.refreshToken ?? null;
-      state.isAuthenticated = true;
+        state.refreshToken = normalizeToken(action.payload.refreshToken);
+      state.isAuthenticated = Boolean(state.token);
     },
     logout: (state) => {
       showSuccessToast("Đăng xuất thành công");
@@ -125,10 +132,10 @@ const authSlice = createSlice({
           (action.payload as AuthState["error"]) ?? "An error occurred";
       })
       .addCase(SignIn.fulfilled, (state, action) => {
-        state.token = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken ?? null;
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
+        state.token = normalizeToken(action.payload.accessToken);
+        state.refreshToken = normalizeToken(action.payload.refreshToken);
+        state.user = action.payload.user ?? null;
+        state.isAuthenticated = Boolean(state.token);
         state.loading = false;
         state.error = null;
       })
@@ -142,8 +149,10 @@ const authSlice = createSlice({
           (action.payload as AuthState["error"]) ?? "An error occurred";
       })
       .addCase(SignUp.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
+        state.user = action.payload.user ?? null;
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
         state.loading = false;
         state.error = null;
       })
@@ -157,7 +166,6 @@ const authSlice = createSlice({
           (action.payload as AuthState["error"]) ?? "An error occurred";
       })
       .addCase(UpdateUser.fulfilled, (state, action) => {
-        console.log("respose:", action.payload);
         state.user = action.payload;
         state.loading = false;
         state.error = null;
@@ -179,7 +187,7 @@ const authSlice = createSlice({
           p && typeof p === "object" && "user" in p
             ? p.user ?? state.user
             : (p as AuthState["user"]);
-        state.isAuthenticated = true;
+        state.isAuthenticated = Boolean(state.token);
         state.loading = false;
         state.error = null;
       });

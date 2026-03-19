@@ -17,10 +17,19 @@ const {
 } = require("../../models");
 const GhnService = require("./ghnService");
 const UserEventService = require("./userEventService");
-const { enqueueProductSync } = require("../utils/gorseSync");
 
 class OrderService {
   static BANK_TRANSFER_EXPIRE_MINUTES = 10;
+
+  static normalizeAnalyticsRange(rangeParam) {
+    const raw = String(rangeParam || "7d")
+      .trim()
+      .toLowerCase();
+    if (raw === "all") return { key: "all", days: null };
+    if (raw === "90d" || raw === "90") return { key: "90d", days: 90 };
+    if (raw === "30d" || raw === "30") return { key: "30d", days: 30 };
+    return { key: "7d", days: 7 };
+  }
 
   static normalizePaymentMethod(method) {
     const raw = String(method || "cod").toLowerCase();
@@ -129,6 +138,7 @@ class OrderService {
         order.status === "pending" &&
         isExpired
       ) {
+        await this.releaseReservedStockForOrder(order.id, transaction);
         await payment.update({ status: "failed" }, { transaction });
         await order.update({ status: "canceled" }, { transaction });
         if (shipment && shipment.status === "pending") {
@@ -225,6 +235,224 @@ class OrderService {
       ghn_ward_code: record.ghn_ward_code || null,
       note: null,
     };
+  }
+
+  static getGhnSyncIntervalMs() {
+    const seconds = Number(process.env.GHN_STATUS_SYNC_INTERVAL_SECONDS || 120);
+    if (!Number.isFinite(seconds) || seconds <= 0) return 120 * 1000;
+    return seconds * 1000;
+  }
+
+  static toJsonText(payload) {
+    if (payload === null || payload === undefined) return null;
+    try {
+      return JSON.stringify(payload);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  static parseGhnDate(value) {
+    if (!value && value !== 0) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const millis = value > 1e12 ? value : value * 1000;
+      const fromNumber = new Date(millis);
+      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber;
+    }
+
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    if (/^\d+$/.test(raw)) {
+      const asNumber = Number(raw);
+      return this.parseGhnDate(asNumber);
+    }
+
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  static buildAddressLine(address = {}) {
+    return [
+      String(address.line1 || "").trim(),
+      String(address.ward || "").trim(),
+      String(address.district || "").trim(),
+      String(address.city || "").trim(),
+      String(address.province || "").trim(),
+    ]
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  static extractGhnOrderCode(payload = {}) {
+    const direct = String(payload?.order_code || "").trim();
+    if (direct) return direct;
+    const fromData = String(payload?.data?.order_code || "").trim();
+    if (fromData) return fromData;
+    const fromCode = String(payload?.code || "").trim();
+    if (fromCode && /^S?[A-Z0-9_-]{6,}$/i.test(fromCode)) return fromCode;
+    return "";
+  }
+
+  static extractGhnStatus(payload = {}, fallback = "") {
+    const candidates = [
+      payload?.status,
+      payload?.status_code,
+      payload?.status_name,
+      payload?.current_status,
+      payload?.state,
+    ];
+    for (const value of candidates) {
+      const normalized = String(value || "").trim().toLowerCase();
+      if (normalized) return normalized;
+    }
+    return String(fallback || "").trim().toLowerCase();
+  }
+
+  static mapGhnStatusToLocal(ghnStatus) {
+    const status = String(ghnStatus || "").trim().toLowerCase();
+    if (!status) {
+      return { shipment_status: "pending", order_status: null };
+    }
+
+    if (status === "delivered" || status.includes("complete")) {
+      return { shipment_status: "delivered", order_status: "completed" };
+    }
+
+    if (
+      status.includes("cancel") ||
+      status.includes("fail") ||
+      status.includes("return") ||
+      status.includes("lost") ||
+      status.includes("damage")
+    ) {
+      return { shipment_status: "failed", order_status: "canceled" };
+    }
+
+    if (
+      status.includes("pick") ||
+      status.includes("transport") ||
+      status.includes("sort") ||
+      status.includes("deliver")
+    ) {
+      return { shipment_status: "shipped", order_status: null };
+    }
+
+    return { shipment_status: "pending", order_status: null };
+  }
+
+  static shouldSyncGhnShipment(shipment, force = false) {
+    if (!shipment) return false;
+    if (String(shipment.shipping_provider || "").toLowerCase() !== "ghn")
+      return false;
+    if (!shipment.ghn_order_code) return false;
+
+    const localStatus = String(shipment.status || "").toLowerCase();
+    if (localStatus === "delivered" || localStatus === "failed") return false;
+    if (force) return true;
+
+    const syncedAt = shipment.ghn_last_sync_at
+      ? new Date(shipment.ghn_last_sync_at).getTime()
+      : 0;
+    if (!syncedAt) return true;
+    return Date.now() - syncedAt >= this.getGhnSyncIntervalMs();
+  }
+
+  static async syncShipmentWithGhn({
+    shipment,
+    order = null,
+    ghnShopId = null,
+    transaction = null,
+    force = false,
+    throwOnError = false,
+  }) {
+    if (!this.shouldSyncGhnShipment(shipment, force)) return shipment;
+
+    try {
+      const detail = await GhnService.getOrderDetail({
+        order_code: shipment.ghn_order_code,
+        shop_id: ghnShopId || undefined,
+      });
+
+      const ghnStatus = this.extractGhnStatus(detail, shipment.ghn_status);
+      const mapped = this.mapGhnStatusToLocal(ghnStatus);
+      const eta = this.parseGhnDate(
+        detail?.leadtime || detail?.expected_delivery_time,
+      );
+
+      const shipmentPatch = {
+        ghn_status: ghnStatus || shipment.ghn_status || null,
+        ghn_last_sync_at: new Date(),
+        ghn_payload: this.toJsonText(detail),
+      };
+
+      if (eta && !shipment.estimated_delivery) {
+        shipmentPatch.estimated_delivery = eta;
+      }
+
+      const currentShipmentStatus = String(shipment.status || "").toLowerCase();
+      const nextShipmentStatus = String(mapped.shipment_status || "").toLowerCase();
+      const shouldPromoteToShipping =
+        nextShipmentStatus === "shipped" && currentShipmentStatus === "pending";
+      const shouldSetFinalStatus =
+        nextShipmentStatus === "delivered" || nextShipmentStatus === "failed";
+      if (shouldPromoteToShipping || shouldSetFinalStatus) {
+        shipmentPatch.status = nextShipmentStatus;
+        if (nextShipmentStatus === "delivered") {
+          shipmentPatch.actual_delivery = shipment.actual_delivery || new Date();
+        }
+      }
+
+      await shipment.update(shipmentPatch, { transaction });
+
+      if (
+        order &&
+        mapped.order_status &&
+        order.status !== mapped.order_status &&
+        order.status !== "completed"
+      ) {
+        await order.update({ status: mapped.order_status }, { transaction });
+      }
+    } catch (error) {
+      if (throwOnError) throw error;
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[GHN] Sync trạng thái thất bại cho shipment #${shipment?.id}:`,
+        error.message,
+      );
+    }
+
+    return shipment;
+  }
+
+  static async syncShipmentsForOrders(orders = [], options = {}) {
+    if (!Array.isArray(orders) || orders.length === 0) return;
+    const force = Boolean(options.force);
+
+    const storeIds = [
+      ...new Set(orders.map((order) => Number(order.store_id)).filter(Boolean)),
+    ];
+    const stores = storeIds.length
+      ? await Store.findAll({
+          where: { id: { [Op.in]: storeIds } },
+          attributes: ["id", "ghn_shop_id"],
+        })
+      : [];
+    const shopMap = new Map(
+      stores.map((store) => [Number(store.id), Number(store.ghn_shop_id || 0)]),
+    );
+
+    for (const order of orders) {
+      const shipment = order.shipments?.[0] || null;
+      // eslint-disable-next-line no-await-in-loop
+      await this.syncShipmentWithGhn({
+        shipment,
+        order,
+        ghnShopId: shopMap.get(Number(order.store_id)) || null,
+        force,
+      });
+    }
   }
 
   static getOrderShippingMetrics(orderItems = []) {
@@ -413,9 +641,215 @@ class OrderService {
     if (order.status === "canceled") return "canceled";
     if (order.status === "completed") return "completed";
     const shipmentStatus = order.shipments?.[0]?.status || "pending";
+    if (shipmentStatus === "failed") return "canceled";
     if (shipmentStatus === "delivered") return "completed";
     if (shipmentStatus === "shipped") return "shipping";
     return "pending";
+  }
+
+  static async lockProductById(productId, transaction) {
+    return Product.findByPk(Number(productId), {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+  }
+
+  static async syncProductAvailableQuantity(productId, transaction) {
+    const rows = await ProductInventory.findAll({
+      where: { product_id: Number(productId) },
+      attributes: ["on_hand", "reserved"],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!rows.length) return null;
+
+    const available = rows.reduce(
+      (sum, row) =>
+        sum +
+        Math.max(0, Number(row.on_hand || 0) - Number(row.reserved || 0)),
+      0,
+    );
+
+    await Product.update(
+      { quantity: Number(available) },
+      { where: { id: Number(productId) }, transaction },
+    );
+
+    return Number(available);
+  }
+
+  static async adjustInventoryForOrderLine({
+    productId,
+    serialId = null,
+    quantity,
+    transaction,
+    action,
+  }) {
+    const pid = Number(productId);
+    const qty = Math.max(1, Number(quantity || 1));
+    const sid = serialId ? Number(serialId) : null;
+
+    if (!pid) throw new Error("product_id không hợp lệ");
+    if (!qty) throw new Error("quantity không hợp lệ");
+    if (!transaction) throw new Error("transaction là bắt buộc");
+
+    const where = sid
+      ? { product_id: pid, serial_id: sid }
+      : { product_id: pid };
+    const rows = await ProductInventory.findAll({
+      where,
+      order: [["id", "ASC"]],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!rows.length) {
+      const product = await this.lockProductById(pid, transaction);
+      if (!product) throw new Error(`Không tìm thấy sản phẩm #${pid}`);
+
+      const currentQty = Number(product.quantity || 0);
+      if (action === "reserve") {
+        if (currentQty < qty) {
+          throw new Error(`Sản phẩm "${product.name}" không đủ tồn kho`);
+        }
+        await product.update({ quantity: currentQty - qty }, { transaction });
+      } else if (action === "release") {
+        await product.update({ quantity: currentQty + qty }, { transaction });
+      }
+      return;
+    }
+
+    if (action === "reserve") {
+      let remaining = qty;
+      for (const row of rows) {
+        if (remaining <= 0) break;
+        const onHand = Number(row.on_hand || 0);
+        const reserved = Number(row.reserved || 0);
+        const available = Math.max(0, onHand - reserved);
+        if (available <= 0) continue;
+        const hold = Math.min(available, remaining);
+        await row.update({ reserved: reserved + hold }, { transaction });
+        remaining -= hold;
+      }
+      if (remaining > 0) {
+        const product = await this.lockProductById(pid, transaction);
+        throw new Error(`Sản phẩm "${product?.name || pid}" không đủ tồn kho`);
+      }
+      await this.syncProductAvailableQuantity(pid, transaction);
+      return;
+    }
+
+    if (action === "consume") {
+      const totalReserved = rows.reduce(
+        (sum, row) => sum + Math.max(0, Number(row.reserved || 0)),
+        0,
+      );
+
+      // Backward compatibility: old orders already deducted on_hand at checkout.
+      if (totalReserved <= 0) {
+        await this.syncProductAvailableQuantity(pid, transaction);
+        return;
+      }
+
+      if (totalReserved < qty) {
+        throw new Error(
+          `Tồn kho giữ chỗ không đủ để xuất kho (product_id=${pid}, cần=${qty}, giữ chỗ=${totalReserved})`,
+        );
+      }
+
+      let remaining = qty;
+      for (const row of rows) {
+        if (remaining <= 0) break;
+        const onHand = Number(row.on_hand || 0);
+        const reserved = Number(row.reserved || 0);
+        if (reserved <= 0) continue;
+        const consumeQty = Math.min(reserved, remaining);
+        if (onHand < consumeQty) {
+          throw new Error(
+            `Dữ liệu tồn kho không hợp lệ (product_id=${pid}, serial_id=${row.serial_id})`,
+          );
+        }
+        await row.update(
+          {
+            on_hand: onHand - consumeQty,
+            reserved: reserved - consumeQty,
+          },
+          { transaction },
+        );
+        remaining -= consumeQty;
+      }
+
+      await this.syncProductAvailableQuantity(pid, transaction);
+      return;
+    }
+
+    if (action === "release") {
+      const totalReserved = rows.reduce(
+        (sum, row) => sum + Math.max(0, Number(row.reserved || 0)),
+        0,
+      );
+
+      let remaining = qty;
+
+      // Release held stock first.
+      for (const row of rows) {
+        if (remaining <= 0) break;
+        const reserved = Number(row.reserved || 0);
+        if (reserved <= 0) continue;
+        const releaseQty = Math.min(reserved, remaining);
+        await row.update({ reserved: reserved - releaseQty }, { transaction });
+        remaining -= releaseQty;
+      }
+
+      // Backward compatibility: old orders had already deducted on_hand.
+      if (remaining > 0) {
+        const anchor = rows[0];
+        const onHand = Number(anchor.on_hand || 0);
+        await anchor.update({ on_hand: onHand + remaining }, { transaction });
+      }
+
+      await this.syncProductAvailableQuantity(pid, transaction);
+      return;
+    }
+
+    throw new Error("Hành động tồn kho không hợp lệ");
+  }
+
+  static async consumeReservedStockForOrderItems(orderItems, transaction) {
+    for (const item of orderItems || []) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.adjustInventoryForOrderLine({
+        productId: item.product_id,
+        serialId: item.serial_id || null,
+        quantity: item.quantity,
+        transaction,
+        action: "consume",
+      });
+    }
+  }
+
+  static async releaseReservedStockForOrderItems(orderItems, transaction) {
+    for (const item of orderItems || []) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.adjustInventoryForOrderLine({
+        productId: item.product_id,
+        serialId: item.serial_id || null,
+        quantity: item.quantity,
+        transaction,
+        action: "release",
+      });
+    }
+  }
+
+  static async releaseReservedStockForOrder(orderId, transaction) {
+    const orderItems = await OrderItem.findAll({
+      where: { order_id: Number(orderId) },
+      attributes: ["product_id", "serial_id", "quantity"],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    await this.releaseReservedStockForOrderItems(orderItems, transaction);
   }
 
   static async createOrderFromCart(userId, payload = {}) {
@@ -509,79 +943,13 @@ class OrderService {
         const qty = item.quantity;
         const unitPrice = Number(product.price || 0);
 
-        if (item.serial_id) {
-          const inventory = await ProductInventory.findOne({
-            where: {
-              product_id: product.id,
-              serial_id: item.serial_id,
-            },
-            transaction,
-            lock: transaction.LOCK.UPDATE,
-          });
-          if (!inventory) {
-            throw new Error(
-              `Không tìm thấy biến thể serial_id=${item.serial_id} cho sản phẩm "${product.name}"`,
-            );
-          }
-          const available = Math.max(
-            0,
-            Number(inventory.on_hand || 0) - Number(inventory.reserved || 0),
-          );
-          if (available < qty) {
-            throw new Error(`Sản phẩm "${product.name}" không đủ tồn kho`);
-          }
-          await inventory.update(
-            { on_hand: Number(inventory.on_hand || 0) - qty },
-            { transaction },
-          );
-        } else {
-          const invRows = await ProductInventory.findAll({
-            where: { product_id: product.id },
-            order: [["id", "ASC"]],
-            transaction,
-          });
-
-          if (invRows.length > 0) {
-            let remaining = qty;
-            for (const inv of invRows) {
-              if (remaining <= 0) break;
-              const available = Math.max(
-                0,
-                Number(inv.on_hand || 0) - Number(inv.reserved || 0),
-              );
-              if (available <= 0) continue;
-              const deduct = Math.min(available, remaining);
-              await inv.update(
-                { on_hand: Number(inv.on_hand || 0) - deduct },
-                { transaction },
-              );
-              remaining -= deduct;
-            }
-            if (remaining > 0) {
-              throw new Error(`Sản phẩm "${product.name}" không đủ tồn kho`);
-            }
-          } else {
-            const stock = Number(product.quantity || 0);
-            if (stock < qty) {
-              throw new Error(`Sản phẩm "${product.name}" không đủ tồn kho`);
-            }
-          }
-        }
-
-        const nextTotal =
-          (await ProductInventory.sum("on_hand", {
-            where: { product_id: product.id },
-            transaction,
-          })) || 0;
-        const fallbackTotal =
-          nextTotal > 0 ||
-          (await ProductInventory.count({
-            where: { product_id: product.id },
-            transaction,
-          })) > 0
-            ? Number(nextTotal)
-            : Math.max(0, Number(product.quantity || 0) - qty);
-        await product.update({ quantity: fallbackTotal }, { transaction });
+        await this.adjustInventoryForOrderLine({
+          productId: Number(product.id),
+          serialId: item.serial_id || null,
+          quantity: qty,
+          transaction,
+          action: "reserve",
+        });
 
         const storeId = Number(product.store_id);
         if (!storeId) {
@@ -735,10 +1103,6 @@ class OrderService {
       }
     }
 
-    for (const productId of productIds) {
-      enqueueProductSync(productId);
-    }
-
     return txResult;
   }
 
@@ -825,6 +1189,9 @@ class OrderService {
             "shipping_service_id",
             "shipping_service_type_id",
             "shipping_fee",
+            "ghn_order_code",
+            "ghn_status",
+            "ghn_last_sync_at",
           ],
           separate: true,
           limit: 1,
@@ -833,6 +1200,8 @@ class OrderService {
       ],
       order: [["created_at", "DESC"]],
     });
+
+    await this.syncShipmentsForOrders(orders, { force: true });
 
     const productIds = orders.flatMap((o) =>
       (o.items || []).map((it) => Number(it.product_id)),
@@ -856,6 +1225,8 @@ class OrderService {
         shipment_status: shipment?.status || null,
         shipment_fee: shipment?.shipping_fee || null,
         shipment_provider: shipment?.shipping_provider || null,
+        ghn_order_code: shipment?.ghn_order_code || null,
+        ghn_status: shipment?.ghn_status || null,
         total_price: order.total_price,
         payment_method: order.payment_method,
         currency: order.currency || "VND",
@@ -934,7 +1305,19 @@ class OrderService {
         {
           model: Shipment,
           as: "shipments",
-          attributes: ["id", "status", "estimated_delivery", "actual_delivery"],
+          attributes: [
+            "id",
+            "status",
+            "estimated_delivery",
+            "actual_delivery",
+            "shipping_provider",
+            "shipping_service_id",
+            "shipping_service_type_id",
+            "shipping_fee",
+            "ghn_order_code",
+            "ghn_status",
+            "ghn_last_sync_at",
+          ],
           separate: true,
           limit: 1,
           order: [["created_at", "DESC"]],
@@ -942,6 +1325,8 @@ class OrderService {
       ],
       order: [["created_at", "DESC"]],
     });
+
+    await this.syncShipmentsForOrders(orders, { force: true });
 
     const rows = orders.map((order) => {
       const displayStatus = this.getOrderDisplayStatus(order);
@@ -951,6 +1336,10 @@ class OrderService {
         status: displayStatus,
         order_status: order.status,
         shipment_status: shipment?.status || null,
+        shipment_fee: shipment?.shipping_fee || null,
+        shipment_provider: shipment?.shipping_provider || null,
+        ghn_order_code: shipment?.ghn_order_code || null,
+        ghn_status: shipment?.ghn_status || null,
         total_price: order.total_price,
         payment_method: order.payment_method,
         currency: order.currency || "VND",
@@ -971,6 +1360,174 @@ class OrderService {
 
     if (statusFilter === "all") return rows;
     return rows.filter((order) => order.status === statusFilter);
+  }
+
+  static async getShopAnalytics(shopUserId, filters = {}) {
+    const stores = await Store.findAll({
+      where: { owner_id: shopUserId },
+      attributes: ["id", "name"],
+    });
+    const storeIds = stores.map((s) => Number(s.id)).filter(Boolean);
+    if (storeIds.length === 0) {
+      return {
+        range: this.normalizeAnalyticsRange(filters.range).key,
+        total_orders: 0,
+        completed_orders: 0,
+        total_revenue: 0,
+        average_order_value: 0,
+        completion_rate: 0,
+        status_counts: {
+          pending: 0,
+          shipping: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        daily_revenue: [],
+        monthly_revenue: [],
+        top_products: [],
+      };
+    }
+
+    const range = this.normalizeAnalyticsRange(filters.range);
+    const whereClause = { store_id: { [Op.in]: storeIds } };
+    if (range.days) {
+      const startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() - (range.days - 1));
+      whereClause.created_at = { [Op.gte]: startDate };
+    }
+
+    const orders = await Order.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: OrderItem,
+          as: "items",
+          required: false,
+          include: [
+            {
+              model: Product,
+              as: "product",
+              required: false,
+              attributes: ["id", "name"],
+            },
+          ],
+        },
+        {
+          model: Shipment,
+          as: "shipments",
+          attributes: ["id", "status", "ghn_order_code", "ghn_status", "ghn_last_sync_at"],
+          separate: true,
+          limit: 1,
+          order: [["created_at", "DESC"]],
+        },
+      ],
+      order: [["created_at", "ASC"]],
+    });
+
+    await this.syncShipmentsForOrders(orders);
+
+    const statusCounts = {
+      pending: 0,
+      shipping: 0,
+      completed: 0,
+      canceled: 0,
+    };
+    const dailyRevenueMap = new Map();
+    const monthlyRevenueMap = new Map();
+    const topProductsMap = new Map();
+
+    let totalOrders = 0;
+    let completedOrders = 0;
+    let totalRevenue = 0;
+
+    for (const order of orders) {
+      totalOrders += 1;
+      const displayStatus = this.getOrderDisplayStatus(order);
+      if (statusCounts[displayStatus] !== undefined) {
+        statusCounts[displayStatus] += 1;
+      }
+
+      if (displayStatus !== "completed") continue;
+
+      completedOrders += 1;
+      const orderRevenue = Number(order.total_price || 0);
+      totalRevenue += orderRevenue;
+
+      const createdAt = new Date(order.created_at);
+      const dayKey = createdAt.toISOString().slice(0, 10);
+      const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
+      dailyRevenueMap.set(dayKey, Number(dailyRevenueMap.get(dayKey) || 0) + orderRevenue);
+      monthlyRevenueMap.set(
+        monthKey,
+        Number(monthlyRevenueMap.get(monthKey) || 0) + orderRevenue,
+      );
+
+      for (const item of order.items || []) {
+        const productId = Number(item.product_id || item.product?.id || 0);
+        const productName = item.product?.name || `#${productId || "unknown"}`;
+        const quantity = Number(item.quantity || 0);
+        const lineRevenue = Number(item.price || 0) * quantity;
+        if (!productId || quantity <= 0) continue;
+
+        const current = topProductsMap.get(productId) || {
+          product_id: productId,
+          name: productName,
+          units_sold: 0,
+          revenue: 0,
+        };
+        current.units_sold += quantity;
+        current.revenue += lineRevenue;
+        topProductsMap.set(productId, current);
+      }
+    }
+
+    const dailyRevenue = Array.from(dailyRevenueMap.entries())
+      .map(([date, revenue]) => ({
+        date,
+        label: new Date(date).toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        revenue,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const monthlyRevenue = Array.from(monthlyRevenueMap.entries())
+      .map(([month, revenue]) => {
+        const [year, monthNum] = month.split("-");
+        return {
+          month,
+          label: `${monthNum}/${year}`,
+          revenue,
+        };
+      })
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    const topProducts = Array.from(topProductsMap.values())
+      .sort((a, b) => {
+        if (b.units_sold === a.units_sold) return b.revenue - a.revenue;
+        return b.units_sold - a.units_sold;
+      })
+      .slice(0, 5);
+
+    const averageOrderValue =
+      completedOrders > 0 ? totalRevenue / completedOrders : 0;
+    const completionRate =
+      totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
+
+    return {
+      range: range.key,
+      total_orders: totalOrders,
+      completed_orders: completedOrders,
+      total_revenue: totalRevenue,
+      average_order_value: averageOrderValue,
+      completion_rate: completionRate,
+      status_counts: statusCounts,
+      daily_revenue: dailyRevenue,
+      monthly_revenue: monthlyRevenue,
+      top_products: topProducts,
+    };
   }
 
   static async approveOrderForShop(shopUserId, orderId) {
@@ -1024,9 +1581,30 @@ class OrderService {
 
       const orderItems = await OrderItem.findAll({
         where: { order_id: order.id },
+        include: [
+          {
+            model: Product,
+            as: "product",
+            required: false,
+            attributes: ["id", "name"],
+          },
+        ],
         transaction,
       });
+      const shouldFinalizeInventory =
+        !shipment ||
+        String(shipment.status || "pending").toLowerCase() === "pending";
+      if (shouldFinalizeInventory) {
+        await this.consumeReservedStockForOrderItems(orderItems, transaction);
+      }
+
       const metrics = this.getOrderShippingMetrics(orderItems);
+      const orderItemSubtotal = orderItems.reduce(
+        (sum, item) =>
+          sum +
+          Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+        0,
+      );
       const ghnShopId = Number(ownedStore.ghn_shop_id || 0);
       if (!ghnShopId) {
         throw new Error("Shop chưa có GHN shop_id hợp lệ");
@@ -1050,18 +1628,19 @@ class OrderService {
         from_ward_code: String(ownedStore.ghn_ward_code),
         to_district_id: toDistrictId,
         to_ward_code: toWardCode,
-        insurance_value: Number(order.total_price || 0),
-        cod_value: order.payment_method === "cod" ? Number(order.total_price || 0) : 0,
+        insurance_value: Math.round(Math.max(orderItemSubtotal, 0)),
+        cod_value:
+          order.payment_method === "cod" ? Number(order.total_price || 0) : 0,
         ...metrics,
       });
       const shippingFee = Number(fee?.total || 0);
       const estimatedDelivery = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-
-      if (!shipment) {
-        await Shipment.create(
+      let activeShipment = shipment;
+      if (!activeShipment) {
+        activeShipment = await Shipment.create(
           {
             order_id: order.id,
-            status: "shipped",
+            status: "pending",
             estimated_delivery: estimatedDelivery,
             shipping_provider: "ghn",
             shipping_service_id: selectedService.service_id || null,
@@ -1070,16 +1649,11 @@ class OrderService {
           },
           { transaction },
         );
-      } else if (
-        shipment.status !== "shipped" &&
-        shipment.status !== "delivered"
-      ) {
-        await shipment.update(
+      } else {
+        await activeShipment.update(
           {
-            status: "shipped",
             estimated_delivery:
-              shipment.estimated_delivery ||
-              estimatedDelivery,
+              activeShipment.estimated_delivery || estimatedDelivery,
             shipping_provider: "ghn",
             shipping_service_id: selectedService.service_id || null,
             shipping_service_type_id: selectedService.service_type_id || null,
@@ -1089,15 +1663,232 @@ class OrderService {
         );
       }
 
+      if (!activeShipment.ghn_order_code) {
+        const receiverName = String(shippingAddress.full_name || "").trim();
+        const receiverPhone = String(shippingAddress.phone || "").trim();
+        const receiverAddress = this.buildAddressLine(shippingAddress);
+
+        if (!receiverName || !receiverPhone || !receiverAddress) {
+          throw new Error(
+            "Đơn hàng thiếu thông tin người nhận (tên/sđt/địa chỉ) để tạo đơn GHN",
+          );
+        }
+
+        const ghnItems = orderItems.map((item) => ({
+          name: String(item.product?.name || `SP-${item.product_id}`),
+          quantity: Math.max(1, Number(item.quantity || 1)),
+          weight: 200,
+          length: 20,
+          width: 20,
+          height: 10,
+        }));
+
+        const ghnCreated = await GhnService.createOrder({
+          shop_id: ghnShopId,
+          client_order_code: `TX-${order.id}`,
+          to_name: receiverName,
+          to_phone: receiverPhone,
+          to_address: receiverAddress,
+          to_ward_code: toWardCode,
+          to_district_id: toDistrictId,
+          service_id: selectedService.service_id || undefined,
+          service_type_id: selectedService.service_type_id || undefined,
+          cod_amount:
+            order.payment_method === "cod" ? Number(order.total_price || 0) : 0,
+          insurance_value: Math.round(Math.max(orderItemSubtotal, 0)),
+          note: String(order.note || "").trim(),
+          content:
+            ghnItems.length > 1
+              ? `Đơn hàng #${order.id} (${ghnItems.length} sản phẩm)`
+              : ghnItems[0]?.name || `Đơn hàng #${order.id}`,
+          weight: metrics.weight,
+          length: metrics.length,
+          width: metrics.width,
+          height: metrics.height,
+          items: ghnItems,
+          return_address: this.buildAddressLine({
+            line1: ownedStore.address_line,
+            ward: ownedStore.ward,
+            district: ownedStore.district,
+            city: ownedStore.city,
+            province: ownedStore.province,
+          }),
+          return_district_id: Number(ownedStore.ghn_district_id),
+          return_ward_code: String(ownedStore.ghn_ward_code || "").trim(),
+        });
+
+        const ghnOrderCode = this.extractGhnOrderCode(ghnCreated);
+        if (!ghnOrderCode) {
+          throw new Error(
+            "Tạo đơn GHN thành công nhưng không nhận được order_code",
+          );
+        }
+
+        let ghnDetail = null;
+        try {
+          ghnDetail = await GhnService.getOrderDetail({
+            order_code: ghnOrderCode,
+            shop_id: ghnShopId,
+          });
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[GHN] Không lấy được chi tiết đơn ${ghnOrderCode}:`,
+            error.message,
+          );
+        }
+
+        const ghnStatus = this.extractGhnStatus(
+          ghnDetail,
+          ghnCreated?.current_status || "ready_to_pick",
+        );
+        const mapped = this.mapGhnStatusToLocal(ghnStatus);
+        const resolvedEta =
+          this.parseGhnDate(
+            ghnDetail?.leadtime || ghnCreated?.expected_delivery_time,
+          ) || activeShipment.estimated_delivery || estimatedDelivery;
+
+        await activeShipment.update(
+          {
+            status:
+              mapped.shipment_status === "pending"
+                ? "shipped"
+                : mapped.shipment_status,
+            estimated_delivery: resolvedEta,
+            actual_delivery:
+              mapped.shipment_status === "delivered"
+                ? activeShipment.actual_delivery || new Date()
+                : activeShipment.actual_delivery || null,
+            ghn_order_code: ghnOrderCode,
+            ghn_status: ghnStatus || "ready_to_pick",
+            ghn_last_sync_at: new Date(),
+            ghn_payload: this.toJsonText(ghnDetail || ghnCreated),
+          },
+          { transaction },
+        );
+
+        if (
+          mapped.order_status &&
+          order.status !== mapped.order_status &&
+          order.status !== "completed"
+        ) {
+          await order.update({ status: mapped.order_status }, { transaction });
+        }
+      } else {
+        await this.syncShipmentWithGhn({
+          shipment: activeShipment,
+          order,
+          ghnShopId,
+          transaction,
+          force: true,
+        });
+      }
+
+      await activeShipment.reload({ transaction });
+      await order.reload({ transaction });
+
+      if (shouldFinalizeInventory) {
+        const normalizedShipmentStatus = String(
+          activeShipment.status || "",
+        ).toLowerCase();
+        const normalizedOrderStatus = String(order.status || "").toLowerCase();
+        if (
+          normalizedShipmentStatus === "failed" ||
+          normalizedOrderStatus === "canceled"
+        ) {
+          await this.releaseReservedStockForOrderItems(orderItems, transaction);
+        }
+      }
+
+      const displayStatus = this.getOrderDisplayStatus({
+        status: order.status,
+        shipments: [activeShipment],
+      });
+
       return {
         id: order.id,
-        status: "shipping",
+        status: displayStatus,
         shipment: {
-          provider: "ghn",
-          shipping_fee: shippingFee,
-          service_id: selectedService.service_id || null,
-          service_type_id: selectedService.service_type_id || null,
+          provider: activeShipment.shipping_provider || "ghn",
+          shipping_fee: activeShipment.shipping_fee || shippingFee,
+          service_id:
+            activeShipment.shipping_service_id ||
+            selectedService.service_id ||
+            null,
+          service_type_id:
+            activeShipment.shipping_service_type_id ||
+            selectedService.service_type_id ||
+            null,
+          ghn_order_code: activeShipment.ghn_order_code || null,
+          ghn_status: activeShipment.ghn_status || null,
         },
+      };
+    });
+  }
+
+  static async rejectOrderForShop(shopUserId, orderId) {
+    const parsedOrderId = Number(orderId);
+    if (!parsedOrderId) throw new Error("order_id không hợp lệ");
+
+    return sequelize.transaction(async (transaction) => {
+      const order = await Order.findOne({
+        where: { id: parsedOrderId },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!order) throw new Error("Không tìm thấy đơn hàng");
+
+      const ownedStore = await Store.findOne({
+        where: { id: order.store_id, owner_id: shopUserId },
+        transaction,
+      });
+      if (!ownedStore) {
+        throw new Error("Bạn không có quyền từ chối đơn hàng này");
+      }
+
+      if (order.status === "canceled") {
+        return { id: order.id, status: "canceled" };
+      }
+      if (order.status === "completed") {
+        throw new Error("Đơn hàng đã hoàn tất, không thể từ chối");
+      }
+
+      const shipment = await Shipment.findOne({
+        where: { order_id: order.id },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const shipmentStatus = String(shipment?.status || "").toLowerCase();
+      if (shipmentStatus === "shipped" || shipmentStatus === "delivered") {
+        throw new Error("Đơn hàng đã bàn giao vận chuyển, không thể từ chối");
+      }
+
+      const payment = await Payment.findOne({
+        where: { order_id: order.id },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (payment && String(payment.status || "").toLowerCase() === "completed") {
+        throw new Error(
+          "Đơn hàng đã thanh toán thành công, vui lòng xử lý hoàn tiền trước khi từ chối",
+        );
+      }
+
+      await this.releaseReservedStockForOrder(order.id, transaction);
+
+      await order.update({ status: "canceled" }, { transaction });
+
+      if (shipment && shipmentStatus !== "failed") {
+        await shipment.update({ status: "failed" }, { transaction });
+      }
+
+      if (payment && String(payment.status || "").toLowerCase() === "pending") {
+        await payment.update({ status: "failed" }, { transaction });
+      }
+
+      return {
+        id: order.id,
+        status: "canceled",
       };
     });
   }

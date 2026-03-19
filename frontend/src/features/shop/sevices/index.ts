@@ -28,8 +28,28 @@ export const updateShopAddressService = async (
   return response.data;
 };
 
+export const updateShopProfileService = async (
+  storeId: number,
+  payload: {
+    name?: string;
+    description?: string;
+    logo?: string | null;
+    banner?: string | null;
+  },
+) => {
+  const response = await api().put(`/stores/${storeId}/profile`, payload);
+  return response.data;
+};
+
 export const registerShopGhnService = async (storeId: number) => {
   const response = await api().post(`/stores/${storeId}/ghn/register`);
+  return response.data;
+};
+
+export const getShopAnalyticsService = async (range: "7d" | "30d" | "90d" | "all") => {
+  const response = await api().get("/orders/shop/analytics", {
+    params: { range },
+  });
   return response.data;
 };
 
@@ -54,6 +74,34 @@ export const getShopProductsService = async ({
  */
 export const getShopBrandsService = async () => {
   const response = await api().get("/brands");
+  return response.data;
+};
+
+export const createBrandRequestService = async (payload: {
+  name: string;
+  image?: string;
+}) => {
+  const response = await api().post("/brands/requests", payload);
+  return response.data;
+};
+
+export const getMyBrandRequestsService = async ({
+  page,
+  limit,
+  status,
+}: {
+  page: number;
+  limit: number;
+  status?: "all" | "pending" | "approved" | "rejected";
+}) => {
+  const offset = Math.max(page - 1, 0) * limit;
+  const response = await api().get("/brands/requests/me", {
+    params: {
+      limit,
+      offset,
+      ...(status && status !== "all" ? { status } : {}),
+    },
+  });
   return response.data;
 };
 
@@ -82,9 +130,28 @@ export const createShopProductService = async (payload: {
   quantity: number;
   description?: string;
   images?: { url: string; sort_order: number }[];
-  variant_key?: string;
+  variant_options?: Record<string, string>;
 }) => {
   const response = await api().post("/products", payload);
+  return response.data;
+};
+
+export const updateShopProductService = async (
+  productId: number,
+  payload: {
+    price?: number;
+    quantity?: number;
+    description?: string;
+    status?: "active" | "inactive" | "sold_out";
+    images?: { url: string; sort_order: number }[];
+  },
+) => {
+  const response = await api().put(`/products/${productId}`, payload);
+  return response.data;
+};
+
+export const deleteShopProductService = async (productId: number) => {
+  const response = await api().delete(`/products/${productId}`);
   return response.data;
 };
 

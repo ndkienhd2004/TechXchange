@@ -16,6 +16,7 @@ import {
   selectProductLoading,
   selectProductTotalPages,
 } from "@/features/products/store/productSelectors";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import * as styles from "./styles";
 
 const ITEMS_PER_PAGE = 8;
@@ -104,7 +105,11 @@ function ProductsContent() {
                         >
                           <ItemCard
                             productId={Number(product.id)}
-                            title={product.name}
+                            title={buildProductDisplayName(
+                              product.name,
+                              product.primary_serial_specs ||
+                                (product.catalog?.specs as Record<string, unknown> | undefined),
+                            )}
                             price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
                             compareAtPrice={
                               product.compareAtPrice
@@ -114,7 +119,9 @@ function ProductsContent() {
                             rating={product.rating}
                             reviewCount={product.reviewCount || 0}
                             badgeText={product.badgeText}
-                            imageSrc={product.default_image}
+                            imageSrc={
+                              product.images?.[0]?.url || product.default_image
+                            }
                           />
                         </Link>
                       ))

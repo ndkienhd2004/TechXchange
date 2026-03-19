@@ -268,6 +268,34 @@ export const card = (theme: Theme): CSSProperties => ({
   padding: theme.spacing.lg,
 });
 
+export const shopLogoSection = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing.lg,
+});
+
+export const shopLogoPreview = (theme: Theme): CSSProperties => ({
+  width: "96px",
+  height: "96px",
+  borderRadius: theme.spacing.lg,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  display: "grid",
+  placeItems: "center",
+  position: "relative",
+  overflow: "hidden",
+  fontSize: theme.typography.fontSize.lg.size,
+});
+
+export const shopLogoInfo = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const hiddenFileInput = (): CSSProperties => ({
+  display: "none",
+});
+
 export const cardHeader = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
@@ -593,6 +621,17 @@ export const shipButton = (theme: Theme): CSSProperties => ({
   cursor: "pointer",
 });
 
+export const rejectButton = (theme: Theme): CSSProperties => ({
+  padding: `${theme.spacing[1]} ${theme.spacing[3]}`,
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.semantic.error}`,
+  background: "transparent",
+  color: theme.colors.palette.semantic.error,
+  fontSize: theme.typography.fontSize.xs.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  cursor: "pointer",
+});
+
 export const modalOverlay = (theme: Theme): CSSProperties => ({
   position: "fixed",
   inset: 0,
@@ -839,6 +878,35 @@ export const modalTextarea = (theme: Theme): CSSProperties => ({
   ...modalInput(theme),
   minHeight: "120px",
   resize: "vertical",
+});
+
+export const modalUploadPreview = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  maxHeight: "180px",
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  objectFit: "cover",
+});
+
+export const modalUploadPreviewGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+  gap: theme.spacing[2],
+});
+
+export const modalUploadPreviewItem = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[1],
+});
+
+export const modalUploadRemoveButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.card,
+  color: theme.colors.palette.text.secondary,
+  borderRadius: theme.spacing.sm,
+  fontSize: theme.typography.fontSize.xs.size,
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  cursor: "pointer",
 });
 
 export const modalSpecGrid = (_theme: Theme): CSSProperties => ({

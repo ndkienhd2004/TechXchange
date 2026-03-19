@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "techxchange-bucket.s3.us-east-2.amazonaws.com",
+      },
     ],
   },
 };

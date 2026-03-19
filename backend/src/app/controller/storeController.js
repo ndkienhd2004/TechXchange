@@ -42,6 +42,19 @@ class StoreController {
     }
   }
 
+  static async updateMyStoreProfile(req, res) {
+    try {
+      const store = await StoreService.updateMyStoreProfile(
+        req.user.id,
+        req.params.id,
+        req.body,
+      );
+      return response.success(res, "Cập nhật thông tin shop thành công", store);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
   static async registerMyStoreWithGhn(req, res) {
     try {
       const result = await StoreService.registerMyStoreWithGhn(

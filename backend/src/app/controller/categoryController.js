@@ -54,7 +54,9 @@ class CategoryController {
       const id = Number(req.params.id);
       if (!id) return response.badRequest(res, "ID danh mục không hợp lệ");
 
-      const deleted = await CategoryService.deleteCategory(id);
+      const deleted = await CategoryService.deleteCategory(id, {
+        actorId: req.user?.id,
+      });
       return response.success(res, "Xóa danh mục thành công", deleted);
     } catch (error) {
       return response.badRequest(res, error.message);

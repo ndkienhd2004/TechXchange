@@ -12,7 +12,6 @@ export interface Product {
   store_id: number;
   brand_id?: number;
   catalog_id?: number;
-  variant_key?: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -21,12 +20,17 @@ export interface Product {
   brand?: { id: string; name: string; image: string | null };
   category?: { id: string; name: string };
   store?: { id: string; name: string; rating: number };
-  attributes?: { id: number; attr_key: string; attr_value: string }[];
+  catalog?: {
+    id?: string | number;
+    name?: string;
+    specs?: Record<string, unknown>;
+  };
+  primary_serial_specs?: Record<string, string>;
   spec_options?: { key: string; values: { value: string; quantity: number }[] }[];
   variant_inventory?: {
     serial_id?: number;
     serial_code?: string;
-    variant_key: string;
+    variant_label?: string;
     attributes: Record<string, string>;
     quantity: number;
     min_price: number;

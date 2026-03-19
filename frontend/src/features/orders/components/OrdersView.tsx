@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
+import { uploadImageToS3 } from "@/services/uploadApi";
 
 type OrderItem = {
   id: number;
@@ -52,6 +54,8 @@ export default function OrdersView() {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewImages, setReviewImages] = useState<Array<{ url: string; key: string }>>([]);
+  const [reviewImageUploading, setReviewImageUploading] = useState(false);
 
   const loadOrders = async () => {
     try {
@@ -84,6 +88,8 @@ export default function OrdersView() {
     setReviewRating(5);
     setHoverRating(null);
     setReviewComment("");
+    setReviewImages([]);
+    setReviewImageUploading(false);
     setReviewModalOpen(true);
   };
 
@@ -92,6 +98,35 @@ export default function OrdersView() {
     setReviewModalOpen(false);
     setReviewProductId(null);
     setHoverRating(null);
+    setReviewImages([]);
+    setReviewImageUploading(false);
+  };
+
+  const onUploadReviewImages = async (files: FileList | null) => {
+    if (!files || files.length === 0 || reviewImageUploading) return;
+    const rows = Array.from(files);
+    if (reviewImages.length + rows.length > 6) {
+      showErrorToast("Tối đa 6 ảnh/review");
+      return;
+    }
+
+    try {
+      setReviewImageUploading(true);
+      for (const file of rows) {
+        if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+          throw new Error("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error("Ảnh vượt quá 10MB");
+        }
+        const uploaded = await uploadImageToS3({ file, folder: "reviews" });
+        setReviewImages((prev) => [...prev, uploaded].slice(0, 6));
+      }
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setReviewImageUploading(false);
+    }
   };
 
   const onSubmitReview = async () => {
@@ -103,6 +138,7 @@ export default function OrdersView() {
         product_id: reviewProductId,
         rating: reviewRating,
         comment: reviewComment.trim() || undefined,
+        images: reviewImages.map((item) => item.url),
       });
       showSuccessToast("Đánh giá thành công");
       closeReviewModal();
@@ -322,6 +358,51 @@ export default function OrdersView() {
               onChange={(event) => setReviewComment(event.target.value)}
             />
 
+            <div style={themed(styles.reviewUploadWrap)}>
+              <label style={themed(styles.reviewUploadLabel)}>
+                Ảnh đánh giá (tối đa 6 ảnh)
+              </label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                onChange={(event) => {
+                  void onUploadReviewImages(event.target.files);
+                  event.currentTarget.value = "";
+                }}
+                style={themed(styles.reviewUploadInput)}
+              />
+              {reviewImageUploading && (
+                <span style={themed(styles.subText)}>Đang upload ảnh...</span>
+              )}
+              {reviewImages.length > 0 && (
+                <div style={themed(styles.reviewUploadGrid)}>
+                  {reviewImages.map((image, index) => (
+                    <div key={image.key} style={themed(styles.reviewUploadItem)}>
+                      <Image
+                        src={image.url}
+                        alt={`review-image-${index + 1}`}
+                        width={120}
+                        height={88}
+                        style={themed(styles.reviewUploadPreview)}
+                      />
+                      <button
+                        type="button"
+                        style={themed(styles.reviewUploadRemove)}
+                        onClick={() =>
+                          setReviewImages((prev) =>
+                            prev.filter((item) => item.key !== image.key),
+                          )
+                        }
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div style={themed(styles.modalActions)}>
               <button
                 type="button"
@@ -334,7 +415,7 @@ export default function OrdersView() {
                 type="button"
                 style={themed(styles.button)}
                 onClick={onSubmitReview}
-                disabled={reviewSubmitting}
+                disabled={reviewSubmitting || reviewImageUploading}
               >
                 {reviewSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
               </button>

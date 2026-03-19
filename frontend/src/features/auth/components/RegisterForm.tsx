@@ -25,7 +25,7 @@ export default function RegisterForm() {
       SignUp({ id: "", email, password, username, gender: "", phone: "" })
     );
     if (SignUp.fulfilled.match(result)) {
-      router.push("/");
+      router.push("/login");
       router.refresh();
     }
   };

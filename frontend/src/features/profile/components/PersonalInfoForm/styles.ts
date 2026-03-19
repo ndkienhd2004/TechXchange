@@ -72,7 +72,7 @@ export const button = (theme: Theme): CSSProperties => ({
   alignSelf: "flex-start",
 });
 
-export const buttonDisabled = (theme: Theme): CSSProperties => ({
+export const buttonDisabled = (): CSSProperties => ({
   opacity: 0.6,
   cursor: "not-allowed",
 });
@@ -90,4 +90,44 @@ export const avatarPreview = (theme: Theme): CSSProperties => ({
   objectFit: "cover",
   background: theme.colors.palette.backgrounds.secondary,
   border: `2px solid ${theme.colors.palette.borders.default}`,
+});
+
+export const avatarUploadRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[3],
+  flexWrap: "wrap",
+});
+
+export const avatarUploadButton = (theme: Theme): CSSProperties => ({
+  padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  cursor: "pointer",
+});
+
+export const avatarUploadHint = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+});
+
+export const hiddenFileInput = (): CSSProperties => ({
+  display: "none",
+});
+
+export const avatarFallback = (theme: Theme): CSSProperties => ({
+  width: 64,
+  height: 64,
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+  border: `1px dashed ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
 });

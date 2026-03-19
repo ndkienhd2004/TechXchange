@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
@@ -17,14 +18,42 @@ import {
   type GhnProvince,
   type GhnWard,
 } from "@/services/ghnApi";
-import { registerShopGhnService, updateShopAddressService } from "../../sevices";
+import {
+  getShopAnalyticsService,
+  registerShopGhnService,
+  updateShopAddressService,
+  updateShopProfileService,
+} from "../../sevices";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
+import { uploadImageToS3 } from "@/services/uploadApi";
+import { getAxiosInstance } from "@/services/axiosConfig";
+
+type DashboardAnalytics = {
+  total_orders: number;
+  completed_orders: number;
+  total_revenue: number;
+};
+
+type DashboardOrder = {
+  id: number;
+  status: "pending" | "shipping" | "completed" | "canceled";
+  created_at: string;
+  total_price: number | string;
+  items?: Array<{
+    id: number;
+    quantity: number;
+    product?: {
+      id?: number;
+      name?: string;
+    };
+  }>;
+};
 
 export default function ShopDashboardView() {
   const { themed } = useAppTheme();
   const dispatch = useAppDispatch();
   const { info, productsTotal, loading } = useAppSelector(
-    (state: RootState) => state.shop
+    (state: RootState) => state.shop,
   );
   const [savingAddress, setSavingAddress] = useState(false);
   const [registeringGhn, setRegisteringGhn] = useState(false);
@@ -35,11 +64,67 @@ export default function ShopDashboardView() {
   const [provinces, setProvinces] = useState<GhnProvince[]>([]);
   const [districts, setDistricts] = useState<GhnDistrict[]>([]);
   const [wards, setWards] = useState<GhnWard[]>([]);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [recentOrdersLoading, setRecentOrdersLoading] = useState(false);
+  const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const formatVnd = (value: number | string) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
+  const getOrderStatusLabel = (status: DashboardOrder["status"]) => {
+    if (status === "pending") return "Chờ xác nhận";
+    if (status === "shipping") return "Đang giao";
+    if (status === "completed") return "Đã giao";
+    return "Đã hủy";
+  };
 
   useEffect(() => {
     // Lấy danh sách sản phẩm để biết tổng số lượng
     dispatch(getShopProducts({ page: 1, limit: 1, append: false }));
   }, [dispatch]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setAnalyticsLoading(true);
+        const res = await getShopAnalyticsService("7d");
+        setAnalytics(res?.data || null);
+      } catch (error) {
+        setAnalytics(null);
+        showErrorToast(error);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+    void run();
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setRecentOrdersLoading(true);
+        const api = getAxiosInstance();
+        const res = await api.get("/orders/shop/me");
+        const rows = Array.isArray(res?.data?.data?.orders)
+          ? res.data.data.orders
+          : [];
+        setRecentOrders(rows.slice(0, 5));
+      } catch (error) {
+        setRecentOrders([]);
+        showErrorToast(error);
+      } finally {
+        setRecentOrdersLoading(false);
+      }
+    };
+    void run();
+  }, []);
 
   useEffect(() => {
     getGhnProvinces().then(setProvinces).catch(showErrorToast);
@@ -70,12 +155,38 @@ export default function ShopDashboardView() {
     getGhnWards(districtId).then(setWards).catch(showErrorToast);
   }, [districtId]);
 
-  const stats = useMemo(() => [
-    { label: "Tổng sản phẩm", value: productsTotal.toString(), tone: "#7c3aed" },
-    { label: "Đơn hàng", value: "0", tone: "#3b82f6" }, // Tạm thời để 0 vì chưa có API
-    { label: "Doanh thu", value: "$0", tone: "#22c55e" }, // Tạm thời để 0 vì chưa có API
-    { label: "Đánh giá", value: info?.rating?.toString() || "0", tone: "#f59e0b", sub: info?.rating?.toFixed(1) || "0.0" },
-  ], [productsTotal, info]);
+  const stats = useMemo(
+    () => [
+      {
+        label: "Tổng sản phẩm",
+        value: productsTotal.toString(),
+        tone: "#7c3aed",
+      },
+      {
+        label: "Đơn hàng",
+        value: analyticsLoading ? "..." : String(analytics?.total_orders ?? 0),
+        tone: "#3b82f6",
+        sub: analyticsLoading
+          ? ""
+          : `${analytics?.completed_orders ?? 0} hoàn thành`,
+      },
+      {
+        label: "Doanh thu",
+        value: analyticsLoading
+          ? "..."
+          : formatVnd(analytics?.total_revenue ?? 0),
+        tone: "#22c55e",
+        sub: "7 ngày gần nhất",
+      },
+      {
+        label: "Đánh giá",
+        value: info?.rating?.toString() || "0",
+        tone: "#f59e0b",
+        sub: info?.rating?.toFixed(1) || "0.0",
+      },
+    ],
+    [productsTotal, info, analyticsLoading, analytics],
+  );
 
   const onSaveAddress = async () => {
     if (!info?.id) return;
@@ -128,13 +239,42 @@ export default function ShopDashboardView() {
     }
   };
 
-  // Dữ liệu giả cho đơn hàng gần đây cho đến khi có API
-  const orders: Array<{
-    id: string;
-    items: string;
-    status: "confirmed" | "shipping" | "delivered";
-    date: string;
-  }> = [];
+  const onChooseLogo = () => {
+    logoInputRef.current?.click();
+  };
+
+  const onShopLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.currentTarget.value = "";
+    if (!file || !info?.id || logoUploading) return;
+
+    if (
+      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+        file.type,
+      )
+    ) {
+      showErrorToast("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showErrorToast("Ảnh vượt quá 10MB");
+      return;
+    }
+
+    try {
+      setLogoUploading(true);
+      const uploaded = await uploadImageToS3({ file, folder: "shops" });
+      await updateShopProfileService(Number(info.id), {
+        logo: uploaded.url,
+      });
+      showSuccessToast("Đã cập nhật ảnh đại diện shop");
+      dispatch(getShopInfo());
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   return (
     <ShopLayout>
@@ -150,12 +290,19 @@ export default function ShopDashboardView() {
           <div key={stat.label} style={themed(styles.statCard)}>
             <div>
               <div style={themed(styles.statLabel)}>{stat.label}</div>
-              <div style={themed(styles.statValue)}>{loading ? "..." : stat.value}</div>
+              <div style={themed(styles.statValue)}>
+                {loading ? "..." : stat.value}
+              </div>
               {stat.sub && (
                 <div style={{ color: stat.tone, marginTop: 4 }}>{stat.sub}</div>
               )}
             </div>
-            <div style={{ ...themed(styles.statIcon), background: `${stat.tone}22` }}>
+            <div
+              style={{
+                ...themed(styles.statIcon),
+                background: `${stat.tone}22`,
+              }}
+            >
               <span style={{ color: stat.tone }}>
                 {stat.label === "Đơn hàng" ? (
                   <AppIcon name="box" />
@@ -172,10 +319,54 @@ export default function ShopDashboardView() {
         ))}
       </section>
 
+      <section style={{ ...themed(styles.card), marginBottom: 16 }}>
+        <div style={themed(styles.cardHeader)}>
+          <h2 style={themed(styles.cardTitle)}>Ảnh đại diện cửa hàng</h2>
+        </div>
+        <div style={themed(styles.shopLogoSection)}>
+          <div style={themed(styles.shopLogoPreview)}>
+            {info?.logo ? (
+              <Image
+                src={info.logo}
+                alt={info.name || "Shop avatar"}
+                fill
+                sizes="120px"
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <span>🏪</span>
+            )}
+          </div>
+          <div style={themed(styles.shopLogoInfo)}>
+            <button
+              type="button"
+              style={themed(styles.primaryButton)}
+              onClick={onChooseLogo}
+              disabled={logoUploading}
+            >
+              {logoUploading ? "Đang upload..." : "Đổi ảnh shop"}
+            </button>
+            <div style={themed(styles.muted)}>
+              JPG, PNG, WEBP, GIF (tối đa 10MB)
+            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={onShopLogoChange}
+              style={themed(styles.hiddenFileInput)}
+            />
+          </div>
+        </div>
+      </section>
+
       <section style={themed(styles.actionGrid)}>
         <Link
           href="/shop/products"
-          style={{ ...themed(styles.actionCard), ...themed(styles.actionPurple) }}
+          style={{
+            ...themed(styles.actionCard),
+            ...themed(styles.actionPurple),
+          }}
         >
           Quản lý sản phẩm
         </Link>
@@ -187,7 +378,10 @@ export default function ShopDashboardView() {
         </Link>
         <Link
           href="/shop/analytics"
-          style={{ ...themed(styles.actionCard), ...themed(styles.actionGreen) }}
+          style={{
+            ...themed(styles.actionCard),
+            ...themed(styles.actionGreen),
+          }}
         >
           Xem thống kê
         </Link>
@@ -266,7 +460,7 @@ export default function ShopDashboardView() {
           >
             {savingAddress ? "Đang lưu..." : "Lưu địa chỉ shop"}
           </button>
-          <button
+          {/* <button
             type="button"
             style={{ ...themed(styles.primaryButton), marginLeft: 12 }}
             onClick={onRegisterGhnShop}
@@ -275,9 +469,9 @@ export default function ShopDashboardView() {
             {registeringGhn
               ? "Đang tạo..."
               : info?.ghn_shop_id
-                ? `GHN shop_id: ${info.ghn_shop_id}`
+                ? "Đã kết nối GHN"
                 : "Tạo GHN shop_id"}
-          </button>
+          </button> */}
         </div>
       </section>
 
@@ -289,35 +483,70 @@ export default function ShopDashboardView() {
           </Link>
         </div>
         <div style={themed(styles.orderList)}>
-          {orders.length > 0 ? (
-            orders.map((order) => (
-              <div key={order.id} style={themed(styles.orderItem)}>
-                <div style={themed(styles.orderThumb)} />
-                <div>
-                  <div style={themed(styles.orderName)}>{order.id}</div>
-                  <div style={themed(styles.orderMeta)}>{order.items}</div>
+          {recentOrdersLoading ? (
+            <div
+              style={{
+                padding: "24px",
+                textAlign: "center",
+                color: themed(styles.muted).color,
+              }}
+            >
+              Đang tải đơn hàng...
+            </div>
+          ) : recentOrders.length > 0 ? (
+            recentOrders.map((order) => {
+              const itemCount = (order.items || []).reduce(
+                (sum, item) => sum + Number(item.quantity || 0),
+                0,
+              );
+              const firstItemName =
+                order.items?.[0]?.product?.name || "Sản phẩm";
+              const statusStyle =
+                order.status === "pending"
+                  ? themed(styles.statusConfirmed)
+                  : order.status === "shipping"
+                    ? themed(styles.statusShipping)
+                    : order.status === "completed"
+                      ? themed(styles.statusDelivered)
+                      : {
+                          background: "rgba(239, 68, 68, 0.2)",
+                          color: "#fca5a5",
+                        };
+
+              return (
+                <div key={order.id} style={themed(styles.orderItem)}>
+                  <div style={themed(styles.orderThumb)} />
+                  <div>
+                    <div style={themed(styles.orderName)}>#{order.id}</div>
+                    <div style={themed(styles.orderMeta)}>
+                      {itemCount} sản phẩm • {firstItemName}
+                    </div>
+                    <div style={themed(styles.orderMeta)}>
+                      {formatVnd(order.total_price)}
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      ...themed(styles.statusPill),
+                      ...statusStyle,
+                    }}
+                  >
+                    {getOrderStatusLabel(order.status)}
+                  </span>
+                  <div style={themed(styles.orderMeta)}>
+                    {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                  </div>
                 </div>
-                <span
-                  style={{
-                    ...themed(styles.statusPill),
-                    ...(order.status === "confirmed"
-                      ? themed(styles.statusConfirmed)
-                      : order.status === "shipping"
-                      ? themed(styles.statusShipping)
-                      : themed(styles.statusDelivered)),
-                  }}
-                >
-                  {order.status === "confirmed"
-                    ? "Đã xác nhận"
-                    : order.status === "shipping"
-                    ? "Đang giao"
-                    : "Đã giao"}
-                </span>
-                <div style={themed(styles.orderMeta)}>{order.date}</div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div style={{ padding: "24px", textAlign: "center", color: themed(styles.muted).color }}>
+            <div
+              style={{
+                padding: "24px",
+                textAlign: "center",
+                color: themed(styles.muted).color,
+              }}
+            >
               Chưa có đơn hàng nào.
             </div>
           )}

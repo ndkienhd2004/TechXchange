@@ -151,6 +151,62 @@ class ProductController {
   }
 
   /**
+   * Shop: Cập nhật listing của mình
+   * PUT /products/:id
+   */
+  static async updateListing(req, res) {
+    try {
+      const productId = Number(req.params.id);
+      if (!productId) {
+        return response.badRequest(res, "ID sản phẩm không hợp lệ");
+      }
+
+      const parseNumber = (value) => {
+        if (value === undefined || value === null || value === "") {
+          return undefined;
+        }
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? undefined : parsed;
+      };
+
+      const images = Array.isArray(req.body.images)
+        ? req.body.images
+            .map((item) => ({
+              url: item?.url ? String(item.url).trim() : null,
+              sort_order: Number.isNaN(Number(item?.sort_order))
+                ? undefined
+                : Number(item.sort_order),
+            }))
+            .filter((item) => item.url)
+        : undefined;
+
+      const payload = {
+        price: parseNumber(req.body.price),
+        quantity: parseNumber(req.body.quantity),
+        description:
+          req.body.description !== undefined
+            ? String(req.body.description || "").trim()
+            : undefined,
+        status:
+          req.body.status !== undefined
+            ? String(req.body.status || "").trim().toLowerCase()
+            : undefined,
+        images,
+      };
+
+      const updated = await ProductService.updateListing(
+        req.user.id,
+        productId,
+        payload,
+      );
+
+      return response.success(res, "Cập nhật sản phẩm thành công", updated);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  /**
    * Tạo sản phẩm mới
    * POST /products
    */
@@ -169,9 +225,6 @@ class ProductController {
       const store_id = parseNumber(req.body.store_id);
       const price = parseNumber(req.body.price);
       const quantity = parseNumber(req.body.quantity);
-      const variant_key = req.body.variant_key
-        ? String(req.body.variant_key).trim()
-        : null;
       const variant_options =
         req.body.variant_options &&
         typeof req.body.variant_options === "object" &&
@@ -211,7 +264,6 @@ class ProductController {
         quantity,
         description,
         images,
-        variant_key,
         variant_options,
         serial_code,
       });
@@ -241,9 +293,6 @@ class ProductController {
       const store_id = parseNumber(req.body.store_id);
       const price = parseNumber(req.body.price);
       const quantity = parseNumber(req.body.quantity);
-      const variant_key = req.body.variant_key
-        ? String(req.body.variant_key).trim()
-        : null;
       const variant_options =
         req.body.variant_options &&
         typeof req.body.variant_options === "object" &&
@@ -279,7 +328,6 @@ class ProductController {
         price,
         quantity,
         images,
-        variant_key,
         variant_options,
         serial_code,
       });

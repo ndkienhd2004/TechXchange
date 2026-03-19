@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MouseEvent, useRef, useState } from "react";
+import { MouseEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsAuthenticated } from "@/features/auth";
@@ -31,8 +31,13 @@ export default function ItemCard({
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [adding, setAdding] = useState(false);
+  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(imageSrc || null);
   const lastClickTrackRef = useRef(0);
   const { theme, themed } = useAppTheme();
+
+  useEffect(() => {
+    setSafeImageSrc(imageSrc || null);
+  }, [imageSrc]);
 
   const filledStars = Math.round(clampRating(rating));
   const emptyStarColor = theme.colors.palette.text.muted;
@@ -83,13 +88,15 @@ export default function ItemCard({
   return (
     <article style={themed(styles.card)} onClick={trackCardClick}>
       <div style={themed(styles.media)}>
-        {imageSrc ? (
+        {safeImageSrc ? (
           <Image
-            src={imageSrc}
+            src={safeImageSrc}
             alt={imageAlt}
             width={320}
             height={400}
             style={themed(styles.mediaImage)}
+            unoptimized
+            onError={() => setSafeImageSrc(null)}
           />
         ) : (
           <div style={themed(styles.mediaPlaceholder)}>Preview</div>

@@ -42,6 +42,17 @@ class OrderController {
     }
   }
 
+  static async getShopAnalytics(req, res) {
+    try {
+      const analytics = await OrderService.getShopAnalytics(req.user.id, {
+        range: req.query.range,
+      });
+      return response.success(res, "Lấy thống kê shop thành công", analytics);
+    } catch (error) {
+      return response.serverError(res, error.message);
+    }
+  }
+
   static async approveShopOrder(req, res) {
     try {
       const result = await OrderService.approveOrderForShop(
@@ -49,6 +60,18 @@ class OrderController {
         req.params.id,
       );
       return response.success(res, "Duyệt đơn hàng thành công", result);
+    } catch (error) {
+      return response.badRequest(res, error.message);
+    }
+  }
+
+  static async rejectShopOrder(req, res) {
+    try {
+      const result = await OrderService.rejectOrderForShop(
+        req.user.id,
+        req.params.id,
+      );
+      return response.success(res, "Từ chối đơn hàng thành công", result);
     } catch (error) {
       return response.badRequest(res, error.message);
     }

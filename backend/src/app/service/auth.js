@@ -177,6 +177,7 @@ class AuthServices {
           username: user.username,
           phone: user.phone,
           gender: user.gender,
+          avatar: user.avatar,
           role: user.role,
         },
         accessToken,

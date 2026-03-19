@@ -28,6 +28,7 @@ import {
   updateAdminCatalogProduct,
 } from "../services/adminApi";
 import AppIcon from "@/components/commons/AppIcon";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
 type CategoryNode = {
   id: number | string;
@@ -154,9 +155,14 @@ export default function AdminProductsView() {
   const onDeleteCatalog = async (id: number) => {
     const ok = window.confirm("Xóa catalog này?");
     if (!ok) return;
-    await deleteAdminCatalogProduct(id);
-    dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-    dispatch(fetchAdminProductCounts());
+    try {
+      await deleteAdminCatalogProduct(id);
+      showSuccessToast("Xóa catalog thành công");
+      dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
+      dispatch(fetchAdminProductCounts());
+    } catch (error) {
+      showErrorToast(error);
+    }
   };
 
   const openEdit = (product: CatalogRow) => {

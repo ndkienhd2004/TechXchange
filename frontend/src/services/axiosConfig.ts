@@ -58,10 +58,17 @@ let storeRef: StoreWithAuth | null = null;
 
 let refreshPromise: Promise<string | null> | null = null;
 
+function sanitizeToken(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const token = value.trim();
+  if (!token || token === "undefined" || token === "null") return null;
+  return token;
+}
+
 async function tryRefreshToken(): Promise<string | null> {
   const store = storeRef;
   if (!store) return null;
-  const refreshToken = store.getState().auth.refreshToken;
+  const refreshToken = sanitizeToken(store.getState().auth.refreshToken);
   if (!refreshToken) return null;
   try {
     const res = await axios
@@ -119,7 +126,7 @@ export function createAxiosInstance(
     (config: InternalAxiosRequestConfig) => {
       const url = config.url ?? "";
       if (isRefreshEndpoint(url)) return config;
-      const token = store.getState().auth.token;
+      const token = sanitizeToken(store.getState().auth.token);
       if (token) {
         config.headers.set("authorization", `Bearer ${token}`);
       }
@@ -151,7 +158,7 @@ export function createAxiosInstance(
       const store = storeRef;
       if (!store) return rejectWithPayload(err, payload);
 
-      const refreshToken = store.getState().auth.refreshToken;
+      const refreshToken = sanitizeToken(store.getState().auth.refreshToken);
       if (!refreshToken) {
         store.dispatch({ type: AUTH_LOGOUT });
         return rejectWithPayload(err, payload);

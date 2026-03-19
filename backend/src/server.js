@@ -15,6 +15,35 @@ async function syncDatabase() {
   try {
     console.log("🔄 Syncing database models...");
 
+    // Ensure optional profile columns exist before app queries them.
+    await sequelize.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT"
+    );
+    await sequelize.query(
+      "ALTER TABLE stores ADD COLUMN IF NOT EXISTS logo TEXT"
+    );
+    await sequelize.query(
+      "ALTER TABLE stores ADD COLUMN IF NOT EXISTS banner TEXT"
+    );
+    await sequelize.query(
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS images TEXT"
+    );
+    await sequelize.query(
+      "ALTER TABLE shipments ADD COLUMN IF NOT EXISTS ghn_order_code VARCHAR(64)"
+    );
+    await sequelize.query(
+      "ALTER TABLE shipments ADD COLUMN IF NOT EXISTS ghn_status VARCHAR(64)"
+    );
+    await sequelize.query(
+      "ALTER TABLE shipments ADD COLUMN IF NOT EXISTS ghn_last_sync_at TIMESTAMP"
+    );
+    await sequelize.query(
+      "ALTER TABLE shipments ADD COLUMN IF NOT EXISTS ghn_payload TEXT"
+    );
+    await sequelize.query(
+      "CREATE INDEX IF NOT EXISTS idx_shipments_ghn_order_code ON shipments(ghn_order_code)"
+    );
+
     // Sync all models (creates tables if they don't exist)
     await sequelize.sync({ alter: false });
 

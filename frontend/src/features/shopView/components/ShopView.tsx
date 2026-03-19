@@ -9,6 +9,7 @@ import { showErrorToast } from "@/components/commons/Toast";
 import * as styles from "./styles";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
 import ItemCard from "@/components/commons/ItemCard";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 
 type StoreInfo = {
   id: number;
@@ -336,7 +337,11 @@ export default function ShopView() {
                           )}
                           <ItemCard
                             productId={Number(product.id)}
-                            title={product.name}
+                            title={buildProductDisplayName(
+                              product.name,
+                              product.primary_serial_specs ||
+                                (product.catalog?.specs as Record<string, unknown> | undefined),
+                            )}
                             price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
                             compareAtPrice={undefined}
                             rating={Number(

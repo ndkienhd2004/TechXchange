@@ -261,7 +261,11 @@ router.get("/catalogs", ProductCatalogController.getCatalogs);
  *                       type: string
  *                     sort_order:
  *                       type: integer
- *               variant_key:
+ *               variant_options:
+ *                 type: object
+ *                 additionalProperties:
+ *                   type: string
+ *               serial_code:
  *                 type: string
  *     responses:
  *       201:
@@ -472,6 +476,13 @@ router.get(
  *         $ref: '#/components/responses/NotFound404'
  */
 router.get("/:id", optionalAuthMiddleware, ProductController.getProductById);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  shopMiddleware,
+  ProductController.updateListing,
+);
 
 /**
  * @swagger

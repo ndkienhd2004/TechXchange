@@ -651,23 +651,6 @@ const options = {
             },
           },
         },
-        ProductAttribute: {
-          type: "object",
-          properties: {
-            id: {
-              type: "integer",
-              example: 1,
-            },
-            attr_key: {
-              type: "string",
-              example: "CPU",
-            },
-            attr_value: {
-              type: "string",
-              example: "Intel i7",
-            },
-          },
-        },
         Product: {
           type: "object",
           properties: {
@@ -751,12 +734,6 @@ const options = {
               type: "array",
               items: {
                 $ref: "#/components/schemas/ProductImage",
-              },
-            },
-            attributes: {
-              type: "array",
-              items: {
-                $ref: "#/components/schemas/ProductAttribute",
               },
             },
           },

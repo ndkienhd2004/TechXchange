@@ -3,6 +3,16 @@ const { Op } = require("sequelize");
 const GhnService = require("./ghnService");
 
 class StoreService {
+  static normalizeOptionalUrl(value) {
+    if (value === undefined) return undefined;
+    const normalized = String(value || "").trim();
+    if (!normalized) return null;
+    if (!/^https?:\/\//i.test(normalized)) {
+      throw new Error("URL ảnh cửa hàng không hợp lệ");
+    }
+    return normalized;
+  }
+
   static normalizeAddressPayload(payload = {}) {
     const addressLine = String(payload.address_line || "").trim();
     const ward = String(payload.ward || "").trim();
@@ -108,6 +118,43 @@ class StoreService {
     if (!store) throw new Error("Không tìm thấy cửa hàng hoặc không có quyền");
 
     await store.update(data);
+    return store;
+  }
+
+  static async updateMyStoreProfile(userId, storeId, payload = {}) {
+    const id = Number(storeId);
+    if (!id) throw new Error("ID cửa hàng không hợp lệ");
+
+    const store = await Store.findOne({
+      where: { id, owner_id: userId },
+    });
+    if (!store) throw new Error("Không tìm thấy cửa hàng hoặc không có quyền");
+
+    const updates = {};
+
+    if (payload.name !== undefined) {
+      const name = String(payload.name || "").trim();
+      if (!name) throw new Error("Tên cửa hàng không được để trống");
+      updates.name = name.slice(0, 100);
+    }
+
+    if (payload.description !== undefined) {
+      updates.description = String(payload.description || "").trim() || null;
+    }
+
+    if (payload.logo !== undefined) {
+      updates.logo = StoreService.normalizeOptionalUrl(payload.logo);
+    }
+
+    if (payload.banner !== undefined) {
+      updates.banner = StoreService.normalizeOptionalUrl(payload.banner);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new Error("Không có thông tin hợp lệ để cập nhật");
+    }
+
+    await store.update(updates);
     return store;
   }
 

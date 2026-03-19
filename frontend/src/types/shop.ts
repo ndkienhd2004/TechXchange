@@ -37,6 +37,7 @@ export interface Product {
   specs: Record<string, string>;
   default_image: string;
   msrp: string;
+  price?: string | number;
   status: string;
   created_at: string;
   updated_at: string;

@@ -28,9 +28,6 @@ module.exports = (sequelize, DataTypes) => {
       catalog_id: {
         type: DataTypes.BIGINT,
       },
-      variant_key: {
-        type: DataTypes.STRING(255),
-      },
       name: {
         type: DataTypes.STRING(100),
       },

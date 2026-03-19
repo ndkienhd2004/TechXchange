@@ -113,7 +113,9 @@ class ProductCatalogController {
         return response.badRequest(res, "ID catalog không hợp lệ");
       }
 
-      const result = await ProductCatalogService.deleteCatalog(catalogId);
+      const result = await ProductCatalogService.deleteCatalog(catalogId, {
+        actorId: req.user?.id,
+      });
 
       return response.success(res, "Xóa catalog thành công", result);
     } catch (error) {

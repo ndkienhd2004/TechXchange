@@ -11,7 +11,6 @@ import {
   getConversationsService,
   getMessagesService,
   openStoreConversationService,
-  sendMessageService,
 } from "@/features/chat/services/chatApi";
 import { OPEN_CHAT_WITH_STORE_EVENT } from "@/features/chat/utils/openChat";
 import { useAppSelector } from "@/store/hooks";
@@ -38,6 +37,7 @@ export default function GlobalChatWidget() {
   const auth = useAppSelector((state) => state.auth);
   const token = auth.token;
   const me = auth.user;
+  const shouldShowWidget = Boolean(token);
   const { themed } = useAppTheme();
   const socketRef = useRef<Socket | null>(null);
   const messageBodyRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +53,7 @@ export default function GlobalChatWidget() {
   const [assistantDraft, setAssistantDraft] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageLimit, setMessageLimit] = useState(30);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
 
   const unreadCount = useMemo(
     () => conversations.reduce((sum, item) => sum + Number(item.unread_count || 0), 0),
@@ -122,6 +123,9 @@ export default function GlobalChatWidget() {
         setActivePeerId(Number(rows[0].peer_user_id));
       }
     } catch (error) {
+      setConversations([]);
+      setMessages([]);
+      setActivePeerId(null);
       showErrorToast(error);
     }
   };
@@ -134,6 +138,7 @@ export default function GlobalChatWidget() {
         const res = await getMessagesService(peerUserId, limit);
         const rows = (res?.data?.messages || []) as ChatMessage[];
         setMessages(dedupeMessages(rows));
+        setHasMoreMessages(rows.length >= limit);
         socketRef.current?.emit("chat:join", { peer_user_id: peerUserId });
         socketRef.current?.emit("chat:read", { peer_user_id: peerUserId });
         setConversations((prev) =>
@@ -180,6 +185,9 @@ export default function GlobalChatWidget() {
 
     socket.on("chat:message", (payload: ChatMessage) => {
       const meId = Number(me?.id || 0);
+      if (Number(payload.sender_id) === meId) {
+        return;
+      }
       setConversations((prev) =>
         upsertConversationFromMessage(prev, payload, meId, activePeerId),
       );
@@ -209,13 +217,32 @@ export default function GlobalChatWidget() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activePeerId, mode, me?.id, token]);
+  }, [activePeerId, mode, me?.id, me?.role, token]);
 
   useEffect(() => {
     if (!token) return;
     loadConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, me?.id, me?.role]);
+
+  useEffect(() => {
+    if (shouldShowWidget) return;
+    setIsOpen(false);
+    setMode("assistant");
+    setConversations([]);
+    setActivePeerId(null);
+    setMessages([]);
+    setDraft("");
+    setAssistantDraft("");
+    setMessageLimit(30);
+    setHasMoreMessages(true);
+    restoreScrollRef.current = null;
+    loadingOlderRef.current = false;
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+  }, [shouldShowWidget]);
 
   useEffect(() => {
     if (mode !== "store" || !activePeerId) return;
@@ -258,7 +285,28 @@ export default function GlobalChatWidget() {
     if (!text) return;
     setDraft("");
     try {
-      await sendMessageService(activePeerId, text);
+      const socket = socketRef.current;
+      if (!socket) {
+        throw new Error("Socket chưa sẵn sàng");
+      }
+      const result = await new Promise<ChatMessage>((resolve, reject) => {
+        socket.emit(
+          "chat:send",
+          { receiver_id: activePeerId, message: text },
+          (ack: { ok: boolean; data?: ChatMessage; message?: string }) => {
+            if (!ack?.ok || !ack?.data) {
+              reject(new Error(ack?.message || "Gửi tin nhắn thất bại"));
+              return;
+            }
+            resolve(ack.data);
+          },
+        );
+      });
+      const meId = Number(me?.id || 0);
+      setMessages((prev) => dedupeMessages([...prev, result]));
+      setConversations((prev) =>
+        upsertConversationFromMessage(prev, result, meId, activePeerId),
+      );
     } catch (error) {
       setDraft(text);
       showErrorToast(error);
@@ -269,10 +317,12 @@ export default function GlobalChatWidget() {
     setMode("store");
     setActivePeerId(peerId);
     setMessageLimit(30);
+    setHasMoreMessages(true);
   };
 
   const onMessageScroll = () => {
     if (mode !== "store" || !activePeerId || loadingMessages) return;
+    if (!hasMoreMessages) return;
     const node = messageBodyRef.current;
     if (!node) return;
     if (node.scrollTop > 24 || loadingOlderRef.current) return;
@@ -287,6 +337,10 @@ export default function GlobalChatWidget() {
     setAssistantDraft("");
     showErrorToast("API chatbot chưa được kết nối");
   };
+
+  if (!shouldShowWidget) {
+    return null;
+  }
 
   return (
     <>

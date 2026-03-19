@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import ItemCard from "@/components/commons/ItemCard";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { Theme } from "@/theme";
@@ -18,6 +17,7 @@ import { selectIsAuthenticated } from "@/features/auth";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import * as styles from "./styles";
 
 function renderStars(
@@ -66,20 +66,23 @@ function toHalfStep(value: number) {
   return Math.round(clamped * 2) / 2;
 }
 
-function parseVariantKey(raw?: string | null) {
-  if (!raw) return {};
-  return raw
-    .split("|")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .reduce<Record<string, string>>((acc, item) => {
-      const [key, ...rest] = item.split("=");
-      const normalizedKey = (key || "").trim().toLowerCase();
-      const value = rest.join("=").trim();
-      if (!normalizedKey || !value) return acc;
-      acc[normalizedKey] = value;
-      return acc;
-    }, {});
+function formatVariantLabel(variant: {
+  variant_label?: string;
+  serial_code?: string;
+  attributes?: Record<string, string>;
+}) {
+  if (variant.variant_label) return variant.variant_label;
+  const attributes = variant.attributes || {};
+  const entries = Object.entries(attributes).filter(
+    ([key, value]) => Boolean(key && value),
+  );
+  if (entries.length > 0) {
+    return entries
+      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("|");
+  }
+  return variant.serial_code || "Mặc định";
 }
 
 export default function ProductDetailPage() {
@@ -92,19 +95,6 @@ export default function ProductDetailPage() {
   
   const product = useAppSelector(selectSelectedProduct);
   const loading = useAppSelector(selectProductDetailLoading);
-  const [relatedProducts, setRelatedProducts] = useState<
-    Array<{
-      id: number;
-      name: string;
-      price: number;
-      compareAtPrice?: number;
-      rating?: number;
-      images?: { id: number; url: string }[];
-      default_image?: string | null;
-      reviewCount?: number;
-      badgeText?: string;
-    }>
-  >([]);
 
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<
@@ -119,6 +109,7 @@ export default function ProductDetailPage() {
       rating: number;
       comment: string;
       created_at: string;
+      images?: string[];
       reviewer?: { id: number; username: string };
     }>
   >([]);
@@ -153,25 +144,6 @@ export default function ProductDetailPage() {
     };
     run();
   }, [id]);
-
-  useEffect(() => {
-    if (!id) return;
-    const run = async () => {
-      try {
-        const api = getAxiosInstance();
-        const res = await api.get(`/recommendations/related/${id}`, {
-          params: { limit: 8 },
-        });
-        const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
-        setRelatedProducts(rows);
-      } catch {
-        setRelatedProducts([]);
-      }
-    };
-    void run();
-  }, [id]);
-
-  const recommended = useMemo(() => relatedProducts.slice(0, 4), [relatedProducts]);
 
   const specOptions = useMemo(() => product?.spec_options ?? [], [product]);
   const variantInventory = useMemo(
@@ -208,14 +180,21 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!product) return;
-    const fromVariant = parseVariantKey(
-      typeof product.variant_key === "string" ? product.variant_key : null,
-    );
+    const currentListingId = Number(id);
+    const variantFromCurrentListing = Number.isFinite(currentListingId)
+      ? variantInventory.find((variant) =>
+          Array.isArray(variant.listing_ids) &&
+          variant.listing_ids.some((listingId) => Number(listingId) === currentListingId),
+        )
+      : undefined;
+    const defaultsFromCurrentListing = variantFromCurrentListing?.attributes
+      ? { ...variantFromCurrentListing.attributes }
+      : {};
     const defaultsFromFirstAvailable =
       variantInventory.length > 0 ? { ...(variantInventory[0].attributes || {}) } : {};
     const defaults: Record<string, string> = {
       ...defaultsFromFirstAvailable,
-      ...fromVariant,
+      ...defaultsFromCurrentListing,
     };
     specOptions.forEach((opt) => {
       if (!defaults[opt.key] && opt.values.length > 0) {
@@ -231,7 +210,7 @@ export default function ProductDetailPage() {
       return;
     }
     setSelectedSpecs(defaults);
-  }, [product, specOptions, variantInventory]);
+  }, [id, product, specOptions, variantInventory]);
 
   if (loading && !product) {
     return (
@@ -272,6 +251,13 @@ export default function ProductDetailPage() {
     : Number(product.id);
   const maxStock = Math.max(1, availableStock);
   const normalizedQuantity = Math.max(1, Math.min(maxStock, quantity));
+  const displayPrice = hasVariantSelection
+    ? Number(selectedVariant?.min_price ?? product.price ?? 0)
+    : Number(product.price || 0);
+  const displayProductName = buildProductDisplayName(
+    product.name,
+    hasVariantSelection ? selectedSpecs : product.primary_serial_specs,
+  );
 
   const ensureAuth = () => {
     if (isAuthenticated) return true;
@@ -281,6 +267,14 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = async () => {
+    if (isOutOfStock) {
+      showErrorToast("Sản phẩm đã hết hàng");
+      return;
+    }
+    if (!selectedListingId) {
+      showErrorToast("Biến thể đã hết hàng");
+      return;
+    }
     if (!ensureAuth()) return;
     if (addingToCart) return;
     if (!product.id) {
@@ -305,6 +299,14 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = async () => {
+    if (isOutOfStock) {
+      showErrorToast("Sản phẩm đã hết hàng");
+      return;
+    }
+    if (!selectedListingId) {
+      showErrorToast("Biến thể đã hết hàng");
+      return;
+    }
     if (!ensureAuth()) return;
     if (addingToCart) return;
     if (!product.id) {
@@ -349,7 +351,7 @@ export default function ProductDetailPage() {
             </Link>
             {" > "}
             <span style={{ color: theme.colors.palette.text.primary }}>
-              {product.name}
+              {displayProductName}
             </span>
           </nav>
 
@@ -424,7 +426,7 @@ export default function ProductDetailPage() {
             </div>
 
             <div style={themed(styles.infoColumn)}>
-              <h1 style={themed(styles.productTitle)}>{product.name}</h1>
+              <h1 style={themed(styles.productTitle)}>{displayProductName}</h1>
               <div style={themed(styles.ratingRow)}>
                 <span style={{ display: "flex", gap: 2 }}>
                   {renderStars(averageRating, theme)}
@@ -437,7 +439,7 @@ export default function ProductDetailPage() {
               </div>
               <div style={themed(styles.priceRow)}>
                 <span style={themed(styles.price)}>
-                  {`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
+                  {`${displayPrice.toLocaleString("vi-VN")} đ`}
                 </span>
                 {product.compareAtPrice && (
                   <span style={themed(styles.comparePrice)}>
@@ -540,7 +542,7 @@ export default function ProductDetailPage() {
                   type="button"
                   style={themed(styles.primaryButton)}
                   onClick={handleAddToCart}
-                  disabled={addingToCart || !selectedListingId || isOutOfStock}
+                  disabled={addingToCart}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
@@ -552,7 +554,7 @@ export default function ProductDetailPage() {
                   type="button"
                   style={themed(styles.secondaryButton)}
                   onClick={handleBuyNow}
-                  disabled={addingToCart || !selectedListingId || isOutOfStock}
+                  disabled={addingToCart}
                 >
                   Mua ngay
                 </button>
@@ -623,17 +625,6 @@ export default function ProductDetailPage() {
             {activeTab === "specs" && (
               <div style={themed(styles.tabContent)}>
                 <div style={{ display: "grid", gap: 12 }}>
-                  {product.attributes && product.attributes.length > 0 ? (
-                    <ul style={{ margin: 0, paddingLeft: theme.spacing.lg, color: theme.colors.palette.text.secondary, fontSize: theme.typography.fontSize.sm.size, lineHeight: 1.8 }}>
-                      {product.attributes.map((attr) => (
-                        <li key={attr.id}>
-                          <strong>{attr.attr_key}:</strong> {attr.attr_value}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>Không có thông số kỹ thuật chi tiết.</p>
-                  )}
                   {variantInventory.length > 0 && (
                     <div>
                       <h4 style={{ margin: "0 0 8px 0", color: theme.colors.palette.text.primary }}>
@@ -648,13 +639,22 @@ export default function ProductDetailPage() {
                           lineHeight: 1.8,
                         }}
                       >
-                        {variantInventory.map((variant) => (
-                          <li key={variant.variant_key}>
-                            <strong>{variant.variant_key}</strong>: {variant.quantity} sản phẩm
+                        {variantInventory.map((variant, variantIndex) => (
+                          <li
+                            key={
+                              variant.serial_id
+                                ? String(variant.serial_id)
+                                : `${variant.serial_code || "variant"}-${variantIndex}`
+                            }
+                          >
+                            <strong>{formatVariantLabel(variant)}</strong>: {variant.quantity} sản phẩm
                           </li>
                         ))}
                       </ul>
                     </div>
+                  )}
+                  {variantInventory.length === 0 && (
+                    <p>Không có thông số kỹ thuật chi tiết.</p>
                   )}
                 </div>
               </div>
@@ -726,6 +726,20 @@ export default function ProductDetailPage() {
                           </span>
                         </div>
                         <div>{review.comment || "(Không có nhận xét)"}</div>
+                        {Array.isArray(review.images) && review.images.length > 0 && (
+                          <div style={themed(styles.reviewImagesGrid)}>
+                            {review.images.map((imageUrl, imageIndex) => (
+                              <Image
+                                key={`${review.id}-${imageIndex}`}
+                                src={imageUrl}
+                                alt={`review-${review.id}-${imageIndex + 1}`}
+                                width={120}
+                                height={88}
+                                style={themed(styles.reviewImageItem)}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -734,31 +748,6 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {recommended.length > 0 && (
-            <section style={{ marginTop: theme.spacing["3xl"] }}>
-              <h2 style={themed(styles.sectionTitle)}>Related Items</h2>
-              <div style={themed(styles.recommendedGrid)}>
-                {recommended.map((p) => (
-                  <Link key={p.id} href={`/products/${p.id}`} style={{ textDecoration: "none" }}>
-                    <ItemCard
-                      productId={Number(p.id)}
-                      title={p.name}
-                      price={`${Number(p.price || 0).toLocaleString("vi-VN")} đ`}
-                      compareAtPrice={
-                        p.compareAtPrice
-                          ? `${Number(p.compareAtPrice || 0).toLocaleString("vi-VN")} đ`
-                          : undefined
-                      }
-                      rating={p.rating}
-                      reviewCount={p.reviewCount}
-                      badgeText={p.badgeText}
-                      imageSrc={p.images?.[0]?.url || p.default_image || undefined}
-                    />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </div>
     </div>

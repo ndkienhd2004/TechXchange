@@ -274,6 +274,12 @@ router.get(
   shopMiddleware,
   OrderController.getShopOrders,
 );
+router.get(
+  "/shop/analytics",
+  authMiddleware,
+  shopMiddleware,
+  OrderController.getShopAnalytics,
+);
 
 /**
  * @swagger
@@ -314,6 +320,47 @@ router.put(
   authMiddleware,
   shopMiddleware,
   OrderController.approveShopOrder,
+);
+
+/**
+ * @swagger
+ * /orders/shop/{id}/reject:
+ *   put:
+ *     tags:
+ *       - Shop Order
+ *     summary: Shop từ chối đơn hàng và nhả tồn giữ chỗ
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Shop từ chối đơn hàng thành công
+ *         content:
+ *           application/json:
+ *             example:
+ *               code: "200"
+ *               success: true
+ *               message: Từ chối đơn hàng thành công
+ *               data:
+ *                 id: 1201
+ *                 status: canceled
+ *       400:
+ *         $ref: '#/components/responses/BadRequest400'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized401'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden403'
+ */
+router.put(
+  "/shop/:id/reject",
+  authMiddleware,
+  shopMiddleware,
+  OrderController.rejectShopOrder,
 );
 
 module.exports = router;

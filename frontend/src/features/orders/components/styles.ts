@@ -284,3 +284,51 @@ export const modalActions = (theme: Theme): CSSProperties => ({
   justifyContent: "flex-end",
   gap: theme.spacing[2],
 });
+
+export const reviewUploadWrap = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+  marginBottom: theme.spacing.md,
+});
+
+export const reviewUploadLabel = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  color: theme.colors.palette.text.secondary,
+});
+
+export const reviewUploadInput = (theme: Theme): CSSProperties => ({
+  ...reviewTextarea(theme),
+  minHeight: "auto",
+  marginBottom: 0,
+  resize: "none",
+  padding: theme.spacing[2],
+});
+
+export const reviewUploadGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+  gap: theme.spacing[2],
+});
+
+export const reviewUploadItem = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[1],
+});
+
+export const reviewUploadPreview = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  height: "88px",
+  objectFit: "cover",
+  borderRadius: theme.spacing.sm,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+});
+
+export const reviewUploadRemove = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.secondary,
+  borderRadius: theme.spacing.sm,
+  fontSize: theme.typography.fontSize.xs.size,
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  cursor: "pointer",
+});

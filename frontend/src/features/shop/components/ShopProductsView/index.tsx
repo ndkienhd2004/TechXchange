@@ -13,8 +13,22 @@ import {
 import { RootState } from "@/store";
 import AddProductModal from "./AddProductModal";
 import AppIcon from "@/components/commons/AppIcon";
+import {
+  deleteShopProductService,
+  updateShopProductService,
+} from "../../sevices";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
 const PAGE_SIZE = 10;
+
+type EditProductForm = {
+  id: number;
+  name: string;
+  price: string;
+  quantity: string;
+  status: "active" | "inactive" | "sold_out";
+  description: string;
+};
 
 export default function ShopProductsView() {
   const { themed } = useAppTheme();
@@ -31,9 +45,24 @@ export default function ShopProductsView() {
     useAppSelector((state: RootState) => state.shop);
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [viewingProduct, setViewingProduct] = useState<(typeof products)[number] | null>(
+    null,
+  );
+  const [editingProduct, setEditingProduct] = useState<EditProductForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [requestStatus, setRequestStatus] = useState("all");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const totalItems = productsTotal;
+  const normalizedSearch = searchKeyword.trim().toLowerCase();
+  const filteredProducts = normalizedSearch
+    ? products.filter((product) =>
+        String(product.name || "")
+          .toLowerCase()
+          .includes(normalizedSearch),
+      )
+    : products;
 
   useEffect(() => {
     dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
@@ -90,6 +119,83 @@ export default function ShopProductsView() {
     dispatch(getShopProducts({ page: next, limit: PAGE_SIZE, append: false }));
   };
 
+  const openViewProduct = (product: (typeof products)[number]) => {
+    setViewingProduct(product);
+  };
+
+  const openEditProduct = (product: (typeof products)[number]) => {
+    const safePrice = Number(product.price ?? product.msrp ?? 0);
+    const safeQuantity = Number(product.quantity ?? 0);
+    const status = String(product.status || "active").toLowerCase();
+    setEditingProduct({
+      id: Number(product.id),
+      name: product.name || "",
+      price: Number.isFinite(safePrice) ? String(safePrice) : "0",
+      quantity: Number.isFinite(safeQuantity) ? String(safeQuantity) : "0",
+      status:
+        status === "inactive" || status === "sold_out" ? status : "active",
+      description: String(product.description || ""),
+    });
+  };
+
+  const closeEditModal = () => {
+    if (savingEdit) return;
+    setEditingProduct(null);
+  };
+
+  const onSaveEditProduct = async () => {
+    if (!editingProduct) return;
+    const price = Number(editingProduct.price);
+    const quantity = Number(editingProduct.quantity);
+    if (!Number.isFinite(price) || price < 0) {
+      showErrorToast("Giá sản phẩm không hợp lệ");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      showErrorToast("Số lượng sản phẩm phải là số nguyên >= 0");
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      await updateShopProductService(editingProduct.id, {
+        price,
+        quantity,
+        status: editingProduct.status,
+        description: editingProduct.description.trim() || "",
+      });
+      showSuccessToast("Cập nhật sản phẩm thành công");
+      setEditingProduct(null);
+      dispatch(getShopProducts({ page, limit: PAGE_SIZE, append: false }));
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const onDeleteProduct = async (product: (typeof products)[number]) => {
+    const productId = Number(product.id);
+    if (!productId || deletingProductId) return;
+
+    const confirmed = window.confirm(
+      `Bạn chắc chắn muốn xoá sản phẩm "${product.name}"?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingProductId(productId);
+      await deleteShopProductService(productId);
+      showSuccessToast("Xoá sản phẩm thành công");
+      dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
+      setPage(1);
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setDeletingProductId(null);
+    }
+  };
+
   return (
     <ShopLayout>
       <header style={themed(styles.pageHeader)}>
@@ -107,6 +213,8 @@ export default function ShopProductsView() {
             type="text"
             placeholder="Tìm kiếm sản phẩm..."
             style={themed(styles.search)}
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
           />
           <button
             type="button"
@@ -142,7 +250,7 @@ export default function ShopProductsView() {
                   Đang tải...
                 </td>
               </tr>
-            ) : products.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
@@ -152,11 +260,13 @@ export default function ShopProductsView() {
                     padding: 24,
                   }}
                 >
-                  Chưa có sản phẩm nào.
+                  {products.length === 0
+                    ? "Chưa có sản phẩm nào."
+                    : "Không tìm thấy sản phẩm phù hợp."}
                 </td>
               </tr>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <tr key={product.id}>
                   <td style={themed(styles.td)}>
                     <div
@@ -174,7 +284,9 @@ export default function ShopProductsView() {
                     </div>
                   </td>
                   <td style={themed(styles.td)}>
-                    <div style={themed(styles.price)}>{product.msrp}</div>
+                    <div style={themed(styles.price)}>
+                      {product.price ?? product.msrp}
+                    </div>
                     <div style={themed(styles.muted)}>MSRP: {product.msrp}</div>
                   </td>
                   <td style={themed(styles.td)}>{product.quantity ?? "-"}</td>
@@ -182,13 +294,26 @@ export default function ShopProductsView() {
                   <td style={themed(styles.td)}>{product.status ?? "-"}</td>
                   <td style={themed(styles.td)}>
                     <div style={themed(styles.rowActions)}>
-                      <button type="button" style={themed(styles.iconButton)}>
+                      <button
+                        type="button"
+                        style={themed(styles.iconButton)}
+                        onClick={() => openViewProduct(product)}
+                      >
                         <AppIcon name="view" />
                       </button>
-                      <button type="button" style={themed(styles.iconButton)}>
+                      <button
+                        type="button"
+                        style={themed(styles.iconButton)}
+                        onClick={() => openEditProduct(product)}
+                      >
                         <AppIcon name="edit" />
                       </button>
-                      <button type="button" style={themed(styles.iconButton)}>
+                      <button
+                        type="button"
+                        style={themed(styles.iconButton)}
+                        onClick={() => onDeleteProduct(product)}
+                        disabled={deletingProductId === Number(product.id)}
+                      >
                         <AppIcon name="delete" />
                       </button>
                     </div>
@@ -268,6 +393,217 @@ export default function ShopProductsView() {
       </section>
 
       <AddProductModal open={openModal} onClose={() => setOpenModal(false)} />
+
+      {viewingProduct && (
+        <div style={themed(styles.modalOverlay)} onClick={() => setViewingProduct(null)}>
+          <div
+            style={themed(styles.modalCard)}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={themed(styles.modalHeader)}>
+              <h3 style={themed(styles.modalTitle)}>Chi tiết sản phẩm</h3>
+              <button
+                type="button"
+                style={themed(styles.modalClose)}
+                onClick={() => setViewingProduct(null)}
+              >
+                <AppIcon name="close" />
+              </button>
+            </div>
+
+            <div style={themed(styles.modalBody)}>
+              <div style={themed(styles.modalForm)}>
+                <label style={themed(styles.modalLabel)}>
+                  Tên sản phẩm
+                  <input
+                    type="text"
+                    value={viewingProduct.name || ""}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+                <label style={themed(styles.modalLabel)}>
+                  Danh mục
+                  <input
+                    type="text"
+                    value={viewingProduct.category?.name ?? "-"}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+                <label style={themed(styles.modalLabel)}>
+                  Giá
+                  <input
+                    type="text"
+                    value={String(viewingProduct.price ?? viewingProduct.msrp ?? "-")}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+                <label style={themed(styles.modalLabel)}>
+                  Kho
+                  <input
+                    type="text"
+                    value={String(viewingProduct.quantity ?? "-")}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+                <label style={themed(styles.modalLabel)}>
+                  Trạng thái
+                  <input
+                    type="text"
+                    value={viewingProduct.status ?? "-"}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+                <label style={themed(styles.modalLabel)}>
+                  Mô tả
+                  <textarea
+                    value={String(viewingProduct.description || "")}
+                    style={themed(styles.modalTextarea)}
+                    readOnly
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div style={themed(styles.modalFooter)}>
+              <button
+                type="button"
+                style={themed(styles.primaryButton)}
+                onClick={() => setViewingProduct(null)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingProduct && (
+        <div style={themed(styles.modalOverlay)} onClick={closeEditModal}>
+          <div
+            style={themed(styles.modalCard)}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={themed(styles.modalHeader)}>
+              <h3 style={themed(styles.modalTitle)}>Sửa sản phẩm</h3>
+              <button
+                type="button"
+                style={themed(styles.modalClose)}
+                onClick={closeEditModal}
+                disabled={savingEdit}
+              >
+                <AppIcon name="close" />
+              </button>
+            </div>
+
+            <div style={themed(styles.modalBody)}>
+              <div style={themed(styles.modalForm)}>
+                <label style={themed(styles.modalLabel)}>
+                  Tên sản phẩm
+                  <input
+                    type="text"
+                    value={editingProduct.name}
+                    style={themed(styles.modalInput)}
+                    readOnly
+                  />
+                </label>
+
+                <label style={themed(styles.modalLabel)}>
+                  Giá bán
+                  <input
+                    type="number"
+                    value={editingProduct.price}
+                    onChange={(e) =>
+                      setEditingProduct((prev) =>
+                        prev ? { ...prev, price: e.target.value } : prev,
+                      )
+                    }
+                    style={themed(styles.modalInput)}
+                  />
+                </label>
+
+                <label style={themed(styles.modalLabel)}>
+                  Số lượng kho
+                  <input
+                    type="number"
+                    value={editingProduct.quantity}
+                    onChange={(e) =>
+                      setEditingProduct((prev) =>
+                        prev ? { ...prev, quantity: e.target.value } : prev,
+                      )
+                    }
+                    style={themed(styles.modalInput)}
+                  />
+                </label>
+
+                <label style={themed(styles.modalLabel)}>
+                  Trạng thái
+                  <select
+                    value={editingProduct.status}
+                    onChange={(e) =>
+                      setEditingProduct((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              status: e.target.value as EditProductForm["status"],
+                            }
+                          : prev,
+                      )
+                    }
+                    style={themed(styles.modalInput)}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="sold_out">Sold Out</option>
+                  </select>
+                </label>
+
+                <label style={themed(styles.modalLabel)}>
+                  Mô tả
+                  <textarea
+                    value={editingProduct.description}
+                    onChange={(e) =>
+                      setEditingProduct((prev) =>
+                        prev ? { ...prev, description: e.target.value } : prev,
+                      )
+                    }
+                    style={themed(styles.modalTextarea)}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div style={themed(styles.modalFooter)}>
+              <button
+                type="button"
+                style={{
+                  ...themed(styles.primaryButton),
+                  marginRight: "12px",
+                  background: "transparent",
+                  color: themed(styles.muted).color,
+                  border: `1px solid ${themed(styles.search).borderColor}`,
+                }}
+                onClick={closeEditModal}
+                disabled={savingEdit}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                style={themed(styles.primaryButton)}
+                onClick={onSaveEditProduct}
+                disabled={savingEdit}
+              >
+                {savingEdit ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section style={{ ...themed(styles.tableCard), marginTop: 16 }}>
         <div style={themed(styles.tableHeader)}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "../styles";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -17,6 +18,7 @@ import BrandRequestModal from "./BrandRequestModal";
 import { useDebounce } from "@/utils/debounce";
 import { fetchCatalogCategories } from "@/features/catalog/store/catalogSlice";
 import AppIcon from "@/components/commons/AppIcon";
+import { uploadImageToS3 } from "@/services/uploadApi";
 
 interface AddProductModalProps {
   open: boolean;
@@ -63,10 +65,24 @@ export default function AddProductModal({
   const [requestBrandId, setRequestBrandId] = useState("");
   const [requestCategoryId, setRequestCategoryId] = useState("");
   const [requestDescription, setRequestDescription] = useState("");
+  const [listingImages, setListingImages] = useState<
+    Array<{
+      url: string;
+      key: string;
+    }>
+  >([]);
+  const [listingImageUploading, setListingImageUploading] = useState(false);
+  const [requestImage, setRequestImage] = useState<{
+    url: string;
+    key: string;
+  } | null>(null);
+  const [requestImageUploading, setRequestImageUploading] = useState(false);
+
+  const maxUploadBytes = 10 * 1024 * 1024;
+  const allowedUploadTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
   // Reset page when search query changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [debouncedQuery]);
 
@@ -104,15 +120,6 @@ export default function AddProductModal({
     return normalized ? [normalized] : [];
   };
 
-  const buildVariantKey = (specMap: Record<string, string>) => {
-    const entries = Object.entries(specMap)
-      .filter(([, value]) => Boolean(value && value.trim()))
-      .map(([key, value]) => [key.trim().toLowerCase(), value.trim()] as const)
-      .sort(([a], [b]) => a.localeCompare(b));
-
-    return entries.map(([key, value]) => `${key}=${value}`).join("|");
-  };
-
   const formatSpecLabel = (key: string) =>
     key
       .split(/[_\s-]+/g)
@@ -146,7 +153,8 @@ export default function AddProductModal({
       .sort((a, b) => a.label.localeCompare(b.label));
   };
 
-  const currentVariantKey = buildVariantKey(selectedSpecs);
+  const currentSerialSpecsPreview =
+    Object.keys(selectedSpecs).length > 0 ? JSON.stringify(selectedSpecs) : "(trống)";
   const selectedCatalog = productCatalogs.find((item) => item.id === selectedCatalogId);
   const selectedCatalogSpecEntries =
     selectedCatalog && selectedCatalog.specs && typeof selectedCatalog.specs === "object"
@@ -171,8 +179,15 @@ export default function AddProductModal({
           store_id: parseInt(shopId),
           price: parseFloat(price),
           quantity: parseInt(quantity),
-          variant_key: currentVariantKey || undefined,
+          variant_options:
+            Object.keys(selectedSpecs).length > 0 ? selectedSpecs : undefined,
           description: shopDescription.trim() || undefined,
+          images: listingImages.length
+            ? listingImages.map((item, index) => ({
+                url: item.url,
+                sort_order: index,
+              }))
+            : undefined,
         }),
       ).unwrap();
       alert("Thêm sản phẩm thành công!");
@@ -195,12 +210,57 @@ export default function AddProductModal({
           category_id: parseInt(requestCategoryId),
           brand_id: parseInt(requestBrandId),
           description: requestDescription,
+          default_image: requestImage?.url,
         }),
       ).unwrap();
       alert("Gửi yêu cầu thành công!");
       onClose();
     } catch {
       alert("Có lỗi xảy ra khi gửi yêu cầu");
+    }
+  };
+
+  const validateBeforeUpload = (file: File) => {
+    if (!allowedUploadTypes.includes(file.type)) {
+      throw new Error("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+    }
+    if (file.size > maxUploadBytes) {
+      throw new Error("Ảnh vượt quá 10MB");
+    }
+  };
+
+  const handleUploadImage = async (file: File, target: "listing" | "request") => {
+    try {
+      validateBeforeUpload(file);
+      if (target === "listing" && listingImages.length >= 6) {
+        throw new Error("Tối đa 6 ảnh cho mỗi listing");
+      }
+      if (target === "listing") {
+        setListingImageUploading(true);
+      } else {
+        setRequestImageUploading(true);
+      }
+
+      const uploaded = await uploadImageToS3({
+        file,
+        folder: target === "listing" ? "products" : "requests",
+      });
+
+      if (target === "listing") {
+        setListingImages((prev) => [...prev, uploaded].slice(0, 6));
+      } else {
+        setRequestImage(uploaded);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Upload ảnh thất bại";
+      alert(message);
+    } finally {
+      if (target === "listing") {
+        setListingImageUploading(false);
+      } else {
+        setRequestImageUploading(false);
+      }
     }
   };
 
@@ -329,6 +389,7 @@ export default function AddProductModal({
                               setRequestSpecValues("");
                               setSpecRequestMode("existing");
                               setRequestExistingKey("");
+                              setListingImages([]);
                               const defaultSpecs: Record<string, string> = {};
                               specEntries.forEach((entry) => {
                                 if (entry.options.length > 0) {
@@ -344,7 +405,16 @@ export default function AddProductModal({
                               checked={isSelected}
                               readOnly
                             />
-                            <div style={themed(styles.modalProductThumb)} />
+                            <div
+                              style={{
+                                ...themed(styles.modalProductThumb),
+                                backgroundImage: c.default_image
+                                  ? `url(${c.default_image})`
+                                  : undefined,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }}
+                            />
                             <div style={themed(styles.modalProductInfo)}>
                               <div
                                 style={themed(styles.modalProductName)}
@@ -391,6 +461,57 @@ export default function AddProductModal({
                                     placeholder="Ví dụ: Hàng mới 99%, bảo hành cửa hàng 6 tháng..."
                                     style={themed(styles.modalTextarea)}
                                   />
+                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                    Ảnh listing (tối đa 6 ảnh)
+                                  </label>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    multiple
+                                    onChange={(e) => {
+                                      const files = Array.from(e.target.files || []);
+                                      if (files.length > 0) {
+                                        void (async () => {
+                                          for (const file of files) {
+                                            await handleUploadImage(file, "listing");
+                                          }
+                                        })();
+                                      }
+                                      e.currentTarget.value = "";
+                                    }}
+                                    style={themed(styles.modalInputFull)}
+                                  />
+                                  {listingImageUploading && (
+                                    <div style={themed(styles.modalHint)}>
+                                      Đang upload ảnh...
+                                    </div>
+                                  )}
+                                  {listingImages.length > 0 && (
+                                    <div style={themed(styles.modalUploadPreviewGrid)}>
+                                      {listingImages.map((item, index) => (
+                                        <div key={item.key} style={themed(styles.modalUploadPreviewItem)}>
+                                          <Image
+                                            src={item.url}
+                                            alt={`Listing preview ${index + 1}`}
+                                            width={180}
+                                            height={140}
+                                            style={themed(styles.modalUploadPreview)}
+                                          />
+                                          <button
+                                            type="button"
+                                            style={themed(styles.modalUploadRemoveButton)}
+                                            onClick={() =>
+                                              setListingImages((prev) =>
+                                                prev.filter((image) => image.key !== item.key),
+                                              )
+                                            }
+                                          >
+                                            Xóa
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div style={themed(styles.modalPanel)}>
@@ -437,7 +558,7 @@ export default function AddProductModal({
                                   </div>
 
                                   <div style={themed(styles.modalVariantPreview)}>
-                                    variant_key: {currentVariantKey || "(trống)"}
+                                    serial_specs: {currentSerialSpecsPreview}
                                   </div>
                                 </div>
                               </div>
@@ -568,6 +689,33 @@ export default function AddProductModal({
                     onChange={(e) => setRequestDescription(e.target.value)}
                   />
                 </label>
+                <label style={themed(styles.modalLabel)}>
+                  Ảnh đại diện sản phẩm (tuỳ chọn)
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        void handleUploadImage(file, "request");
+                      }
+                      e.currentTarget.value = "";
+                    }}
+                    style={themed(styles.modalInput)}
+                  />
+                  {requestImageUploading && (
+                    <span style={themed(styles.modalHint)}>Đang upload ảnh...</span>
+                  )}
+                  {requestImage?.url && (
+                    <Image
+                      src={requestImage.url}
+                      alt="Request preview"
+                      width={720}
+                      height={240}
+                      style={themed(styles.modalUploadPreview)}
+                    />
+                  )}
+                </label>
                 <button
                   type="button"
                   style={themed(styles.modalLink)}
@@ -599,7 +747,11 @@ export default function AddProductModal({
               onClick={
                 mode === "existing" ? handleAddExisting : handleSendRequest
               }
-              disabled={loading}
+              disabled={
+                loading ||
+                (mode === "existing" && listingImageUploading) ||
+                (mode === "request" && requestImageUploading)
+              }
             >
               {loading
                 ? "Đang xử lý..."

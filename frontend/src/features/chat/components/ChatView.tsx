@@ -10,12 +10,19 @@ import {
   getConversationsService,
   getMessagesService,
   openStoreConversationService,
-  sendMessageService,
 } from "../services/chatApi";
 import { API_BASE_URL } from "@/config/api";
 
 function resolveSocketUrl() {
   return API_BASE_URL.replace(/\/api\/?$/, "");
+}
+
+function dedupeById(rows: ChatMessage[]) {
+  const map = new Map<number, ChatMessage>();
+  rows.forEach((item) => map.set(Number(item.id), item));
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
+  );
 }
 
 export default function ChatView() {
@@ -78,6 +85,7 @@ export default function ChatView() {
       const sender = Number(payload.sender_id);
       const receiver = Number(payload.receiver_id);
       const currentUserId = Number(me?.id || 0);
+      if (sender === currentUserId) return;
       const peerId = sender === currentUserId ? receiver : sender;
 
       setConversations((prev) => {
@@ -100,7 +108,7 @@ export default function ChatView() {
       });
 
       if (activePeerId === peerId) {
-        setMessages((prev) => [...prev, payload]);
+        setMessages((prev) => dedupeById([...prev, payload]));
         socket.emit("chat:read", { peer_user_id: peerId });
       }
     });
@@ -163,7 +171,37 @@ export default function ChatView() {
 
     try {
       setDraft("");
-      await sendMessageService(activePeerId, text);
+      const socket = socketRef.current;
+      if (!socket) {
+        throw new Error("Socket chưa sẵn sàng");
+      }
+      const result = await new Promise<ChatMessage>((resolve, reject) => {
+        socket.emit(
+          "chat:send",
+          { receiver_id: activePeerId, message: text },
+          (ack: { ok: boolean; data?: ChatMessage; message?: string }) => {
+            if (!ack?.ok || !ack?.data) {
+              reject(new Error(ack?.message || "Gửi tin nhắn thất bại"));
+              return;
+            }
+            resolve(ack.data);
+          },
+        );
+      });
+      setMessages((prev) => dedupeById([...prev, result]));
+      setConversations((prev) => {
+        const next = [...prev];
+        const idx = next.findIndex((item) => item.peer_user_id === activePeerId);
+        if (idx < 0) return prev;
+        next[idx] = {
+          ...next[idx],
+          last_message: result.message,
+          last_message_at: result.sent_at,
+          unread_count: 0,
+        };
+        const [picked] = next.splice(idx, 1);
+        return [picked, ...next];
+      });
     } catch (error) {
       setDraft(text);
       showErrorToast(error);

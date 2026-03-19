@@ -431,7 +431,7 @@ export default function Header() {
   const categories = [
     { name: "Tất cả danh mục", value: "all" },
     ...flattenWithDepth(categoryTree).map((item) => ({
-      name: `${item.depth > 0 ? "— ".repeat(item.depth) : ""}${item.name}`,
+      name: item.name,
       value: String(item.id),
     })),
   ];
