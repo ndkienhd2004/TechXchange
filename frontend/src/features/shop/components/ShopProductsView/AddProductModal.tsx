@@ -19,6 +19,7 @@ import { useDebounce } from "@/utils/debounce";
 import { fetchCatalogCategories } from "@/features/catalog/store/catalogSlice";
 import AppIcon from "@/components/commons/AppIcon";
 import { uploadImageToS3 } from "@/services/uploadApi";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
 interface AddProductModalProps {
   open: boolean;
@@ -26,6 +27,30 @@ interface AddProductModalProps {
 }
 
 const ITEMS_PER_LIMIT = 5;
+
+function extractErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (typeof error === "string" && error.trim()) {
+    return error.trim();
+  }
+
+  if (error && typeof error === "object") {
+    const directMessage = (error as { message?: unknown }).message;
+    if (typeof directMessage === "string" && directMessage.trim()) {
+      return directMessage.trim();
+    }
+
+    const responseData = (error as { response?: { data?: unknown } }).response
+      ?.data;
+    if (responseData && typeof responseData === "object") {
+      const responseMessage = (responseData as { message?: unknown }).message;
+      if (typeof responseMessage === "string" && responseMessage.trim()) {
+        return responseMessage.trim();
+      }
+    }
+  }
+
+  return fallbackMessage;
+}
 
 export default function AddProductModal({
   open,
@@ -49,7 +74,9 @@ export default function AddProductModal({
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(
     null,
   );
-  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({});
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>(
+    {},
+  );
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("10");
   const [shopDescription, setShopDescription] = useState("");
@@ -79,7 +106,12 @@ export default function AddProductModal({
   const [requestImageUploading, setRequestImageUploading] = useState(false);
 
   const maxUploadBytes = 10 * 1024 * 1024;
-  const allowedUploadTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const allowedUploadTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
 
   // Reset page when search query changes
   useEffect(() => {
@@ -105,9 +137,7 @@ export default function AddProductModal({
 
   const getSpecOptions = (value: unknown): string[] => {
     if (Array.isArray(value)) {
-      return value
-        .map((item) => String(item).trim())
-        .filter(Boolean);
+      return value.map((item) => String(item).trim()).filter(Boolean);
     }
     if (typeof value === "string") {
       return value
@@ -154,13 +184,23 @@ export default function AddProductModal({
   };
 
   const currentSerialSpecsPreview =
-    Object.keys(selectedSpecs).length > 0 ? JSON.stringify(selectedSpecs) : "(trống)";
-  const selectedCatalog = productCatalogs.find((item) => item.id === selectedCatalogId);
+    Object.keys(selectedSpecs).length > 0
+      ? JSON.stringify(selectedSpecs)
+      : "(trống)";
+  const selectedCatalog = productCatalogs.find(
+    (item) => item.id === selectedCatalogId,
+  );
   const selectedCatalogSpecEntries =
-    selectedCatalog && selectedCatalog.specs && typeof selectedCatalog.specs === "object"
-      ? normalizeCatalogSpecEntries(selectedCatalog.specs as Record<string, unknown>)
+    selectedCatalog &&
+    selectedCatalog.specs &&
+    typeof selectedCatalog.specs === "object"
+      ? normalizeCatalogSpecEntries(
+          selectedCatalog.specs as Record<string, unknown>,
+        )
       : [];
-  const selectedCatalogSpecKeys = selectedCatalogSpecEntries.map((item) => item.key);
+  const selectedCatalogSpecKeys = selectedCatalogSpecEntries.map(
+    (item) => item.key,
+  );
 
   const handleAddExisting = async () => {
     if (!selectedCatalogId || !price || !quantity) {
@@ -190,11 +230,13 @@ export default function AddProductModal({
             : undefined,
         }),
       ).unwrap();
-      alert("Thêm sản phẩm thành công!");
+      showSuccessToast("Thêm sản phẩm thành công!");
       dispatch(getShopProducts({ page: 1, limit: 10 }));
       onClose();
-    } catch {
-      alert("Có lỗi xảy ra khi thêm sản phẩm");
+    } catch (error) {
+      showErrorToast(
+        extractErrorMessage(error, "Có lỗi xảy ra khi thêm sản phẩm"),
+      );
     }
   };
 
@@ -229,7 +271,10 @@ export default function AddProductModal({
     }
   };
 
-  const handleUploadImage = async (file: File, target: "listing" | "request") => {
+  const handleUploadImage = async (
+    file: File,
+    target: "listing" | "request",
+  ) => {
     try {
       validateBeforeUpload(file);
       if (target === "listing" && listingImages.length >= 6) {
@@ -366,7 +411,8 @@ export default function AddProductModal({
                   ) : (
                     productCatalogs.map((c) => {
                       const isSelected = selectedCatalogId === c.id;
-                      const catalogSpecs = c.specs && typeof c.specs === "object" ? c.specs : {};
+                      const catalogSpecs =
+                        c.specs && typeof c.specs === "object" ? c.specs : {};
                       const specEntries = normalizeCatalogSpecEntries(
                         catalogSpecs as Record<string, unknown>,
                       );
@@ -434,7 +480,11 @@ export default function AddProductModal({
                             <div style={themed(styles.modalProductExpanded)}>
                               <div style={themed(styles.modalExpandedGrid)}>
                                 <div style={themed(styles.modalPanel)}>
-                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                  <label
+                                    style={themed(
+                                      styles.modalProductSmallLabel,
+                                    )}
+                                  >
                                     Giá bán
                                   </label>
                                   <input
@@ -443,25 +493,41 @@ export default function AddProductModal({
                                     onChange={(e) => setPrice(e.target.value)}
                                     style={themed(styles.modalInputFull)}
                                   />
-                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                  <label
+                                    style={themed(
+                                      styles.modalProductSmallLabel,
+                                    )}
+                                  >
                                     Số lượng
                                   </label>
                                   <input
                                     type="number"
                                     value={quantity}
-                                    onChange={(e) => setQuantity(e.target.value)}
+                                    onChange={(e) =>
+                                      setQuantity(e.target.value)
+                                    }
                                     style={themed(styles.modalInputFull)}
                                   />
-                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                  <label
+                                    style={themed(
+                                      styles.modalProductSmallLabel,
+                                    )}
+                                  >
                                     Mô tả riêng của shop (tuỳ chọn)
                                   </label>
                                   <textarea
                                     value={shopDescription}
-                                    onChange={(e) => setShopDescription(e.target.value)}
+                                    onChange={(e) =>
+                                      setShopDescription(e.target.value)
+                                    }
                                     placeholder="Ví dụ: Hàng mới 99%, bảo hành cửa hàng 6 tháng..."
                                     style={themed(styles.modalTextarea)}
                                   />
-                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                  <label
+                                    style={themed(
+                                      styles.modalProductSmallLabel,
+                                    )}
+                                  >
                                     Ảnh listing (tối đa 6 ảnh)
                                   </label>
                                   <input
@@ -469,11 +535,16 @@ export default function AddProductModal({
                                     accept="image/jpeg,image/png,image/webp,image/gif"
                                     multiple
                                     onChange={(e) => {
-                                      const files = Array.from(e.target.files || []);
+                                      const files = Array.from(
+                                        e.target.files || [],
+                                      );
                                       if (files.length > 0) {
                                         void (async () => {
                                           for (const file of files) {
-                                            await handleUploadImage(file, "listing");
+                                            await handleUploadImage(
+                                              file,
+                                              "listing",
+                                            );
                                           }
                                         })();
                                       }
@@ -487,22 +558,38 @@ export default function AddProductModal({
                                     </div>
                                   )}
                                   {listingImages.length > 0 && (
-                                    <div style={themed(styles.modalUploadPreviewGrid)}>
+                                    <div
+                                      style={themed(
+                                        styles.modalUploadPreviewGrid,
+                                      )}
+                                    >
                                       {listingImages.map((item, index) => (
-                                        <div key={item.key} style={themed(styles.modalUploadPreviewItem)}>
+                                        <div
+                                          key={item.key}
+                                          style={themed(
+                                            styles.modalUploadPreviewItem,
+                                          )}
+                                        >
                                           <Image
                                             src={item.url}
                                             alt={`Listing preview ${index + 1}`}
                                             width={180}
                                             height={140}
-                                            style={themed(styles.modalUploadPreview)}
+                                            style={themed(
+                                              styles.modalUploadPreview,
+                                            )}
                                           />
                                           <button
                                             type="button"
-                                            style={themed(styles.modalUploadRemoveButton)}
+                                            style={themed(
+                                              styles.modalUploadRemoveButton,
+                                            )}
                                             onClick={() =>
                                               setListingImages((prev) =>
-                                                prev.filter((image) => image.key !== item.key),
+                                                prev.filter(
+                                                  (image) =>
+                                                    image.key !== item.key,
+                                                ),
                                               )
                                             }
                                           >
@@ -515,7 +602,11 @@ export default function AddProductModal({
                                 </div>
 
                                 <div style={themed(styles.modalPanel)}>
-                                  <label style={themed(styles.modalProductSmallLabel)}>
+                                  <label
+                                    style={themed(
+                                      styles.modalProductSmallLabel,
+                                    )}
+                                  >
                                     Tùy chọn có sẵn từ catalog
                                   </label>
                                   <div style={themed(styles.modalSpecGrid)}>
@@ -525,25 +616,35 @@ export default function AddProductModal({
                                       </div>
                                     ) : (
                                       specEntries.map((entry) => {
-                                        if (entry.options.length === 0) return null;
+                                        if (entry.options.length === 0)
+                                          return null;
 
                                         return (
                                           <label
                                             key={entry.key}
                                             style={themed(styles.modalSpecItem)}
                                           >
-                                            <span style={themed(styles.modalProductSmallLabel)}>
+                                            <span
+                                              style={themed(
+                                                styles.modalProductSmallLabel,
+                                              )}
+                                            >
                                               {entry.label}
                                             </span>
                                             <select
-                                              value={selectedSpecs[entry.key] ?? entry.options[0]}
+                                              value={
+                                                selectedSpecs[entry.key] ??
+                                                entry.options[0]
+                                              }
                                               onChange={(e) =>
                                                 setSelectedSpecs((prev) => ({
                                                   ...prev,
                                                   [entry.key]: e.target.value,
                                                 }))
                                               }
-                                              style={themed(styles.modalInputFull)}
+                                              style={themed(
+                                                styles.modalInputFull,
+                                              )}
                                             >
                                               {entry.options.map((opt) => (
                                                 <option key={opt} value={opt}>
@@ -557,7 +658,9 @@ export default function AddProductModal({
                                     )}
                                   </div>
 
-                                  <div style={themed(styles.modalVariantPreview)}>
+                                  <div
+                                    style={themed(styles.modalVariantPreview)}
+                                  >
                                     serial_specs: {currentSerialSpecsPreview}
                                   </div>
                                 </div>
@@ -618,17 +721,22 @@ export default function AddProductModal({
                       Cần thêm thông số cho catalog?
                     </div>
                     <div style={themed(styles.modalRequestSub)}>
-                      Mở form riêng để đề xuất cho admin, tránh lẫn với thông số listing.
+                      Mở form riêng để đề xuất cho admin, tránh lẫn với thông số
+                      listing.
                     </div>
                     <button
                       type="button"
                       style={themed(styles.modalGhostButton)}
                       onClick={() => {
                         if (selectedCatalogSpecKeys.length > 0) {
-                          setRequestExistingKey(selectedCatalogSpecKeys[0] ?? "");
+                          setRequestExistingKey(
+                            selectedCatalogSpecKeys[0] ?? "",
+                          );
                         }
                         setSpecRequestMode(
-                          selectedCatalogSpecKeys.length > 0 ? "existing" : "new",
+                          selectedCatalogSpecKeys.length > 0
+                            ? "existing"
+                            : "new",
                         );
                         setSpecRequestOpen(true);
                       }}
@@ -704,7 +812,9 @@ export default function AddProductModal({
                     style={themed(styles.modalInput)}
                   />
                   {requestImageUploading && (
-                    <span style={themed(styles.modalHint)}>Đang upload ảnh...</span>
+                    <span style={themed(styles.modalHint)}>
+                      Đang upload ảnh...
+                    </span>
                   )}
                   {requestImage?.url && (
                     <Image
@@ -770,7 +880,9 @@ export default function AddProductModal({
         <div style={themed(styles.modalOverlay)}>
           <div style={themed(styles.specRequestModalCard)}>
             <div style={themed(styles.modalHeader)}>
-              <h3 style={themed(styles.modalTitle)}>Đề xuất thông số catalog</h3>
+              <h3 style={themed(styles.modalTitle)}>
+                Đề xuất thông số catalog
+              </h3>
               <button
                 type="button"
                 style={themed(styles.modalClose)}
@@ -806,7 +918,7 @@ export default function AddProductModal({
                 </button>
               </div>
 
-                    {specRequestMode === "existing" ? (
+              {specRequestMode === "existing" ? (
                 <label style={themed(styles.modalLabel)}>
                   Chọn key có sẵn
                   <select
@@ -839,7 +951,7 @@ export default function AddProductModal({
               )}
 
               <label style={themed(styles.modalLabel)}>
-                Giá trị đề xuất (cách nhau bằng `|`, `,` hoặc `;`)
+                Giá trị đề xuất
                 <input
                   type="text"
                   value={requestSpecValues}

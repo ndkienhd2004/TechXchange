@@ -71,6 +71,7 @@ export const title = (theme: Theme): CSSProperties => ({
   margin: 0,
   fontSize: theme.typography.fontSize.lg.size,
   fontWeight: theme.typography.fontWeight.semibold,
+  color: "#ffffff",
   lineHeight: 1.3,
   minHeight: "2.6em",
   maxHeight: "2.6em",
