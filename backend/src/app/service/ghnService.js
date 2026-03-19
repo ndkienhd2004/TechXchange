@@ -1,8 +1,4 @@
 class GhnService {
-  static shouldDebug() {
-    return String(process.env.GHN_DEBUG || "true").toLowerCase() !== "false";
-  }
-
   static maskToken(token) {
     const value = String(token || "");
     if (!value) return "";
@@ -57,18 +53,6 @@ class GhnService {
     };
     const reqBody = payload ? JSON.stringify(payload) : JSON.stringify({});
 
-    if (this.shouldDebug()) {
-      // eslint-disable-next-line no-console
-      console.log("[GHN][REQUEST]", {
-        url,
-        headers: {
-          ...reqHeaders,
-          Token: this.maskToken(reqHeaders.Token),
-        },
-        body: payload || {},
-      });
-    }
-
     const response = await fetch(url, {
       method: "POST",
       headers: reqHeaders,
@@ -82,32 +66,15 @@ class GhnService {
       throw new Error(`GHN trả về dữ liệu không hợp lệ (${response.status})`);
     }
 
-    if (this.shouldDebug()) {
-      // eslint-disable-next-line no-console
-      console.log("[GHN][RESPONSE]", {
-        url,
-        httpStatus: response.status,
-        body: json,
-      });
-    }
-
     if (!response.ok || Number(json?.code) !== 200) {
-      const rawMessage =
-        typeof json?.message === "string" ? json.message : "";
+      const rawMessage = typeof json?.message === "string" ? json.message : "";
       const detail =
         typeof json?.code_message === "string" ? ` [${json.code_message}]` : "";
       const payloadHint =
         json?.data && typeof json.data === "object"
           ? ` - ${JSON.stringify(json.data)}`
           : "";
-      if (this.shouldDebug()) {
-        // eslint-disable-next-line no-console
-        console.error("[GHN][ERROR]", {
-          url,
-          httpStatus: response.status,
-          response: json,
-        });
-      }
+
       throw new Error(
         (rawMessage || `GHN request thất bại (${response.status})`) +
           detail +
@@ -288,7 +255,9 @@ class GhnService {
       body.coupon = String(payload.coupon).trim();
     }
     if (Array.isArray(payload.pick_shift) && payload.pick_shift.length > 0) {
-      body.pick_shift = payload.pick_shift.map((item) => Number(item)).filter(Boolean);
+      body.pick_shift = payload.pick_shift
+        .map((item) => Number(item))
+        .filter(Boolean);
     }
 
     return this.request("/shiip/public-api/v2/shipping-order/create", body, {
@@ -311,7 +280,9 @@ class GhnService {
       throw new Error("Thiếu thông tin tạo GHN shop (name/phone/address)");
     }
     if (!/^0\d{9,10}$/.test(body.phone)) {
-      throw new Error("Số điện thoại shop không hợp lệ (cần 10-11 số, bắt đầu bằng 0)");
+      throw new Error(
+        "Số điện thoại shop không hợp lệ (cần 10-11 số, bắt đầu bằng 0)",
+      );
     }
     if (!body.ward_code || !body.district_id) {
       throw new Error("Thiếu district_id/ward_code để tạo GHN shop");
