@@ -202,13 +202,6 @@ const Actions = ({
             >
               Tài khoản
             </Link>
-            <Link
-              href="/messages"
-              style={themed(styles.userMenuItem)}
-              onClick={() => setUserMenuOpen(false)}
-            >
-              Tin nhắn
-            </Link>
             {user.role === "admin" && (
               <Link
                 href="/admin"
@@ -431,7 +424,7 @@ export default function Header() {
   const categories = [
     { name: "Tất cả danh mục", value: "all" },
     ...flattenWithDepth(categoryTree).map((item) => ({
-      name: `${item.depth > 0 ? "— ".repeat(item.depth) : ""}${item.name}`,
+      name: item.name,
       value: String(item.id),
     })),
   ];

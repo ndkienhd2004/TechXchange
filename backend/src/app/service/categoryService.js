@@ -17,6 +17,10 @@ const slugify = (value) =>
     .replace(/^-|-$/g, "");
 
 class CategoryService {
+  static logDeleteEvent(stage, payload = {}) {
+    console.log(`[Admin][CategoryDelete][${stage}]`, payload);
+  }
+
   static async getDescendantCategoryIds(categoryId) {
     const id = Number(categoryId);
     if (!id) return [];
@@ -106,39 +110,98 @@ class CategoryService {
     });
   }
 
-  static async deleteCategory(categoryId) {
+  static async deleteCategory(categoryId, options = {}) {
     const id = Number(categoryId);
+    const actorId = options.actorId ? Number(options.actorId) : null;
+    const context = { categoryId: id, actorId };
+
+    CategoryService.logDeleteEvent("Attempt", context);
+
     if (!id) throw new Error("ID danh mục không hợp lệ");
 
     const category = await ProductCategory.findByPk(id);
-    if (!category) throw new Error("Danh mục không tồn tại");
-
-    const hasChildren = await ProductCategory.findOne({
-      where: { parent_id: id },
-      attributes: ["id"],
-    });
-    if (hasChildren) {
-      throw new Error("Không thể xóa danh mục đang có danh mục con");
+    if (!category) {
+      CategoryService.logDeleteEvent("NotFound", context);
+      throw new Error("Danh mục không tồn tại");
     }
 
-    const usedInCatalog = await ProductCatalog.findOne({
-      where: { category_id: id },
-      attributes: ["id"],
-    });
-    if (usedInCatalog) {
-      throw new Error("Không thể xóa danh mục đang được dùng trong catalog");
-    }
+    try {
+      const [
+        childCount,
+        catalogUsageCount,
+        productUsageCount,
+        childSamples,
+        catalogSamples,
+        productSamples,
+      ] = await Promise.all([
+        ProductCategory.count({
+          where: { parent_id: id },
+        }),
+        ProductCatalog.count({
+          where: { category_id: id },
+        }),
+        Product.count({
+          where: { category_id: id },
+        }),
+        ProductCategory.findAll({
+          where: { parent_id: id },
+          attributes: ["id", "name", "slug", "is_active"],
+          limit: 5,
+          order: [["id", "DESC"]],
+        }),
+        ProductCatalog.findAll({
+          where: { category_id: id },
+          attributes: ["id", "name", "status", "brand_id"],
+          limit: 5,
+          order: [["id", "DESC"]],
+        }),
+        Product.findAll({
+          where: { category_id: id },
+          attributes: ["id", "name", "status", "seller_id", "store_id"],
+          limit: 5,
+          order: [["id", "DESC"]],
+        }),
+      ]);
 
-    const usedInProduct = await Product.findOne({
-      where: { category_id: id },
-      attributes: ["id"],
-    });
-    if (usedInProduct) {
-      throw new Error("Không thể xóa danh mục đang được dùng trong sản phẩm");
-    }
+      if (childCount > 0 || catalogUsageCount > 0 || productUsageCount > 0) {
+        CategoryService.logDeleteEvent("BlockedInUse", {
+          ...context,
+          categoryName: category.name,
+          childCount,
+          catalogUsageCount,
+          productUsageCount,
+          childSamples: childSamples.map((item) => item.toJSON()),
+          catalogSamples: catalogSamples.map((item) => item.toJSON()),
+          productSamples: productSamples.map((item) => item.toJSON()),
+        });
 
-    await category.destroy();
-    return category;
+        if (childCount > 0) {
+          throw new Error(
+            `Không thể xóa danh mục đang có danh mục con (số danh mục con: ${childCount})`
+          );
+        }
+        if (catalogUsageCount > 0 || productUsageCount > 0) {
+          throw new Error(
+            `Không thể xóa danh mục đang được sử dụng (catalog: ${catalogUsageCount}, sản phẩm: ${productUsageCount})`
+          );
+        }
+      }
+
+      await category.destroy();
+      CategoryService.logDeleteEvent("Success", {
+        ...context,
+        categoryName: category.name,
+      });
+
+      return category;
+    } catch (error) {
+      CategoryService.logDeleteEvent("Error", {
+        ...context,
+        categoryName: category.name,
+        message: error.message,
+      });
+      throw error;
+    }
   }
 }
 

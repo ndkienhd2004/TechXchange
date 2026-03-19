@@ -11,6 +11,9 @@ export const container = (theme: Theme): CSSProperties => ({
 });
 
 export const pageButton = (theme: Theme): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   minWidth: "40px",
   height: "40px",
   padding: `0 ${theme.spacing[3]}`,
@@ -18,6 +21,8 @@ export const pageButton = (theme: Theme): CSSProperties => ({
   border: `1px solid ${theme.colors.palette.borders.default}`,
   background: theme.colors.palette.backgrounds.card,
   color: theme.colors.palette.text.primary,
+  textDecoration: "none",
+  textAlign: "center",
   fontSize: theme.typography.fontSize.sm.size,
   fontWeight: theme.typography.fontWeight.medium,
   cursor: "pointer",

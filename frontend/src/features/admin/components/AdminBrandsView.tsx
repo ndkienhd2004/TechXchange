@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -14,6 +15,8 @@ import type { AdminStatus } from "@/features/admin/types";
 import AdminLayout from "./AdminLayout";
 import * as styles from "./styles";
 import AppIcon from "@/components/commons/AppIcon";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
+import { uploadImageToS3 } from "@/services/uploadApi";
 import {
   createAdminBrand,
   deleteAdminBrand,
@@ -49,6 +52,14 @@ export default function AdminBrandsView() {
   const [editingBrandId, setEditingBrandId] = useState<number | null>(null);
   const [brandName, setBrandName] = useState("");
   const [brandImage, setBrandImage] = useState("");
+  const [brandImageUploading, setBrandImageUploading] = useState(false);
+  const maxUploadBytes = 10 * 1024 * 1024;
+  const allowedUploadTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
 
   const loadBrands = async () => {
     try {
@@ -127,26 +138,59 @@ export default function AdminBrandsView() {
 
   const onSaveBrand = async () => {
     if (!brandName.trim()) return;
-    if (editingBrandId) {
-      await updateAdminBrand(editingBrandId, {
-        name: brandName.trim(),
-        image: brandImage.trim() || undefined,
-      });
-    } else {
-      await createAdminBrand({
-        name: brandName.trim(),
-        image: brandImage.trim() || undefined,
-      });
+    try {
+      if (editingBrandId) {
+        await updateAdminBrand(editingBrandId, {
+          name: brandName.trim(),
+          image: brandImage.trim() || undefined,
+        });
+        showSuccessToast("Cập nhật thương hiệu thành công");
+      } else {
+        await createAdminBrand({
+          name: brandName.trim(),
+          image: brandImage.trim() || undefined,
+        });
+        showSuccessToast("Tạo thương hiệu thành công");
+      }
+      setBrandModalOpen(false);
+      await loadBrands();
+    } catch (error) {
+      showErrorToast(error);
     }
-    setBrandModalOpen(false);
-    await loadBrands();
+  };
+
+  const onBrandImageFileChange = async (file: File) => {
+    if (!allowedUploadTypes.includes(file.type)) {
+      showErrorToast("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+      return;
+    }
+    if (file.size > maxUploadBytes) {
+      showErrorToast("Ảnh vượt quá 10MB");
+      return;
+    }
+
+    try {
+      setBrandImageUploading(true);
+      const uploaded = await uploadImageToS3({ file, folder: "brands" });
+      setBrandImage(uploaded.url);
+      showSuccessToast("Upload logo thương hiệu thành công");
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setBrandImageUploading(false);
+    }
   };
 
   const onDeleteBrand = async (id: number) => {
     const ok = window.confirm("Xóa brand này?");
     if (!ok) return;
-    await deleteAdminBrand(id);
-    await loadBrands();
+    try {
+      await deleteAdminBrand(id);
+      showSuccessToast("Xóa thương hiệu thành công");
+      await loadBrands();
+    } catch (error) {
+      showErrorToast(error);
+    }
   };
 
   const requestStatusLabel = (value: string) => {
@@ -242,7 +286,7 @@ export default function AdminBrandsView() {
               <tr>
                 <th style={themed(styles.th)}>ID</th>
                 <th style={themed(styles.th)}>Tên thương hiệu</th>
-                <th style={themed(styles.th)}>Image URL</th>
+                <th style={themed(styles.th)}>Logo</th>
                 <th style={themed(styles.th)}>Thao tác</th>
               </tr>
             </thead>
@@ -260,7 +304,25 @@ export default function AdminBrandsView() {
                   <tr key={brand.id}>
                     <td style={themed(styles.td)}>{brand.id}</td>
                     <td style={themed(styles.td)}>{brand.name}</td>
-                    <td style={themed(styles.td)}>{brand.image || "-"}</td>
+                    <td style={themed(styles.td)}>
+                      {brand.image ? (
+                        <Image
+                          src={brand.image}
+                          alt={brand.name}
+                          width={120}
+                          height={68}
+                          style={{
+                            width: "72px",
+                            height: "42px",
+                            objectFit: "cover",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(148,163,184,0.25)",
+                          }}
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td style={themed(styles.td)}>
                       <div style={themed(styles.rowActions)}>
                         <button
@@ -441,14 +503,41 @@ export default function AdminBrandsView() {
                 />
               </div>
               <div style={themed(styles.modalSection)}>
-                <label style={themed(styles.muted)}>Logo URL (tuỳ chọn)</label>
+                <label style={themed(styles.muted)}>
+                  Logo thương hiệu (tuỳ chọn)
+                </label>
                 <input
-                  type="text"
-                  value={brandImage}
-                  onChange={(e) => setBrandImage(e.target.value)}
-                  placeholder="https://..."
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void onBrandImageFileChange(file);
+                    }
+                    e.currentTarget.value = "";
+                  }}
                   style={themed(styles.searchInput)}
                 />
+                <span style={themed(styles.muted)}>
+                  {brandImageUploading
+                    ? "Đang upload..."
+                    : "JPG, PNG, WEBP, GIF (tối đa 10MB)"}
+                </span>
+                {brandImage ? (
+                  <Image
+                    src={brandImage}
+                    alt="Brand logo preview"
+                    width={360}
+                    height={140}
+                    style={{
+                      width: "140px",
+                      height: "80px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(148,163,184,0.25)",
+                    }}
+                  />
+                ) : null}
               </div>
             </div>
 
@@ -464,6 +553,7 @@ export default function AdminBrandsView() {
                 type="button"
                 style={themed(styles.primaryButton)}
                 onClick={onSaveBrand}
+                disabled={brandImageUploading}
               >
                 Lưu
               </button>

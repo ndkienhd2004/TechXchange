@@ -73,11 +73,13 @@ export const title = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
   lineHeight: 1.3,
   minHeight: "2.6em",
+  maxHeight: "2.6em",
   overflow: "hidden",
   textOverflow: "ellipsis",
   display: "-webkit-box",
   WebkitLineClamp: 2,
   WebkitBoxOrient: "vertical",
+  wordBreak: "break-word",
 });
 
 export const priceRow = (theme: Theme): CSSProperties => ({

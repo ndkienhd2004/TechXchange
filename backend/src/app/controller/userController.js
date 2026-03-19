@@ -27,12 +27,13 @@ class UserController {
   static async updateProfile(req, res) {
     try {
       const userId = req.user.id;
-      const { username, phone, gender } = req.body;
+      const { username, phone, gender, avatar } = req.body;
 
       const user = await UserService.updateUser(userId, {
         username,
         phone,
         gender,
+        avatar,
       });
 
       return response.success(res, "Cập nhật thông tin thành công", {
@@ -41,6 +42,8 @@ class UserController {
         username: user.username,
         phone: user.phone,
         gender: user.gender,
+        avatar: user.avatar,
+        role: user.role,
       });
     } catch (error) {
       return response.badRequest(res, error.message);

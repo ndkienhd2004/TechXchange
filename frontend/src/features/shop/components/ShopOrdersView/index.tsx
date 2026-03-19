@@ -119,6 +119,22 @@ export default function ShopOrdersView() {
     }
   };
 
+  const onReject = async (orderId: number) => {
+    const accepted = window.confirm(
+      "Bạn chắc chắn muốn từ chối đơn này? Hệ thống sẽ nhả lại tồn kho đã giữ chỗ.",
+    );
+    if (!accepted) return;
+
+    try {
+      const api = getAxiosInstance();
+      await api.put(`/orders/shop/${orderId}/reject`);
+      showSuccessToast("Đã từ chối đơn hàng và nhả lại tồn kho");
+      await loadOrders(activeTab);
+    } catch (error) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <ShopLayout>
       <header style={themed(styles.pageHeader)}>
@@ -240,13 +256,22 @@ export default function ShopOrdersView() {
                     <td style={themed(styles.td)}>
                       <div style={themed(styles.rowActions)}>
                         {order.status === "pending" ? (
-                          <button
-                            type="button"
-                            style={themed(styles.shipButton)}
-                            onClick={() => onApprove(Number(order.id))}
-                          >
-                            Duyệt giao hàng
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              style={themed(styles.shipButton)}
+                              onClick={() => onApprove(Number(order.id))}
+                            >
+                              Duyệt giao hàng
+                            </button>
+                            <button
+                              type="button"
+                              style={themed(styles.rejectButton)}
+                              onClick={() => onReject(Number(order.id))}
+                            >
+                              Từ chối
+                            </button>
+                          </>
                         ) : (
                           <span style={themed(styles.orderMeta)}>—</span>
                         )}

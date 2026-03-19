@@ -119,8 +119,9 @@ export const createShopProduct = createAsyncThunk(
       store_id: number;
       price: number;
       quantity: number;
-      variant_key?: string;
+      variant_options?: Record<string, string>;
       description?: string;
+      images?: { url: string; sort_order: number }[];
     },
     thunkAPI,
   ) => {

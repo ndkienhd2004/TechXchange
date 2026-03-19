@@ -2,10 +2,33 @@ const { Op } = require("sequelize");
 const { Review, Order, OrderItem, User } = require("../../models");
 
 class ReviewService {
+  static normalizeReviewImages(imagesInput) {
+    if (!Array.isArray(imagesInput)) return [];
+    return imagesInput
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .slice(0, 6);
+  }
+
+  static parseStoredReviewImages(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw.map((item) => String(item || "").trim()).filter(Boolean);
+    }
+    try {
+      const parsed = JSON.parse(String(raw));
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((item) => String(item || "").trim()).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   static async createProductReview(userId, payload = {}) {
     const productId = Number(payload.product_id);
     const rating = Number(payload.rating);
     const comment = payload.comment ? String(payload.comment).trim() : null;
+    const images = ReviewService.normalizeReviewImages(payload.images);
 
     if (!productId) throw new Error("product_id không hợp lệ");
     if (Number.isNaN(rating) || rating < 1 || rating > 5) {
@@ -50,11 +73,12 @@ class ReviewService {
       product_id: productId,
       rating,
       comment,
+      images: images.length > 0 ? JSON.stringify(images) : null,
     });
   }
 
   static async getProductReviews(productId) {
-    return Review.findAll({
+    const rows = await Review.findAll({
       where: { product_id: productId },
       include: [
         {
@@ -64,6 +88,13 @@ class ReviewService {
         },
       ],
       order: [["created_at", "DESC"]],
+    });
+    return rows.map((row) => {
+      const payload = row.toJSON();
+      return {
+        ...payload,
+        images: ReviewService.parseStoredReviewImages(payload.images),
+      };
     });
   }
 

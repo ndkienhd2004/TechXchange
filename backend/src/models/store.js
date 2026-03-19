@@ -23,6 +23,12 @@ module.exports = (sequelize, DataTypes) => {
       rating: {
         type: DataTypes.DOUBLE,
       },
+      logo: {
+        type: DataTypes.TEXT,
+      },
+      banner: {
+        type: DataTypes.TEXT,
+      },
       address_line: {
         type: DataTypes.TEXT,
       },

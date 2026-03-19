@@ -458,3 +458,18 @@ export const reviewFilterButtonActive = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.brand.purple[300],
   background: `${theme.colors.palette.brand.purple[700]}33`,
 });
+
+export const reviewImagesGrid = (theme: Theme): CSSProperties => ({
+  marginTop: theme.spacing[3],
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))",
+  gap: theme.spacing[2],
+});
+
+export const reviewImageItem = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  height: "88px",
+  objectFit: "cover",
+  borderRadius: theme.spacing.sm,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+});

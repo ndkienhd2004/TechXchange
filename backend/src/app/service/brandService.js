@@ -4,6 +4,10 @@ const { Brand, Product, ProductCatalog } = require("../../models");
  * Brand Service - Xử lý nghiệp vụ liên quan đến thương hiệu
  */
 class BrandService {
+  static logDeleteEvent(stage, payload = {}) {
+    console.log(`[Admin][BrandDelete][${stage}]`, payload);
+  }
+
   /**
    * Tạo thương hiệu mới
    * @param {object} payload
@@ -79,29 +83,69 @@ class BrandService {
    * @param {number} brandId
    * @returns {Promise<void>}
    */
-  static async deleteBrand(brandId) {
+  static async deleteBrand(brandId, options = {}) {
+    const normalizedBrandId = Number(brandId);
+    const actorId = options.actorId ? Number(options.actorId) : null;
+    const context = {
+      brandId: normalizedBrandId,
+      actorId,
+    };
+
+    BrandService.logDeleteEvent("Attempt", context);
+
     try {
-      const brand = await Brand.findByPk(brandId);
+      const brand = await Brand.findByPk(normalizedBrandId);
       if (!brand) {
+        BrandService.logDeleteEvent("NotFound", context);
         throw new Error("Thương hiệu không tồn tại");
       }
 
-      const usedByProduct = await Product.findOne({
-        where: { brand_id: brandId },
-      });
-      if (usedByProduct) {
-        throw new Error("Không thể xóa thương hiệu đang được sử dụng");
-      }
+      const [productUsageCount, catalogUsageCount, productSamples, catalogSamples] =
+        await Promise.all([
+          Product.count({
+            where: { brand_id: normalizedBrandId },
+          }),
+          ProductCatalog.count({
+            where: { brand_id: normalizedBrandId },
+          }),
+          Product.findAll({
+            where: { brand_id: normalizedBrandId },
+            attributes: ["id", "name", "status", "seller_id", "store_id"],
+            limit: 5,
+            order: [["id", "DESC"]],
+          }),
+          ProductCatalog.findAll({
+            where: { brand_id: normalizedBrandId },
+            attributes: ["id", "name", "status", "category_id"],
+            limit: 5,
+            order: [["id", "DESC"]],
+          }),
+        ]);
 
-      const usedByCatalog = await ProductCatalog.findOne({
-        where: { brand_id: brandId },
-      });
-      if (usedByCatalog) {
-        throw new Error("Không thể xóa thương hiệu đang được sử dụng trong catalog");
+      if (productUsageCount > 0 || catalogUsageCount > 0) {
+        BrandService.logDeleteEvent("BlockedInUse", {
+          ...context,
+          brandName: brand.name,
+          productUsageCount,
+          catalogUsageCount,
+          productSamples: productSamples.map((item) => item.toJSON()),
+          catalogSamples: catalogSamples.map((item) => item.toJSON()),
+        });
+        throw new Error(
+          `Không thể xóa thương hiệu đang được sử dụng (sản phẩm: ${productUsageCount}, catalog: ${catalogUsageCount})`
+        );
       }
 
       await brand.destroy();
+      BrandService.logDeleteEvent("Success", {
+        ...context,
+        brandName: brand.name,
+      });
     } catch (error) {
+      BrandService.logDeleteEvent("Error", {
+        ...context,
+        message: error.message,
+      });
       throw error;
     }
   }

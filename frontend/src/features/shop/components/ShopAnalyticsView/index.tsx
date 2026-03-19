@@ -1,49 +1,135 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import RevenueDailyChart from "../charts/RevenueDailyChart";
 import RevenueMonthlyChart from "../charts/RevenueMonthlyChart";
 import AppIcon from "@/components/commons/AppIcon";
+import { getShopAnalyticsService } from "../../sevices";
+import { showErrorToast } from "@/components/commons/Toast";
 
-const kpis = [
-  { label: "Doanh thu", value: "$0", trend: "+12.5%", tone: "up", icon: "$" },
-  { label: "Đơn hàng", value: "0", trend: "+8.2%", tone: "up", icon: "cart" },
-  { label: "Đơn hoàn thành", value: "0", trend: "0% tỷ lệ", tone: "flat", icon: "box" },
-  { label: "Giá trị TB", value: "$0", trend: "-3.1%", tone: "down", icon: "$" },
+type AnalyticsRange = "7d" | "30d" | "90d" | "all";
+
+type ShopAnalytics = {
+  range: AnalyticsRange;
+  total_orders: number;
+  completed_orders: number;
+  total_revenue: number;
+  average_order_value: number;
+  completion_rate: number;
+  daily_revenue: Array<{ date: string; label: string; revenue: number }>;
+  monthly_revenue: Array<{ month: string; label: string; revenue: number }>;
+  top_products: Array<{
+    product_id: number;
+    name: string;
+    units_sold: number;
+    revenue: number;
+  }>;
+};
+
+const rangeOptions: Array<{ key: AnalyticsRange; label: string }> = [
+  { key: "7d", label: "7 ngày" },
+  { key: "30d", label: "30 ngày" },
+  { key: "90d", label: "90 ngày" },
+  { key: "all", label: "Tất cả" },
 ];
 
-const topProducts = [
-  { name: "DJI Mini 3 Pro Drone", units: 40, revenue: "$7,560" },
-  { name: "Sony WH-1000XM5", units: 32, revenue: "$11,168" },
-  { name: "DELL Gaming G15 5520", units: 12, revenue: "$14,040" },
-  { name: "iPhone 15 Pro Max", units: 8, revenue: "$9,592" },
-  { name: "Galaxy Tab S9", units: 6, revenue: "$5,094" },
-];
+const formatVnd = (value: number) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
 
 export default function ShopAnalyticsView() {
   const { themed } = useAppTheme();
+  const [range, setRange] = useState<AnalyticsRange>("7d");
+  const [loading, setLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<ShopAnalytics | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+        const res = await getShopAnalyticsService(range);
+        setAnalytics(res?.data || null);
+      } catch (error) {
+        showErrorToast(error);
+        setAnalytics(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void run();
+  }, [range]);
+
+  const kpis = useMemo(() => {
+    const totalOrders = Number(analytics?.total_orders || 0);
+    const completedOrders = Number(analytics?.completed_orders || 0);
+    const revenue = Number(analytics?.total_revenue || 0);
+    const avgOrderValue = Number(analytics?.average_order_value || 0);
+    const completionRate = Number(analytics?.completion_rate || 0);
+
+    return [
+      {
+        label: "Doanh thu",
+        value: formatVnd(revenue),
+        trend: `${completionRate.toFixed(1)}% tỉ lệ hoàn thành`,
+        tone: "up" as const,
+        icon: "$",
+      },
+      {
+        label: "Đơn hàng",
+        value: totalOrders.toString(),
+        trend: `${Math.max(totalOrders - completedOrders, 0)} chưa hoàn thành`,
+        tone: "flat" as const,
+        icon: "cart",
+      },
+      {
+        label: "Đơn hoàn thành",
+        value: completedOrders.toString(),
+        trend: `${completionRate.toFixed(1)}% tổng đơn`,
+        tone: "up" as const,
+        icon: "box",
+      },
+      {
+        label: "Giá trị TB",
+        value: formatVnd(avgOrderValue),
+        trend: "AOV",
+        tone: "flat" as const,
+        icon: "$",
+      },
+    ];
+  }, [analytics]);
+
+  const dailyData = analytics?.daily_revenue || [];
+  const monthlyData = analytics?.monthly_revenue || [];
+  const topProducts = analytics?.top_products || [];
 
   return (
     <ShopLayout>
       <header style={themed(styles.pageHeader)}>
         <h1 style={themed(styles.pageTitle)}>Thống kê & Báo cáo</h1>
-        <p style={themed(styles.pageSubtitle)}>Phân tích hiệu suất cửa hàng</p>
+        <p style={themed(styles.pageSubtitle)}>
+          {loading ? "Đang tải dữ liệu..." : "Phân tích hiệu suất cửa hàng"}
+        </p>
       </header>
 
       <div style={themed(styles.filterRow)}>
-        {["7 ngày", "30 ngày", "90 ngày", "Tất cả"].map((label, index) => (
+        {rangeOptions.map((item) => (
           <button
-            key={label}
+            key={item.key}
             type="button"
             style={
-              index === 0
+              range === item.key
                 ? themed(styles.filterButtonActive)
                 : themed(styles.filterButton)
             }
+            onClick={() => setRange(item.key)}
           >
-            {label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -60,8 +146,8 @@ export default function ShopAnalyticsView() {
                   ...(kpi.tone === "up"
                     ? themed(styles.trendUp)
                     : kpi.tone === "down"
-                    ? themed(styles.trendDown)
-                    : themed(styles.trendFlat)),
+                      ? themed(styles.trendDown)
+                      : themed(styles.trendFlat)),
                 }}
               >
                 {kpi.tone === "up" ? "↑" : kpi.tone === "down" ? "↓" : "—"}{" "}
@@ -89,7 +175,11 @@ export default function ShopAnalyticsView() {
             <h2 style={themed(styles.cardTitle)}>Doanh thu theo ngày</h2>
           </div>
           <div style={themed(styles.chartBox)}>
-            <RevenueDailyChart />
+            {dailyData.length === 0 ? (
+              <div style={themed(styles.muted)}>Chưa có dữ liệu</div>
+            ) : (
+              <RevenueDailyChart data={dailyData} />
+            )}
           </div>
         </div>
         <div style={themed(styles.card)}>
@@ -97,7 +187,11 @@ export default function ShopAnalyticsView() {
             <h2 style={themed(styles.cardTitle)}>Doanh thu theo tháng</h2>
           </div>
           <div style={themed(styles.chartBox)}>
-            <RevenueMonthlyChart />
+            {monthlyData.length === 0 ? (
+              <div style={themed(styles.muted)}>Chưa có dữ liệu</div>
+            ) : (
+              <RevenueMonthlyChart data={monthlyData} />
+            )}
           </div>
         </div>
       </section>
@@ -107,18 +201,22 @@ export default function ShopAnalyticsView() {
           <h2 style={themed(styles.cardTitle)}>Top 5 sản phẩm bán chạy</h2>
         </div>
         <div style={themed(styles.topList)}>
-          {topProducts.map((product, index) => (
-            <div key={product.name} style={themed(styles.topItem)}>
-              <div style={themed(styles.topRank)}>{index + 1}</div>
-              <div style={themed(styles.topInfo)}>
-                <div style={themed(styles.topName)}>{product.name}</div>
-                <div style={themed(styles.orderMeta)}>
-                  {product.units} đã bán
+          {topProducts.length === 0 ? (
+            <div style={themed(styles.muted)}>Chưa có dữ liệu bán hàng</div>
+          ) : (
+            topProducts.map((product, index) => (
+              <div key={product.product_id} style={themed(styles.topItem)}>
+                <div style={themed(styles.topRank)}>{index + 1}</div>
+                <div style={themed(styles.topInfo)}>
+                  <div style={themed(styles.topName)}>{product.name}</div>
+                  <div style={themed(styles.orderMeta)}>
+                    {product.units_sold} đã bán
+                  </div>
                 </div>
+                <div style={themed(styles.price)}>{formatVnd(product.revenue)}</div>
               </div>
-              <div style={themed(styles.price)}>{product.revenue}</div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
     </ShopLayout>

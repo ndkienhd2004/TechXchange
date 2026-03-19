@@ -24,6 +24,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         unique: true,
       },
+      avatar: {
+        type: DataTypes.TEXT,
+      },
       password_hash: {
         type: DataTypes.STRING,
       },

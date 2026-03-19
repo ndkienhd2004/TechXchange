@@ -84,7 +84,9 @@ class BrandController {
         return response.badRequest(res, "ID thương hiệu không hợp lệ");
       }
 
-      await BrandService.deleteBrand(brandId);
+      await BrandService.deleteBrand(brandId, {
+        actorId: req.user?.id,
+      });
 
       return response.success(res, "Xóa thương hiệu thành công");
     } catch (error) {

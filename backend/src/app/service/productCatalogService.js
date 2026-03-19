@@ -3,6 +3,10 @@ const { ProductCatalog, Product, Brand, ProductCategory } = require("../../model
 const CategoryService = require("./categoryService");
 
 class ProductCatalogService {
+  static logDeleteEvent(stage, payload = {}) {
+    console.log(`[Admin][CatalogDelete][${stage}]`, payload);
+  }
+
   static async getCatalogs(filters = {}, limit = 10, page = 1) {
     const whereClause = {};
 
@@ -44,23 +48,58 @@ class ProductCatalogService {
     };
   }
 
-  static async deleteCatalog(catalogId) {
+  static async deleteCatalog(catalogId, options = {}) {
+    const normalizedCatalogId = Number(catalogId);
+    const actorId = options.actorId ? Number(options.actorId) : null;
+    const context = {
+      catalogId: normalizedCatalogId,
+      actorId,
+    };
+
+    ProductCatalogService.logDeleteEvent("Attempt", context);
+
     try {
-      const catalog = await ProductCatalog.findByPk(catalogId);
+      const catalog = await ProductCatalog.findByPk(normalizedCatalogId);
       if (!catalog) {
+        ProductCatalogService.logDeleteEvent("NotFound", context);
         throw new Error("Catalog không tồn tại");
       }
 
-      const usedByListing = await Product.findOne({
-        where: { catalog_id: catalogId },
-      });
-      if (usedByListing) {
-        throw new Error("Không thể xóa catalog đang được shop sử dụng");
+      const [listingUsageCount, listingSamples] = await Promise.all([
+        Product.count({
+          where: { catalog_id: normalizedCatalogId },
+        }),
+        Product.findAll({
+          where: { catalog_id: normalizedCatalogId },
+          attributes: ["id", "name", "status", "seller_id", "store_id"],
+          limit: 5,
+          order: [["id", "DESC"]],
+        }),
+      ]);
+
+      if (listingUsageCount > 0) {
+        ProductCatalogService.logDeleteEvent("BlockedInUse", {
+          ...context,
+          catalogName: catalog.name,
+          listingUsageCount,
+          listingSamples: listingSamples.map((item) => item.toJSON()),
+        });
+        throw new Error(
+          `Không thể xóa catalog đang được shop sử dụng (số listing: ${listingUsageCount})`
+        );
       }
 
       await catalog.destroy();
+      ProductCatalogService.logDeleteEvent("Success", {
+        ...context,
+        catalogName: catalog.name,
+      });
       return catalog;
     } catch (error) {
+      ProductCatalogService.logDeleteEvent("Error", {
+        ...context,
+        message: error.message,
+      });
       throw error;
     }
   }

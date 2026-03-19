@@ -9,6 +9,7 @@ import { showErrorToast } from "@/components/commons/Toast";
 import * as styles from "./styles";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
 import ItemCard from "@/components/commons/ItemCard";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 
 type StoreInfo = {
   id: number;
@@ -34,6 +35,9 @@ type StoreProduct = {
   status: string;
   quantity?: number;
   rating?: number;
+  reviewCount?: number | string | null;
+  review_count?: number | string | null;
+  buyturn?: number | string | null;
   created_at?: string;
   images?: Array<{ id: number; url: string }>;
   default_image?: string;
@@ -336,13 +340,23 @@ export default function ShopView() {
                           )}
                           <ItemCard
                             productId={Number(product.id)}
-                            title={product.name}
+                            title={buildProductDisplayName(
+                              product.name,
+                              product.primary_serial_specs ||
+                                (product.catalog?.specs as Record<string, unknown> | undefined),
+                            )}
                             price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
                             compareAtPrice={undefined}
                             rating={Number(
                               product.rating || store?.rating || 0,
                             )}
-                            reviewCount={120}
+                            reviewCount={Number(
+                              product.reviewCount ??
+                                product.review_count ??
+                                product.buyturn ??
+                                product.quantity ??
+                                0,
+                            )}
                             badgeText={Number(product.quantity || 0) > 0 ? "-8%" : "Hết hàng"}
                             imageSrc={
                               product.images?.[0]?.url ||

@@ -72,6 +72,35 @@ export const summaryAvatarImg = (): CSSProperties => ({
   flexShrink: 0,
 });
 
+export const avatarButton = (): CSSProperties => ({
+  border: "none",
+  padding: 0,
+  background: "transparent",
+  cursor: "pointer",
+  position: "relative",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+export const avatarChangeBadge = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  bottom: -8,
+  left: "50%",
+  transform: "translateX(-50%)",
+  borderRadius: "999px",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.secondary,
+  fontSize: fs(theme, "xs"),
+  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  whiteSpace: "nowrap",
+});
+
+export const hiddenFileInput = (): CSSProperties => ({
+  display: "none",
+});
+
 export const summaryInfo = (theme: Theme): CSSProperties => ({
   display: "flex",
   flexDirection: "column",

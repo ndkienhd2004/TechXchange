@@ -98,6 +98,12 @@ router.put(
   shopMiddleware,
   StoreController.updateMyStoreAddress,
 );
+router.put(
+  "/:id/profile",
+  authMiddleware,
+  shopMiddleware,
+  StoreController.updateMyStoreProfile,
+);
 router.post(
   "/:id/ghn/register",
   authMiddleware,

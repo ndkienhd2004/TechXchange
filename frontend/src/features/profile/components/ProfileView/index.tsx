@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { selectUser, selectIsAuthenticated } from "@/features/auth";
-import { GetUserProfile, logout } from "@/features/auth";
+import { GetUserProfile, logout, UpdateUser } from "@/features/auth";
 import PersonalInfoForm from "../PersonalInfoForm";
 import * as styles from "./styles";
 import { useAppTheme } from "@/theme/ThemeProvider";
@@ -20,6 +20,7 @@ import {
 } from "@/services/ghnApi";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import AppIcon from "@/components/commons/AppIcon";
+import { uploadImageToS3 } from "@/services/uploadApi";
 
 type TabId = "info" | "address";
 type UserAddress = {
@@ -77,6 +78,8 @@ export default function ProfileView() {
     searchParams.get("tab") === "address" ? "address" : "info",
   );
   const [avatarError, setAvatarError] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -221,6 +224,46 @@ export default function ProfileView() {
     router.replace("/");
   };
 
+  const openAvatarPicker = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.currentTarget.value = "";
+    if (!file || !user || avatarUploading) return;
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      showErrorToast("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showErrorToast("Ảnh vượt quá 10MB");
+      return;
+    }
+
+    try {
+      setAvatarUploading(true);
+      const uploaded = await uploadImageToS3({ file, folder: "avatars" });
+      await dispatch(
+        UpdateUser({
+          username: user.username || "",
+          email: user.email || "",
+          gender: user.gender || "other",
+          phone: user.phone || "",
+          avatar: uploaded.url,
+        }),
+      ).unwrap();
+      await dispatch(GetUserProfile()).unwrap();
+      setAvatarError(false);
+      showSuccessToast("Đổi ảnh đại diện thành công");
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const resetAddressForm = () => {
     setAddressForm(EMPTY_ADDRESS_FORM);
   };
@@ -327,6 +370,11 @@ export default function ProfileView() {
     user?.username?.charAt(0)?.toUpperCase() ||
     user?.email?.charAt(0)?.toUpperCase() ||
     "?";
+  const avatarUrlRaw = typeof user?.avatar === "string" ? user.avatar.trim() : "";
+  const hasAvatarUrl =
+    Boolean(avatarUrlRaw) &&
+    avatarUrlRaw !== "null" &&
+    avatarUrlRaw !== "undefined";
 
   const sortedAddresses = useMemo(() => {
     return [...addresses].sort((a, b) => Number(b.is_default) - Number(a.is_default));
@@ -341,17 +389,35 @@ export default function ProfileView() {
       <div style={themed(styles.container)}>
         <div style={themed(styles.summaryCard)}>
           <div style={themed(styles.summaryLeft)}>
-            {user.avatar && !avatarError ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.avatar}
-                alt=""
-                style={themed(styles.summaryAvatarImg)}
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <div style={themed(styles.summaryAvatar)}>{initial}</div>
-            )}
+            <button
+              type="button"
+              style={themed(styles.avatarButton)}
+              onClick={openAvatarPicker}
+              disabled={avatarUploading}
+              title="Bấm để đổi ảnh đại diện"
+            >
+              {hasAvatarUrl && !avatarError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrlRaw}
+                  alt=""
+                  style={themed(styles.summaryAvatarImg)}
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div style={themed(styles.summaryAvatar)}>{initial}</div>
+              )}
+              <span style={themed(styles.avatarChangeBadge)}>
+                {avatarUploading ? "Đang tải..." : "Đổi ảnh"}
+              </span>
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleAvatarChange}
+              style={themed(styles.hiddenFileInput)}
+            />
             <div style={themed(styles.summaryInfo)}>
               <h1 style={themed(styles.summaryName)}>{user.username || user.email}</h1>
               <p style={themed(styles.summaryEmail)}>{user.email}</p>

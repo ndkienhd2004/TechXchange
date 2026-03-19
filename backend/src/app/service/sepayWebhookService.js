@@ -211,7 +211,6 @@ class SepayWebhookService {
       if (!order) {
         await event.update(
           {
-            order_id: orderId,
             process_status: "ignored",
             process_message: "Không tìm thấy đơn hàng",
             processed_at: new Date(),
@@ -223,7 +222,7 @@ class SepayWebhookService {
           duplicated: false,
           message: "Không tìm thấy đơn hàng để cập nhật",
           event_id: event.id,
-          order_id: orderId,
+          order_id: null,
         };
       }
 

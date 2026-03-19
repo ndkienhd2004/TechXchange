@@ -14,19 +14,15 @@ const Product = require("./product")(sequelize, DataTypes);
 const AdminReview = require("./adminReview")(sequelize, DataTypes);
 const Order = require("./order")(sequelize, DataTypes);
 const OrderItem = require("./orderItem")(sequelize, DataTypes);
-const News = require("./news")(sequelize, DataTypes);
-const NewsDetail = require("./newsDetail")(sequelize, DataTypes);
 const Review = require("./review")(sequelize, DataTypes);
 const Report = require("./report")(sequelize, DataTypes);
 const Payment = require("./payment")(sequelize, DataTypes);
 const Shipment = require("./shipment")(sequelize, DataTypes);
 const CartItem = require("./cartItem")(sequelize, DataTypes);
-const UserPassedItem = require("./userPassedItem")(sequelize, DataTypes);
 const Banner = require("./banner")(sequelize, DataTypes);
 const BannerDetail = require("./bannerDetail")(sequelize, DataTypes);
 const UserProductEvent = require("./userProductEvent")(sequelize, DataTypes);
 const ProductImage = require("./productImage")(sequelize, DataTypes);
-const ProductAttribute = require("./productAttribute")(sequelize, DataTypes);
 const ProductSerial = require("./productSerial")(sequelize, DataTypes);
 const ProductInventory = require("./productInventory")(sequelize, DataTypes);
 const RefreshToken = require("./refreshToken")(sequelize, DataTypes);
@@ -142,11 +138,6 @@ OrderItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 ProductSerial.hasMany(OrderItem, { foreignKey: "serial_id", as: "orderItems" });
 OrderItem.belongsTo(ProductSerial, { foreignKey: "serial_id", as: "serial" });
 
-News.hasMany(NewsDetail, { foreignKey: "news_id", as: "details" });
-NewsDetail.belongsTo(News, { foreignKey: "news_id", as: "news" });
-Product.hasMany(NewsDetail, { foreignKey: "product_id", as: "newsDetails" });
-NewsDetail.belongsTo(Product, { foreignKey: "product_id", as: "product" });
-
 User.hasMany(Review, { foreignKey: "reviewer_id", as: "reviews" });
 Review.belongsTo(User, { foreignKey: "reviewer_id", as: "reviewer" });
 Product.hasMany(Review, { foreignKey: "product_id", as: "reviews" });
@@ -188,22 +179,6 @@ CartItem.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Product.hasMany(CartItem, { foreignKey: "product_id", as: "cartItems" });
 CartItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
 
-User.hasMany(UserPassedItem, {
-  foreignKey: "seller_id",
-  as: "soldPassedItems",
-});
-User.hasMany(UserPassedItem, {
-  foreignKey: "buyer_id",
-  as: "boughtPassedItems",
-});
-UserPassedItem.belongsTo(User, { foreignKey: "seller_id", as: "seller" });
-UserPassedItem.belongsTo(User, { foreignKey: "buyer_id", as: "buyer" });
-Product.hasMany(UserPassedItem, {
-  foreignKey: "product_id",
-  as: "passedItems",
-});
-UserPassedItem.belongsTo(Product, { foreignKey: "product_id", as: "product" });
-
 Banner.hasMany(BannerDetail, { foreignKey: "banner_id", as: "details" });
 BannerDetail.belongsTo(Banner, { foreignKey: "banner_id", as: "banner" });
 Product.hasMany(BannerDetail, {
@@ -222,15 +197,6 @@ UserProductEvent.belongsTo(Product, {
 
 Product.hasMany(ProductImage, { foreignKey: "product_id", as: "images" });
 ProductImage.belongsTo(Product, { foreignKey: "product_id", as: "product" });
-
-Product.hasMany(ProductAttribute, {
-  foreignKey: "product_id",
-  as: "attributes",
-});
-ProductAttribute.belongsTo(Product, {
-  foreignKey: "product_id",
-  as: "product",
-});
 
 Product.hasMany(ProductSerial, {
   foreignKey: "product_id",
@@ -280,19 +246,15 @@ module.exports = {
   AdminReview,
   Order,
   OrderItem,
-  News,
-  NewsDetail,
   Review,
   Report,
   Payment,
   Shipment,
   CartItem,
-  UserPassedItem,
   Banner,
   BannerDetail,
   UserProductEvent,
   ProductImage,
-  ProductAttribute,
   ProductSerial,
   ProductInventory,
   RefreshToken,

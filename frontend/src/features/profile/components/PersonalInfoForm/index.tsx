@@ -28,16 +28,13 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
-  const [avatar, setAvatar] = useState("");
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsername(user.username ?? "");
       setEmail(user.email ?? "");
       setGender(user.gender ?? "");
       setPhone(user.phone ?? "");
-      setAvatar(user.avatar ?? "");
     }
   }, [user]);
 
@@ -49,7 +46,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
         email,
         gender,
         phone,
-        ...(avatar && { avatar }),
       })
     );
   };
@@ -60,17 +56,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
     <section style={themed(styles.section)}>
       <h2 style={themed(styles.sectionTitle)}>Thông tin cá nhân</h2>
       <form style={themed(styles.form)} onSubmit={handleSubmit}>
-        {/* Id - chỉ hiển thị */}
-        <div style={themed(styles.field)}>
-          <label style={themed(styles.label)}>ID</label>
-          <input
-            type="text"
-            value={user.id}
-            readOnly
-            style={themed(styles.inputReadOnly)}
-          />
-        </div>
-
         <div style={themed(styles.row)}>
           <div style={themed(styles.field)}>
             <label style={themed(styles.label)}>Họ tên</label>
@@ -121,28 +106,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
           </div>
         </div>
 
-        <div style={themed(styles.field)}>
-          <label style={themed(styles.label)}>Avatar URL</label>
-          <input
-            type="url"
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
-            placeholder="https://..."
-            style={themed(styles.input)}
-          />
-          {avatar && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatar}
-              alt="Avatar preview"
-              style={themed(styles.avatarPreview)}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          )}
-        </div>
-
         {/* Chỉ hiển thị nếu backend trả về */}
         {(user.createdAt || user.updatedAt) && (
           <div style={themed(styles.row)}>
@@ -179,7 +142,6 @@ export default function PersonalInfoForm({ user }: PersonalInfoFormProps) {
           </p>
         )}
         <button
-          onClick={handleSubmit}
           type="submit"
           style={{
             ...themed(styles.button),

@@ -41,7 +41,7 @@ export const modal = (): CSSProperties => ({
   right: 24,
   bottom: 92,
   width: "min(760px, calc(100vw - 32px))",
-  height: "min(62vh, 520px)",
+  height: "min(70vh, 560px)",
   background: "#17181d",
   border: "1px solid rgba(99,102,241,0.35)",
   borderRadius: 20,
@@ -59,6 +59,7 @@ export const sidebar = (): CSSProperties => ({
   overflow: "hidden",
   display: "flex",
   flexDirection: "column",
+  minHeight: 0,
 });
 
 export const sidebarHeader = (theme: Theme): CSSProperties => ({
@@ -69,6 +70,9 @@ export const sidebarHeader = (theme: Theme): CSSProperties => ({
 });
 
 export const aiItem = (active: boolean): CSSProperties => ({
+  width: "100%",
+  border: "none",
+  textAlign: "left",
   display: "flex",
   alignItems: "center",
   gap: 10,
@@ -109,11 +113,15 @@ export const sectionLabel = (theme: Theme): CSSProperties => ({
 });
 
 export const conversationList = (): CSSProperties => ({
+  minHeight: 0,
   overflowY: "auto",
   flex: 1,
 });
 
 export const conversationItem = (active: boolean): CSSProperties => ({
+  width: "100%",
+  border: "none",
+  textAlign: "left",
   display: "flex",
   alignItems: "center",
   gap: 10,
@@ -163,6 +171,8 @@ export const content = (): CSSProperties => ({
   display: "flex",
   flexDirection: "column",
   minWidth: 0,
+  minHeight: 0,
+  height: "100%",
 });
 
 export const contentHeader = (): CSSProperties => ({
@@ -196,6 +206,7 @@ export const headerSubtitle = (theme: Theme): CSSProperties => ({
 
 export const messageBody = (): CSSProperties => ({
   flex: 1,
+  minHeight: 0,
   overflowY: "auto",
   background: "#2c2e33",
   padding: 12,
@@ -227,6 +238,9 @@ export const bubbleTime = (theme: Theme): CSSProperties => ({
 });
 
 export const inputBar = (): CSSProperties => ({
+  position: "sticky",
+  bottom: 0,
+  zIndex: 2,
   padding: 10,
   borderTop: "1px solid rgba(71,85,105,0.45)",
   background: "#2c2e33",

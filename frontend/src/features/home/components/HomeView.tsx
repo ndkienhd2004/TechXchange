@@ -5,9 +5,8 @@ import Link from "next/link";
 import HeroCarousel from "@/components/commons/HeroCarousel";
 import SaleBanner from "@/components/commons/SaleBanner";
 import ItemCard from "@/components/commons/ItemCard";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import { useAppTheme } from "@/theme/ThemeProvider";
-import { useAppSelector } from "@/store/hooks";
-import { selectIsAuthenticated } from "@/features/auth";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import * as styles from "./styles";
 
@@ -40,16 +39,22 @@ type ProductRow = {
   id: number;
   name: string;
   price: number;
-  rating?: number;
+  rating?: number | string | null;
+  reviewCount?: number | string | null;
+  review_count?: number | string | null;
+  buyturn?: number | string | null;
+  quantity?: number | string | null;
   images?: { id: number; url: string }[];
   default_image?: string | null;
+  primary_serial_specs?: Record<string, string>;
+  catalog?: {
+    specs?: Record<string, unknown>;
+  };
 };
 
 export default function HomeView() {
   const { themed } = useAppTheme();
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [featuredProducts, setFeaturedProducts] = useState<ProductRow[]>([]);
-  const [forYouProducts, setForYouProducts] = useState<ProductRow[]>([]);
 
   useEffect(() => {
     const run = async () => {
@@ -65,25 +70,6 @@ export default function HomeView() {
     void run();
   }, []);
 
-  useEffect(() => {
-    const run = async () => {
-      if (!isAuthenticated) {
-        setForYouProducts([]);
-        return;
-      }
-      try {
-        const api = getAxiosInstance();
-        const res = await api.get("/recommendations/home", { params: { limit: 8 } });
-        const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
-        setForYouProducts(rows);
-      } catch {
-        setForYouProducts([]);
-      }
-    };
-    void run();
-  }, [isAuthenticated]);
-
-  const shownForYou = useMemo(() => forYouProducts.slice(0, 4), [forYouProducts]);
   const shownFeatured = useMemo(() => featuredProducts.slice(0, 4), [featuredProducts]);
 
   return (
@@ -103,34 +89,6 @@ export default function HomeView() {
             </div>
           </section>
 
-          {shownForYou.length > 0 && (
-            <section style={themed(styles.section)}>
-              <div style={themed(styles.sectionHeader)}>
-                <h2 style={themed(styles.sectionTitle)}>For You</h2>
-                <Link href="/products" style={themed(styles.viewAllLink)}>
-                  Xem tất cả →
-                </Link>
-              </div>
-              <div style={themed(styles.productGrid)}>
-                {shownForYou.map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.id}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <ItemCard
-                      productId={Number(product.id)}
-                      title={product.name}
-                      price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
-                      rating={Number(product.rating || 0)}
-                      imageSrc={product.images?.[0]?.url || product.default_image || undefined}
-                    />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
           <section style={themed(styles.section)}>
             <div style={themed(styles.sectionHeader)}>
               <h2 style={themed(styles.sectionTitle)}>Featured Products</h2>
@@ -147,9 +105,20 @@ export default function HomeView() {
                 >
                   <ItemCard
                     productId={Number(product.id)}
-                    title={product.name}
+                    title={buildProductDisplayName(
+                      product.name,
+                      product.primary_serial_specs ||
+                        (product.catalog?.specs as Record<string, unknown> | undefined),
+                    )}
                     price={`${Number(product.price || 0).toLocaleString("vi-VN")} đ`}
                     rating={Number(product.rating || 0)}
+                    reviewCount={Number(
+                      product.reviewCount ??
+                        product.review_count ??
+                        product.buyturn ??
+                        product.quantity ??
+                        0,
+                    )}
                     imageSrc={product.images?.[0]?.url || product.default_image || undefined}
                   />
                 </Link>

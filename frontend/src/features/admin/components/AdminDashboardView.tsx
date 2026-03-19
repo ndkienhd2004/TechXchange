@@ -20,6 +20,7 @@ import {
 } from "@/features/admin/store/adminSelectors";
 import AdminLayout from "./AdminLayout";
 import * as styles from "./styles";
+import { showErrorToast } from "@/components/commons/Toast";
 
 export default function AdminDashboardView() {
   const { themed } = useAppTheme();
@@ -39,8 +40,34 @@ export default function AdminDashboardView() {
     dispatch(fetchAdminProductRequests({ page: 1, status: "pending", limit: 1 }));
   }, [dispatch]);
 
-  const totalUsers = Number(userStats.data?.totalUsers ?? 0);
-  const totalShops = Number(userStats.data?.totalShops ?? 0);
+  useEffect(() => {
+    if (userStats.error) showErrorToast(userStats.error);
+  }, [userStats.error]);
+
+  useEffect(() => {
+    if (products.error) showErrorToast(products.error);
+  }, [products.error]);
+
+  useEffect(() => {
+    if (stores.error) showErrorToast(stores.error);
+  }, [stores.error]);
+
+  useEffect(() => {
+    if (brands.error) showErrorToast(brands.error);
+  }, [brands.error]);
+
+  useEffect(() => {
+    if (productRequests.error) showErrorToast(productRequests.error);
+  }, [productRequests.error]);
+
+  const totalUsers = Number(userStats.data?.totalUsers ?? userStats.data?.total ?? 0);
+  const totalShops = Number(
+    userStats.data?.totalShops ?? userStats.data?.totalShopAccounts ?? 0
+  );
+  const totalPendingRequests =
+    Number(stores.total ?? 0) +
+    Number(brands.total ?? 0) +
+    Number(productRequests.total ?? 0);
 
   const stats = [
     { label: "Người dùng", value: String(totalUsers), tone: "#3b82f6" },
@@ -48,7 +75,7 @@ export default function AdminDashboardView() {
     { label: "Sản phẩm", value: String(products.total), tone: "#22c55e" },
     {
       label: "Yêu cầu chờ duyệt",
-      value: String(stores.total + brands.total + productRequests.total),
+      value: String(totalPendingRequests),
       tone: "#f59e0b",
     },
   ];

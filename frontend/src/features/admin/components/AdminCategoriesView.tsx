@@ -13,6 +13,7 @@ import {
 } from "@/features/admin/services/adminApi";
 import type { AdminCategory } from "@/features/admin/types";
 import AppIcon from "@/components/commons/AppIcon";
+import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 
 type FlatCategory = AdminCategory & { depth: number };
 
@@ -124,9 +125,12 @@ export default function AdminCategoriesView() {
     if (!ok) return;
     try {
       await deleteAdminCategory(item.id);
+      showSuccessToast("Xóa danh mục thành công");
       await loadCategories();
     } catch (e: unknown) {
-      setError(getErrorMessage(e, "Xóa thất bại"));
+      const message = getErrorMessage(e, "Xóa thất bại");
+      setError(message);
+      showErrorToast(message);
     }
   };
 

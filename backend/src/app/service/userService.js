@@ -1,4 +1,4 @@
-const { User } = require("../../models");
+const { User, Store } = require("../../models");
 
 /**
  * User Service - Quản lý thông tin người dùng
@@ -18,6 +18,7 @@ class UserService {
           "email",
           "username",
           "phone",
+          "avatar",
           "gender",
           "role",
           "created_at",
@@ -47,6 +48,7 @@ class UserService {
           "email",
           "username",
           "phone",
+          "avatar",
           "gender",
           "role",
           "created_at",
@@ -96,7 +98,7 @@ class UserService {
       }
 
       // Cập nhật thông tin
-      const allowedFields = ["username", "email", "phone", "gender"];
+      const allowedFields = ["username", "email", "phone", "gender", "avatar"];
       const dataToUpdate = {};
       allowedFields.forEach((field) => {
         if (updateData[field]) {
@@ -128,6 +130,7 @@ class UserService {
           "username",
           "phone",
           "gender",
+          "avatar",
           "role",
           "created_at",
         ],
@@ -238,7 +241,7 @@ class UserService {
   static async getUserProfile(userId) {
     try {
       const user = await User.findByPk(userId, {
-        attributes: ["id", "email", "username", "phone", "gender", "role"],
+        attributes: ["id", "email", "username", "phone", "gender", "avatar", "role"],
       });
       if (!user) {
         throw new Error("Người dùng không tồn tại");
@@ -319,14 +322,29 @@ class UserService {
    */
   static async getUserStats() {
     try {
-      const totalUsers = await User.count();
-      const adminCount = await User.count({ where: { role: "admin" } });
-      const regularUsers = totalUsers - adminCount;
+      const [totalUsers, totalAdmins, totalShopAccounts, totalShops] =
+        await Promise.all([
+          User.count(),
+          User.count({ where: { role: "admin" } }),
+          User.count({ where: { role: "shop" } }),
+          Store.count(),
+        ]);
+
+      const totalCustomers = Math.max(
+        totalUsers - totalAdmins - totalShopAccounts,
+        0
+      );
 
       return {
+        totalUsers,
+        totalShops,
+        totalAdmins,
+        totalShopAccounts,
+        totalCustomers,
+        // Backward-compatible fields for old clients
         total: totalUsers,
-        admins: adminCount,
-        regularUsers: regularUsers,
+        admins: totalAdmins,
+        regularUsers: totalCustomers,
       };
     } catch (error) {
       throw error;

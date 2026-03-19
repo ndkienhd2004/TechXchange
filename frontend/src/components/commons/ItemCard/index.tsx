@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MouseEvent, useRef, useState } from "react";
+import { MouseEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsAuthenticated } from "@/features/auth";
@@ -20,8 +20,8 @@ export default function ItemCard({
   title,
   price,
   compareAtPrice,
-  rating = 4,
-  reviewCount = 120,
+  rating = 0,
+  reviewCount = 0,
   badgeText = "-8%",
   imageSrc,
   imageAlt = "Product image",
@@ -31,10 +31,19 @@ export default function ItemCard({
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [adding, setAdding] = useState(false);
+  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(imageSrc || null);
   const lastClickTrackRef = useRef(0);
   const { theme, themed } = useAppTheme();
 
-  const filledStars = Math.round(clampRating(rating));
+  useEffect(() => {
+    setSafeImageSrc(imageSrc || null);
+  }, [imageSrc]);
+
+  const normalizedRating = Number.isFinite(Number(rating)) ? Number(rating) : 0;
+  const normalizedReviewCount = Number.isFinite(Number(reviewCount))
+    ? Math.max(0, Number(reviewCount))
+    : 0;
+  const filledStars = Math.round(clampRating(normalizedRating));
   const emptyStarColor = theme.colors.palette.text.muted;
   const filledStarColor = theme.colors.palette.semantic.warning;
 
@@ -83,13 +92,15 @@ export default function ItemCard({
   return (
     <article style={themed(styles.card)} onClick={trackCardClick}>
       <div style={themed(styles.media)}>
-        {imageSrc ? (
+        {safeImageSrc ? (
           <Image
-            src={imageSrc}
+            src={safeImageSrc}
             alt={imageAlt}
             width={320}
             height={400}
             style={themed(styles.mediaImage)}
+            unoptimized
+            onError={() => setSafeImageSrc(null)}
           />
         ) : (
           <div style={themed(styles.mediaPlaceholder)}>Preview</div>
@@ -129,7 +140,7 @@ export default function ItemCard({
               );
             })}
           </div>
-          <span style={themed(styles.ratingCount)}>({reviewCount})</span>
+          <span style={themed(styles.ratingCount)}>({normalizedReviewCount})</span>
         </div>
       </div>
       <div style={themed(styles.actions)}>
