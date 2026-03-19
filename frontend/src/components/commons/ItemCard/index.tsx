@@ -12,7 +12,6 @@ import { getAxiosInstance } from "@/services/axiosConfig";
 import * as styles from "./styles";
 import { ItemCardProps } from "@/types/itemCard";
 
-
 const clampRating = (value: number) => Math.min(5, Math.max(0, value));
 
 export default function ItemCard({
@@ -31,7 +30,9 @@ export default function ItemCard({
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [adding, setAdding] = useState(false);
-  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(imageSrc || null);
+  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(
+    imageSrc || null,
+  );
   const lastClickTrackRef = useRef(0);
   const { theme, themed } = useAppTheme();
 
@@ -64,7 +65,9 @@ export default function ItemCard({
 
     try {
       setAdding(true);
-      await dispatch(addToCart({ product_id: Number(productId), quantity: 1 })).unwrap();
+      await dispatch(
+        addToCart({ product_id: Number(productId), quantity: 1 }),
+      ).unwrap();
       showSuccessToast("Đã thêm vào giỏ hàng");
     } catch (error) {
       showErrorToast(error);
@@ -140,7 +143,9 @@ export default function ItemCard({
               );
             })}
           </div>
-          <span style={themed(styles.ratingCount)}>({normalizedReviewCount})</span>
+          <span style={themed(styles.ratingCount)}>
+            ({normalizedReviewCount})
+          </span>
         </div>
       </div>
       <div style={themed(styles.actions)}>
