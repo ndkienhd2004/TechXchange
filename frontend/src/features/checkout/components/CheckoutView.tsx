@@ -18,7 +18,7 @@ const currency = (value: number) =>
   );
 
 export default function CheckoutView() {
-  const { themed } = useAppTheme();
+  const { theme, themed } = useAppTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
@@ -378,7 +378,13 @@ export default function CheckoutView() {
             </div>
             <div style={themed(styles.summaryRow)}>
               <span>Phí vận chuyển</span>
-              <span style={{ color: shippingError ? "#ef4444" : undefined }}>
+              <span
+                style={{
+                  color: shippingError
+                    ? theme.colors.palette.semantic.error
+                    : undefined,
+                }}
+              >
                 {shippingLoading
                   ? "Đang tính..."
                   : shippingError

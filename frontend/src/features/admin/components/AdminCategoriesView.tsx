@@ -28,7 +28,7 @@ const flatten = (nodes: AdminCategory[], depth = 0): FlatCategory[] => {
 };
 
 export default function AdminCategoriesView() {
-  const { themed } = useAppTheme();
+  const { theme, themed } = useAppTheme();
   const [items, setItems] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -156,8 +156,8 @@ export default function AdminCategoriesView() {
             borderRadius: 10,
             padding: "10px 12px",
             marginLeft: depth * 16,
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(148,163,184,0.18)",
+            background: `${theme.colors.palette.backgrounds.hover}33`,
+            border: `1px solid ${theme.colors.palette.borders.default}`,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -194,7 +194,7 @@ export default function AdminCategoriesView() {
               gap: 8,
               marginLeft: 8,
               paddingLeft: 12,
-              borderLeft: "1px dashed rgba(148,163,184,0.35)",
+              borderLeft: `1px dashed ${theme.colors.palette.borders.light}`,
             }}
           >
             {children.map((child) => renderTreeNode(child, depth + 1))}
@@ -224,7 +224,13 @@ export default function AdminCategoriesView() {
         </div>
 
         {error && (
-          <div style={{ ...themed(styles.muted), marginTop: 12, color: "#f87171" }}>
+          <div
+            style={{
+              ...themed(styles.muted),
+              marginTop: 12,
+              color: theme.colors.palette.semantic.error,
+            }}
+          >
             {error}
           </div>
         )}

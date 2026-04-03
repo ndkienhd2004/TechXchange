@@ -1,23 +1,27 @@
 import type { CSSProperties } from "react";
-import type { Theme } from "@/theme";
+import { getGradients, type Theme } from "@/theme";
 
-export const floatingButton = (theme: Theme): CSSProperties => ({
-  position: "fixed",
-  right: 24,
-  bottom: 24,
-  width: 62,
-  height: 62,
-  borderRadius: "50%",
-  border: "none",
-  background: "linear-gradient(130deg, #6d28d9 0%, #db2777 100%)",
-  color: "#fff",
-  boxShadow: theme.shadows.xl,
-  cursor: "pointer",
-  zIndex: 1600,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-});
+export const floatingButton = (theme: Theme): CSSProperties => {
+  const gradients = getGradients(theme.colors);
+
+  return {
+    position: "fixed",
+    right: 24,
+    bottom: 24,
+    width: 62,
+    height: 62,
+    borderRadius: "50%",
+    border: "none",
+    background: gradients.primary,
+    color: "#fff",
+    boxShadow: theme.shadows.xl,
+    cursor: "pointer",
+    zIndex: 1600,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+};
 
 export const unreadBadge = (theme: Theme): CSSProperties => ({
   position: "absolute",
@@ -36,26 +40,29 @@ export const unreadBadge = (theme: Theme): CSSProperties => ({
   padding: "0 5px",
 });
 
-export const modal = (): CSSProperties => ({
+export const modal = (theme: Theme): CSSProperties => ({
   position: "fixed",
   right: 24,
   bottom: 92,
   width: "min(760px, calc(100vw - 32px))",
   height: "min(70vh, 560px)",
-  background: "#17181d",
-  border: "1px solid rgba(99,102,241,0.35)",
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
   borderRadius: 20,
-  boxShadow: "0 34px 90px rgba(0,0,0,0.5)",
+  boxShadow:
+    theme.theme === "dark"
+      ? "0 34px 90px rgba(0,0,0,0.5)"
+      : "0 24px 64px rgba(15,23,42,0.18)",
   zIndex: 1601,
   display: "grid",
   gridTemplateColumns: "240px 1fr",
   overflow: "hidden",
-  color: "#f8fafc",
+  color: theme.colors.palette.text.primary,
 });
 
-export const sidebar = (): CSSProperties => ({
-  borderRight: "1px solid rgba(71,85,105,0.45)",
-  background: "#14161a",
+export const sidebar = (theme: Theme): CSSProperties => ({
+  borderRight: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
   overflow: "hidden",
   display: "flex",
   flexDirection: "column",
@@ -64,12 +71,12 @@ export const sidebar = (): CSSProperties => ({
 
 export const sidebarHeader = (theme: Theme): CSSProperties => ({
   padding: "14px 16px",
-  borderBottom: "1px solid rgba(71,85,105,0.45)",
+  borderBottom: `1px solid ${theme.colors.palette.borders.default}`,
   fontSize: theme.typography.fontSize.lg.size,
   fontWeight: theme.typography.fontWeight.bold,
 });
 
-export const aiItem = (active: boolean): CSSProperties => ({
+export const aiItem = (theme: Theme, active: boolean): CSSProperties => ({
   width: "100%",
   border: "none",
   textAlign: "left",
@@ -77,16 +84,24 @@ export const aiItem = (active: boolean): CSSProperties => ({
   alignItems: "center",
   gap: 10,
   padding: "10px 14px",
-  background: active ? "rgba(124,58,237,0.25)" : "transparent",
-  borderLeft: active ? "4px solid #a855f7" : "4px solid transparent",
+  background:
+    active
+      ? theme.theme === "dark"
+        ? "rgba(124,58,237,0.25)"
+        : "rgba(168,85,247,0.14)"
+      : "transparent",
+  borderLeft: active
+    ? `4px solid ${theme.colors.palette.brand.purple[500]}`
+    : "4px solid transparent",
   cursor: "pointer",
+  color: theme.colors.palette.text.primary,
 });
 
-export const botAvatar = (): CSSProperties => ({
+export const botAvatar = (theme: Theme): CSSProperties => ({
   width: 34,
   height: 34,
   borderRadius: "50%",
-  background: "linear-gradient(140deg, #7c3aed 0%, #db2777 100%)",
+  background: `linear-gradient(140deg, ${theme.colors.palette.brand.purple[600]} 0%, ${theme.colors.palette.brand.pink[600]} 100%)`,
   color: "#fff",
   display: "inline-flex",
   alignItems: "center",
@@ -97,18 +112,19 @@ export const aiTitle = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.sm.size,
   fontWeight: theme.typography.fontWeight.bold,
   lineHeight: 1.2,
+  color: theme.colors.palette.text.primary,
 });
 
 export const aiSubtitle = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
-  color: "#9ca3af",
+  color: theme.colors.palette.text.muted,
   lineHeight: 1.25,
 });
 
 export const sectionLabel = (theme: Theme): CSSProperties => ({
   padding: "8px 16px",
   fontSize: theme.typography.fontSize.xs.size,
-  color: "#6b7280",
+  color: theme.colors.palette.text.muted,
   fontWeight: theme.typography.fontWeight.semibold,
 });
 
@@ -118,7 +134,7 @@ export const conversationList = (): CSSProperties => ({
   flex: 1,
 });
 
-export const conversationItem = (active: boolean): CSSProperties => ({
+export const conversationItem = (theme: Theme, active: boolean): CSSProperties => ({
   width: "100%",
   border: "none",
   textAlign: "left",
@@ -126,16 +142,22 @@ export const conversationItem = (active: boolean): CSSProperties => ({
   alignItems: "center",
   gap: 10,
   padding: "10px 14px",
-  borderTop: "1px solid rgba(51,65,85,0.35)",
+  borderTop: `1px solid ${theme.colors.palette.borders.default}`,
   cursor: "pointer",
-  background: active ? "rgba(59,130,246,0.12)" : "transparent",
+  background:
+    active
+      ? theme.theme === "dark"
+        ? "rgba(59,130,246,0.12)"
+        : "rgba(59,130,246,0.08)"
+      : "transparent",
+  color: theme.colors.palette.text.primary,
 });
 
-export const conversationAvatar = (): CSSProperties => ({
+export const conversationAvatar = (theme: Theme): CSSProperties => ({
   width: 34,
   height: 34,
   borderRadius: "50%",
-  background: "#334155",
+  background: theme.colors.palette.backgrounds.hover,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -147,11 +169,12 @@ export const conversationTitle = (theme: Theme): CSSProperties => ({
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
+  color: theme.colors.palette.text.primary,
 });
 
 export const conversationPreview = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
-  color: "#9ca3af",
+  color: theme.colors.palette.text.muted,
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -175,13 +198,17 @@ export const content = (): CSSProperties => ({
   height: "100%",
 });
 
-export const contentHeader = (): CSSProperties => ({
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "10px 14px",
-  background: "linear-gradient(130deg, #7c3aed 0%, #db2777 100%)",
-});
+export const contentHeader = (theme: Theme): CSSProperties => {
+  const gradients = getGradients(theme.colors);
+
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 14px",
+    background: gradients.primary,
+  };
+};
 
 export const headerIconBtn = (): CSSProperties => ({
   border: "none",
@@ -197,18 +224,20 @@ export const headerTitle = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.base.size,
   fontWeight: theme.typography.fontWeight.bold,
   lineHeight: 1.1,
+  color: "#fff",
 });
 
 export const headerSubtitle = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
   opacity: 0.9,
+  color: "#fff",
 });
 
-export const messageBody = (): CSSProperties => ({
+export const messageBody = (theme: Theme): CSSProperties => ({
   flex: 1,
   minHeight: 0,
   overflowY: "auto",
-  background: "#2c2e33",
+  background: theme.colors.palette.backgrounds.secondary,
   padding: 12,
 });
 
@@ -221,10 +250,10 @@ export const messageRow = (mine: boolean): CSSProperties => ({
 export const bubble = (theme: Theme, mine: boolean): CSSProperties => ({
   maxWidth: "72%",
   background: mine
-    ? "linear-gradient(130deg, #7c3aed 0%, #db2777 100%)"
-    : "#16191d",
-  color: "#f8fafc",
-  border: "1px solid rgba(71,85,105,0.45)",
+    ? `linear-gradient(130deg, ${theme.colors.palette.brand.purple[600]} 0%, ${theme.colors.palette.brand.pink[600]} 100%)`
+    : theme.colors.palette.backgrounds.card,
+  color: mine ? "#fff" : theme.colors.palette.text.primary,
+  border: `1px solid ${mine ? "transparent" : theme.colors.palette.borders.default}`,
   borderRadius: 10,
   padding: "8px 10px",
   fontSize: theme.typography.fontSize.base.size,
@@ -237,13 +266,13 @@ export const bubbleTime = (theme: Theme): CSSProperties => ({
   marginTop: 4,
 });
 
-export const inputBar = (): CSSProperties => ({
+export const inputBar = (theme: Theme): CSSProperties => ({
   position: "sticky",
   bottom: 0,
   zIndex: 2,
   padding: 10,
-  borderTop: "1px solid rgba(71,85,105,0.45)",
-  background: "#2c2e33",
+  borderTop: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
   display: "grid",
   gridTemplateColumns: "1fr 56px",
   gap: 8,
@@ -252,18 +281,18 @@ export const inputBar = (): CSSProperties => ({
 export const input = (theme: Theme): CSSProperties => ({
   width: "100%",
   borderRadius: 10,
-  border: "1px solid rgba(71,85,105,0.7)",
-  background: "#16191d",
-  color: "#f8fafc",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.primary,
+  color: theme.colors.palette.text.primary,
   fontSize: theme.typography.fontSize.base.size,
   padding: "8px 10px",
   outline: "none",
 });
 
-export const sendButton = (): CSSProperties => ({
+export const sendButton = (theme: Theme): CSSProperties => ({
   border: "none",
   borderRadius: 10,
-  background: "linear-gradient(130deg, #7c3aed 0%, #9333ea 100%)",
+  background: `linear-gradient(130deg, ${theme.colors.palette.brand.purple[600]} 0%, ${theme.colors.palette.brand.pink[600]} 100%)`,
   color: "#fff",
   cursor: "pointer",
   display: "inline-flex",
@@ -272,12 +301,12 @@ export const sendButton = (): CSSProperties => ({
 });
 
 export const emptyState = (theme: Theme): CSSProperties => ({
-  color: "#9ca3af",
+  color: theme.colors.palette.text.muted,
   fontSize: theme.typography.fontSize.sm.size,
   padding: "10px 2px",
 });
 
 export const hintText = (theme: Theme): CSSProperties => ({
-  color: "#9ca3af",
+  color: theme.colors.palette.text.muted,
   fontSize: theme.typography.fontSize.sm.size,
 });

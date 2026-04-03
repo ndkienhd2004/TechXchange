@@ -17,6 +17,10 @@ import * as styles from "./styles";
 import { selectCatalogCategoriesTree } from "@/features/catalog/store/catalogSelectors";
 import type { CatalogCategory } from "@/features/catalog/store/catalogSlice";
 import { selectCartTotalItems } from "@/features/cart/store/cartSelectors";
+import {
+  buildAuthRedirectHref,
+  buildCurrentPath,
+} from "@/features/auth/utils/redirect";
 
 type Themed = (fn: (theme: Theme) => CSSProperties) => CSSProperties;
 
@@ -115,6 +119,8 @@ const Actions = ({
   userMenuRef,
   onLogout,
   cartTotalItems,
+  loginHref,
+  registerHref,
 }: {
   themed: Themed;
   hoveredElement: string | null;
@@ -127,6 +133,8 @@ const Actions = ({
   userMenuRef: RefObject<HTMLDivElement | null>;
   onLogout: () => void;
   cartTotalItems: number;
+  loginHref: string;
+  registerHref: string;
 }) => (
   <div style={themed(styles.actions)}>
     <Link
@@ -233,7 +241,7 @@ const Actions = ({
     ) : (
       <>
         <Link
-          href="/login"
+          href={loginHref}
           style={{
             ...themed(styles.userInfo),
             ...(hoveredElement === "login" ? themed(styles.userInfoHover) : {}),
@@ -244,7 +252,7 @@ const Actions = ({
           Đăng nhập
         </Link>
         <Link
-          href="/register"
+          href={registerHref}
           style={{
             ...themed(styles.userInfo),
             ...(hoveredElement === "register"
@@ -409,6 +417,9 @@ export default function Header() {
   );
   const categoryTree = useAppSelector(selectCatalogCategoriesTree);
   const cartTotalItems = useAppSelector(selectCartTotalItems);
+  const currentPath = buildCurrentPath(pathname, searchParams);
+  const loginHref = buildAuthRedirectHref("/login", currentPath);
+  const registerHref = buildAuthRedirectHref("/register", currentPath);
 
   const flattenWithDepth = (
     nodes: CatalogCategory[],
@@ -527,6 +538,8 @@ export default function Header() {
           userMenuRef={userMenuRef}
           onLogout={handleLogout}
           cartTotalItems={cartTotalItems}
+          loginHref={loginHref}
+          registerHref={registerHref}
         />
       </div>
       <Nav

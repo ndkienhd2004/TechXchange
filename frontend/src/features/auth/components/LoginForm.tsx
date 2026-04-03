@@ -1,27 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "./AuthLayout";
 import { SignIn } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
 import { selectError, selectLoading } from "../store/authSelectors";
+import {
+  buildAuthRedirectHref,
+  resolveSafeRedirectTarget,
+} from "../utils/redirect";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { themed } = useAppTheme();
   const isLoading = useAppSelector(selectLoading);
   const error = useAppSelector(selectError);
+  const nextPath = resolveSafeRedirectTarget(searchParams.get("next"), "/");
+  const registerHref = buildAuthRedirectHref("/register", nextPath);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = await dispatch(SignIn({ email, password }));
     if (SignIn.fulfilled.match(result)) {
-      router.push("/");
+      router.replace(nextPath);
       router.refresh();
     }
   };
@@ -30,7 +38,7 @@ export default function LoginForm() {
     <AuthLayout
       title="Đăng nhập"
       footerLabel="Chưa có tài khoản?"
-      footerLinkHref="/register"
+      footerLinkHref={registerHref}
       footerLinkText="Đăng ký"
     >
       <form style={themed(styles.form)} onSubmit={handleSubmit}>

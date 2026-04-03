@@ -292,7 +292,7 @@ class ProductService {
               },
             ],
           },
-          { model: Store, as: "store", attributes: ["id", "name", "rating"] },
+          { model: Store, as: "store", attributes: ["id", "name", "rating", "logo"] },
           { model: User, as: "seller", attributes: ["id", "username"] },
           {
             model: ProductImage,
@@ -356,6 +356,106 @@ class ProductService {
   }
 
   /**
+   * Lấy danh sách sản phẩm theo danh sách ID, giữ nguyên thứ tự đầu vào
+   * @param {number[]} productIds
+   * @param {string[]|null} statuses
+   * @returns {Promise<object[]>}
+   */
+  static async getProductsByIds(productIds = [], statuses = ["active"]) {
+    const normalizedIds = Array.from(
+      new Set(
+        (Array.isArray(productIds) ? productIds : [])
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value > 0),
+      ),
+    );
+
+    if (normalizedIds.length === 0) {
+      return [];
+    }
+
+    const whereClause = {
+      id: { [Op.in]: normalizedIds },
+    };
+    if (statuses && statuses.length > 0) {
+      whereClause.status = { [Op.in]: statuses };
+    }
+
+    const rows = await Product.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: ProductCatalog,
+          as: "catalog",
+          required: true,
+          include: [
+            {
+              model: Brand,
+              as: "brand",
+              attributes: ["id", "name", "image"],
+            },
+            {
+              model: ProductCategory,
+              as: "category",
+              attributes: ["id", "name"],
+            },
+          ],
+        },
+        { model: Store, as: "store", attributes: ["id", "name", "rating", "logo"] },
+        { model: User, as: "seller", attributes: ["id", "username"] },
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["id", "url", "sort_order"],
+          separate: true,
+          order: [["sort_order", "ASC"]],
+        },
+      ],
+    });
+
+    const serialRows = await ProductSerial.findAll({
+      attributes: ["id", "product_id", "serial_specs"],
+      where: {
+        product_id: { [Op.in]: normalizedIds },
+      },
+      order: [
+        ["product_id", "ASC"],
+        ["id", "ASC"],
+      ],
+    });
+
+    const listingIdToPrimarySpecs = new Map();
+    serialRows.forEach((serial) => {
+      const listingId = Number(serial.product_id);
+      if (!Number.isFinite(listingId) || listingId <= 0) {
+        return;
+      }
+      if (listingIdToPrimarySpecs.has(listingId)) {
+        return;
+      }
+      listingIdToPrimarySpecs.set(
+        listingId,
+        ProductService.normalizeVariantOptions(serial.serial_specs || {}),
+      );
+    });
+
+    rows.forEach((row) => {
+      const listingId = Number(row.id);
+      row.setDataValue(
+        "primary_serial_specs",
+        listingIdToPrimarySpecs.get(listingId) || {},
+      );
+    });
+
+    const rowById = new Map(
+      rows.map((row) => [Number(row.id), row]),
+    );
+    return normalizedIds
+      .map((listingId) => rowById.get(listingId))
+      .filter(Boolean);
+  }
+
+  /**
    * Lấy chi tiết sản phẩm
    * @param {number} productId
    * @param {string[]|null} statuses
@@ -392,7 +492,7 @@ class ProductService {
           {
             model: Store,
             as: "store",
-            attributes: ["id", "name", "rating", "description"],
+            attributes: ["id", "name", "rating", "logo", "description"],
           },
           {
             model: User,
@@ -665,7 +765,7 @@ class ProductService {
             {
               model: Store,
               as: "store",
-              attributes: ["id", "name", "rating"],
+              attributes: ["id", "name", "rating", "logo"],
             },
             {
               model: User,
@@ -833,7 +933,7 @@ class ProductService {
             {
               model: Store,
               as: "store",
-              attributes: ["id", "name", "rating"],
+              attributes: ["id", "name", "rating", "logo"],
             },
             {
               model: User,

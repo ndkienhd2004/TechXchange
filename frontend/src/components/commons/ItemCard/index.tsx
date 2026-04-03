@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import { MouseEvent, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsAuthenticated } from "@/features/auth";
 import { addToCart } from "@/features/cart/store/cartSlice";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { getAxiosInstance } from "@/services/axiosConfig";
+import {
+  buildAuthRedirectHref,
+  buildCurrentPath,
+} from "@/features/auth/utils/redirect";
 import * as styles from "./styles";
 import { ItemCardProps } from "@/types/itemCard";
 
@@ -27,6 +31,8 @@ export default function ItemCard({
   ctaLabel = "Buy now",
 }: ItemCardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [adding, setAdding] = useState(false);
@@ -47,6 +53,10 @@ export default function ItemCard({
   const filledStars = Math.round(clampRating(normalizedRating));
   const emptyStarColor = theme.colors.palette.text.muted;
   const filledStarColor = theme.colors.palette.semantic.warning;
+  const loginRedirectHref = buildAuthRedirectHref(
+    "/login",
+    buildCurrentPath(pathname, searchParams),
+  );
 
   const handleAddToCart = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -58,7 +68,7 @@ export default function ItemCard({
     }
     if (!isAuthenticated) {
       showErrorToast("Vui lòng đăng nhập để thêm vào giỏ hàng");
-      router.push("/login");
+      router.push(loginRedirectHref);
       return;
     }
     if (adding) return;

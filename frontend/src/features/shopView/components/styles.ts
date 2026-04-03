@@ -47,6 +47,7 @@ export const avatarWrap = (): CSSProperties => ({
 });
 
 export const avatarBox = (): CSSProperties => ({
+  position: "relative",
   width: 160,
   height: 160,
   borderRadius: 20,
@@ -57,6 +58,14 @@ export const avatarBox = (): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  overflow: "hidden",
+});
+
+export const avatarImage = (): CSSProperties => ({
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  display: "block",
 });
 
 export const verifiedDot = (): CSSProperties => ({

@@ -23,7 +23,7 @@ import * as styles from "./styles";
 import { showErrorToast } from "@/components/commons/Toast";
 
 export default function AdminDashboardView() {
-  const { themed } = useAppTheme();
+  const { themed, theme } = useAppTheme();
   const dispatch = useAppDispatch();
 
   const userStats = useAppSelector(selectAdminUserStats);
@@ -70,13 +70,25 @@ export default function AdminDashboardView() {
     Number(productRequests.total ?? 0);
 
   const stats = [
-    { label: "Người dùng", value: String(totalUsers), tone: "#3b82f6" },
-    { label: "Cửa hàng", value: String(totalShops), tone: "#a855f7" },
-    { label: "Sản phẩm", value: String(products.total), tone: "#22c55e" },
+    {
+      label: "Người dùng",
+      value: String(totalUsers),
+      tone: theme.colors.palette.semantic.info,
+    },
+    {
+      label: "Cửa hàng",
+      value: String(totalShops),
+      tone: theme.colors.palette.brand.purple[500],
+    },
+    {
+      label: "Sản phẩm",
+      value: String(products.total),
+      tone: theme.colors.palette.semantic.success,
+    },
     {
       label: "Yêu cầu chờ duyệt",
       value: String(totalPendingRequests),
-      tone: "#f59e0b",
+      tone: theme.colors.palette.semantic.warning,
     },
   ];
 

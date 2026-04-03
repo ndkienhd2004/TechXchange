@@ -2,22 +2,28 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { Theme } from "@/theme";
+import type { Product as ProductRow } from "@/features/products/types";
 import { fetchProductById, clearSelectedProduct } from "@/features/products/store/productSlice";
 import { 
   selectSelectedProduct, 
   selectProductDetailLoading
 } from "@/features/products/store/productSelectors";
 import { addToCart } from "@/features/cart/store/cartSlice";
+import ItemCard from "@/components/commons/ItemCard";
 import { selectIsAuthenticated } from "@/features/auth";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
 import { buildProductDisplayName } from "@/features/products/utils/displayName";
+import {
+  buildAuthRedirectHref,
+  buildCurrentPath,
+} from "@/features/auth/utils/redirect";
 import * as styles from "./styles";
 
 function renderStars(
@@ -87,6 +93,8 @@ function formatVariantLabel(variant: {
 
 export default function ProductDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : "";
   const dispatch = useAppDispatch();
@@ -114,6 +122,12 @@ export default function ProductDetailPage() {
     }>
   >([]);
   const [reviewFilter, setReviewFilter] = useState<"all" | number>("all");
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductRow[]>(
+    [],
+  );
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [shopLogoError, setShopLogoError] = useState(false);
+  const [resolvedStoreLogoUrl, setResolvedStoreLogoUrl] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -144,6 +158,72 @@ export default function ProductDetailPage() {
     };
     run();
   }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    const run = async () => {
+      setLoadingRecommendations(true);
+      try {
+        const api = getAxiosInstance();
+        const res = await api.get(`/products/${id}/recommendations`, {
+          params: { limit: 8, mode: "content" },
+        });
+        const rows = Array.isArray(res?.data?.data?.products)
+          ? res.data.data.products
+          : [];
+        const currentProductId = Number(id);
+        setRecommendedProducts(
+          rows.filter(
+            (row: ProductRow) => Number(row?.id) !== currentProductId,
+          ),
+        );
+      } catch {
+        setRecommendedProducts([]);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    void run();
+  }, [id]);
+
+  useEffect(() => {
+    const storeId = Number(product?.store_id || 0);
+    const inlineLogo = String(product?.store?.logo || "").trim();
+    if (!storeId) {
+      setResolvedStoreLogoUrl("");
+      return;
+    }
+    if (inlineLogo) {
+      setResolvedStoreLogoUrl(inlineLogo);
+      return;
+    }
+
+    let isCancelled = false;
+    const run = async () => {
+      try {
+        const api = getAxiosInstance();
+        const storeRes = await api.get(`/stores/${storeId}`);
+        const storeLogo = String(storeRes?.data?.data?.logo || "").trim();
+        if (!isCancelled) {
+          setResolvedStoreLogoUrl(storeLogo);
+        }
+      } catch {
+        if (!isCancelled) {
+          setResolvedStoreLogoUrl("");
+        }
+      }
+    };
+    void run();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.store?.logo, product?.store_id]);
 
   const specOptions = useMemo(() => product?.spec_options ?? [], [product]);
   const variantInventory = useMemo(
@@ -212,6 +292,10 @@ export default function ProductDetailPage() {
     setSelectedSpecs(defaults);
   }, [id, product, specOptions, variantInventory]);
 
+  useEffect(() => {
+    setShopLogoError(false);
+  }, [product?.store?.logo, resolvedStoreLogoUrl]);
+
   if (loading && !product) {
     return (
       <div style={{ ...themed(styles.page), display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -236,6 +320,14 @@ export default function ProductDetailPage() {
 
   if (!product) return null;
 
+  const shopLogoUrl = String(product.store?.logo || resolvedStoreLogoUrl || "").trim();
+  const hasShopLogo =
+    Boolean(shopLogoUrl) &&
+    shopLogoUrl !== "null" &&
+    shopLogoUrl !== "undefined" &&
+    !shopLogoError;
+  const shopInitial = String(product.store?.name || "S").charAt(0).toUpperCase();
+
   const selectedVariant = variantInventory.find((variant) =>
     specOptions.every((opt) => selectedSpecs[opt.key] === variant.attributes?.[opt.key]),
   );
@@ -258,11 +350,15 @@ export default function ProductDetailPage() {
     product.name,
     hasVariantSelection ? selectedSpecs : product.primary_serial_specs,
   );
+  const loginRedirectHref = buildAuthRedirectHref(
+    "/login",
+    buildCurrentPath(pathname, searchParams),
+  );
 
   const ensureAuth = () => {
     if (isAuthenticated) return true;
     showErrorToast("Vui lòng đăng nhập để tiếp tục");
-    router.push("/login");
+    router.push(loginRedirectHref);
     return false;
   };
 
@@ -531,7 +627,12 @@ export default function ProductDetailPage() {
                 <span
                   style={{
                     ...themed(styles.quantityNote),
-                    ...(isOutOfStock ? { color: "#ef4444", fontWeight: 700 } : {}),
+                    ...(isOutOfStock
+                      ? {
+                          color: theme.colors.palette.semantic.error,
+                          fontWeight: 700,
+                        }
+                      : {}),
                   }}
                 >
                   {isOutOfStock ? "Không có hàng" : `${availableStock} sản phẩm có sẵn`}
@@ -570,7 +671,19 @@ export default function ProductDetailPage() {
           {product.store && (
             <div style={themed(styles.shopCard)}>
               <div style={themed(styles.shopInfo)}>
-                <span style={themed(styles.shopAvatar)}>🏠</span>
+                <span style={themed(styles.shopAvatar)}>
+                  {hasShopLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={shopLogoUrl}
+                      alt={product.store.name || "Shop logo"}
+                      style={themed(styles.shopAvatarImage)}
+                      onError={() => setShopLogoError(true)}
+                    />
+                  ) : (
+                    shopInitial
+                  )}
+                </span>
                 <div>
                   <h3 style={themed(styles.shopName)}>{product.store.name}</h3>
                   <p style={themed(styles.shopMeta)}>★ {product.store.rating || 0} · 85 sản phẩm</p>
@@ -747,6 +860,54 @@ export default function ProductDetailPage() {
               </div>
             )}
           </div>
+
+          {(loadingRecommendations || recommendedProducts.length > 0) && (
+            <section style={{ marginTop: theme.spacing["3xl"] }}>
+              <h2 style={themed(styles.sectionTitle)}>Gợi ý cho bạn</h2>
+              {loadingRecommendations ? (
+                <p style={{ color: theme.colors.palette.text.secondary }}>
+                  Đang tải gợi ý sản phẩm...
+                </p>
+              ) : (
+                <div style={themed(styles.recommendedGrid)}>
+                  {recommendedProducts.map((recommendedProduct) => (
+                    <Link
+                      key={String(recommendedProduct.id)}
+                      href={`/products/${recommendedProduct.id}`}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <ItemCard
+                        productId={Number(recommendedProduct.id)}
+                        title={buildProductDisplayName(
+                          recommendedProduct.name,
+                          recommendedProduct.primary_serial_specs ||
+                            (recommendedProduct.catalog?.specs as
+                              | Record<string, unknown>
+                              | undefined),
+                        )}
+                        price={`${Number(
+                          recommendedProduct.price || 0,
+                        ).toLocaleString("vi-VN")} đ`}
+                        rating={Number(recommendedProduct.rating || 0)}
+                        reviewCount={Number(
+                          recommendedProduct.reviewCount ??
+                            recommendedProduct.review_count ??
+                            recommendedProduct.buyturn ??
+                            recommendedProduct.quantity ??
+                            0,
+                        )}
+                        imageSrc={
+                          recommendedProduct.images?.[0]?.url ||
+                          recommendedProduct.default_image ||
+                          undefined
+                        }
+                      />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
         </div>
       </div>

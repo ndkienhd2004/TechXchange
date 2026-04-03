@@ -13,7 +13,7 @@ export const backdrop = (theme: Theme): CSSProperties => ({
   padding: `${theme.spacing.xl} ${theme.spacing.lg} ${theme.spacing["3xl"]}`,
 });
 
-export const shell = (theme: Theme): CSSProperties => ({
+export const shell = (): CSSProperties => ({
   maxWidth: "1200px",
   margin: "0 auto",
 });
@@ -72,7 +72,7 @@ export const mainImage = (theme: Theme): CSSProperties => ({
   overflow: "hidden",
 });
 
-export const galleryNav = (theme: Theme): CSSProperties => ({
+export const galleryNav = (): CSSProperties => ({
   position: "absolute",
   top: "50%",
   transform: "translateY(-50%)",
@@ -291,6 +291,7 @@ export const shopInfo = (theme: Theme): CSSProperties => ({
 });
 
 export const shopAvatar = (theme: Theme): CSSProperties => ({
+  position: "relative",
   width: "48px",
   height: "48px",
   borderRadius: theme.spacing.md,
@@ -299,6 +300,16 @@ export const shopAvatar = (theme: Theme): CSSProperties => ({
   alignItems: "center",
   justifyContent: "center",
   fontSize: theme.typography.fontSize.xl.size,
+  fontWeight: theme.typography.fontWeight.bold,
+  color: theme.colors.palette.text.secondary,
+  overflow: "hidden",
+});
+
+export const shopAvatarImage = (): CSSProperties => ({
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  display: "block",
 });
 
 export const shopName = (theme: Theme): CSSProperties => ({
@@ -412,7 +423,7 @@ export const reviewAvatar = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });
 
-export const reviewMeta = (theme: Theme): CSSProperties => ({
+export const reviewMeta = (): CSSProperties => ({
   flex: 1,
 });
 

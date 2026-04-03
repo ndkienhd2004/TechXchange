@@ -61,7 +61,7 @@ export const button = (theme: Theme): CSSProperties => ({
   alignItems: "center",
   justifyContent: "center",
   padding: `${theme.spacing[4]} ${theme.spacing[8]}`,
-  background: "#ec4899",
+  background: theme.colors.palette.brand.pink[500],
   color: "#ffffff",
   fontSize: theme.typography.fontSize.base.size,
   fontWeight: theme.typography.fontWeight.semibold,
@@ -71,7 +71,7 @@ export const button = (theme: Theme): CSSProperties => ({
   border: "none",
   cursor: "pointer",
   transition: "all 0.2s ease",
-  boxShadow: "0 4px 14px 0 rgba(236, 72, 153, 0.4)",
+  boxShadow: theme.shadows.md,
   alignSelf: "flex-start",
 });
 

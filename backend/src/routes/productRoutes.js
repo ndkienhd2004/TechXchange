@@ -448,6 +448,63 @@ router.get(
 
 /**
  * @swagger
+ * /products/recommendations/me:
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Lấy danh sách gợi ý cá nhân cho user
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 8
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [hybrid, content, collaborative]
+ */
+router.get(
+  "/recommendations/me",
+  authMiddleware,
+  ProductController.getMyRecommendations,
+);
+
+/**
+ * @swagger
+ * /products/{id}/recommendations:
+ *   get:
+ *     tags:
+ *       - Product
+ *     summary: Lấy danh sách gợi ý sản phẩm tương tự
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 8
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [content, collaborative]
+ */
+router.get(
+  "/:id/recommendations",
+  optionalAuthMiddleware,
+  ProductController.getProductRecommendations,
+);
+
+/**
+ * @swagger
  * /products/{id}:
  *   get:
  *     tags:

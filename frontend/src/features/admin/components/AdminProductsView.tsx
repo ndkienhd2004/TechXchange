@@ -5,14 +5,10 @@ import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   approveCatalogSpecRequestById,
-  approveAdminProductById,
-  cancelAdminProductById,
   fetchAdminCatalogSpecRequests,
-  fetchAdminProductCounts,
   fetchAdminProducts,
   rejectCatalogSpecRequestById,
   setAdminCatalogSpecRequestsStatus,
-  setAdminProductsStatus,
 } from "@/features/admin/store/adminSlice";
 import {
   selectAdminCatalogSpecRequests,
@@ -57,7 +53,7 @@ const tabs: { key: AdminStatus; label: string }[] = [
 export default function AdminProductsView() {
   const { themed } = useAppTheme();
   const dispatch = useAppDispatch();
-  const { items, page, totalPages, total, status, loading, counts } =
+  const { items, page, totalPages, total, loading } =
     useAppSelector(selectAdminProducts);
   const specRequests = useAppSelector(selectAdminCatalogSpecRequests);
   const [q, setQ] = useState("");
@@ -73,12 +69,8 @@ export default function AdminProductsView() {
   const [categoryOptions, setCategoryOptions] = useState<Array<{ id: number; name: string; level?: number }>>([]);
 
   useEffect(() => {
-    dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-  }, [dispatch, page, status, q]);
-
-  useEffect(() => {
-    dispatch(fetchAdminProductCounts());
-  }, [dispatch]);
+    dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
+  }, [dispatch, page, q]);
 
   useEffect(() => {
     (async () => {
@@ -114,22 +106,6 @@ export default function AdminProductsView() {
     );
   }, [dispatch, specRequests.page, specRequests.status]);
 
-  const onStatusChange = (nextStatus: AdminStatus) => {
-    dispatch(setAdminProductsStatus(nextStatus));
-  };
-
-  const onApprove = async (id: number) => {
-    await dispatch(approveAdminProductById(id));
-    dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-    dispatch(fetchAdminProductCounts());
-  };
-
-  const onReject = async (id: number) => {
-    await dispatch(cancelAdminProductById(id));
-    dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-    dispatch(fetchAdminProductCounts());
-  };
-
   const onApproveSpec = async (id: number) => {
     await dispatch(approveCatalogSpecRequestById(id));
     dispatch(
@@ -158,8 +134,7 @@ export default function AdminProductsView() {
     try {
       await deleteAdminCatalogProduct(id);
       showSuccessToast("Xóa catalog thành công");
-      dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-      dispatch(fetchAdminProductCounts());
+      dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
     } catch (error) {
       showErrorToast(error);
     }
@@ -187,8 +162,7 @@ export default function AdminProductsView() {
       category_id: editingCategoryId ? Number(editingCategoryId) : undefined,
     });
     setEditOpen(false);
-    dispatch(fetchAdminProducts({ page, status, limit: 10, q: q || undefined }));
-    dispatch(fetchAdminProductCounts());
+    dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
   };
 
   const statusLabel = (value: string) => {
@@ -202,7 +176,7 @@ export default function AdminProductsView() {
   return (
     <AdminLayout>
       <header style={themed(styles.pageHeader)}>
-        <h1 style={themed(styles.pageTitle)}>Quản lý sản phẩm</h1>
+        <h1 style={themed(styles.pageTitle)}>Danh mục sản phẩm</h1>
         <p style={themed(styles.pageSubtitle)}>{total} sản phẩm</p>
       </header>
 
@@ -218,24 +192,6 @@ export default function AdminProductsView() {
             onChange={(e) => setQ(e.target.value)}
             style={themed(styles.searchInput)}
           />
-        </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <div style={themed(styles.tabGroup)}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => onStatusChange(tab.key)}
-                style={
-                  tab.key === status
-                    ? themed(styles.tabButtonActive)
-                    : themed(styles.tabButton)
-                }
-              >
-                {tab.label} ({counts[tab.key] ?? 0})
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -293,28 +249,6 @@ export default function AdminProductsView() {
                       >
                         <AppIcon name="edit" />
                       </button>
-                      {product.status === "pending" && (
-                        <button
-                          type="button"
-                          style={themed(styles.primaryButton)}
-                          onClick={() => onApprove(product.id)}
-                        >
-                          Duyệt
-                        </button>
-                      )}
-                      {product.status === "pending" && (
-                        <button
-                          type="button"
-                          style={{
-                            ...themed(styles.tabButton),
-                            border: "1px solid #ef4444",
-                            color: "#ef4444",
-                          }}
-                          onClick={() => onReject(product.id)}
-                        >
-                          Từ chối
-                        </button>
-                      )}
                       <button
                         type="button"
                         style={themed(styles.dangerButton)}
@@ -338,7 +272,7 @@ export default function AdminProductsView() {
               dispatch(
                 fetchAdminProducts({
                   page: Math.max(page - 1, 1),
-                  status,
+                  status: "all",
                   limit: 10,
                   q: q || undefined,
                 })
@@ -358,7 +292,7 @@ export default function AdminProductsView() {
               dispatch(
                 fetchAdminProducts({
                   page: Math.min(page + 1, Math.max(totalPages, 1)),
-                  status,
+                  status: "all",
                   limit: 10,
                   q: q || undefined,
                 })
@@ -373,18 +307,7 @@ export default function AdminProductsView() {
       </section>
 
       {editOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.65)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-            padding: 16,
-          }}
-        >
+        <div style={themed(styles.modalOverlay)}>
           <div style={{ ...themed(styles.tableCard), width: "min(760px, 94vw)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <input

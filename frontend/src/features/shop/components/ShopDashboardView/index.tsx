@@ -20,7 +20,6 @@ import {
 } from "@/services/ghnApi";
 import {
   getShopAnalyticsService,
-  registerShopGhnService,
   updateShopAddressService,
   updateShopProfileService,
 } from "../../sevices";
@@ -50,13 +49,12 @@ type DashboardOrder = {
 };
 
 export default function ShopDashboardView() {
-  const { themed } = useAppTheme();
+  const { themed, theme } = useAppTheme();
   const dispatch = useAppDispatch();
   const { info, productsTotal, loading } = useAppSelector(
     (state: RootState) => state.shop,
   );
   const [savingAddress, setSavingAddress] = useState(false);
-  const [registeringGhn, setRegisteringGhn] = useState(false);
   const [addressLine, setAddressLine] = useState("");
   const [provinceId, setProvinceId] = useState<number | null>(null);
   const [districtId, setDistrictId] = useState<number | null>(null);
@@ -160,12 +158,12 @@ export default function ShopDashboardView() {
       {
         label: "Tổng sản phẩm",
         value: productsTotal.toString(),
-        tone: "#7c3aed",
+        tone: theme.colors.palette.brand.purple[500],
       },
       {
         label: "Đơn hàng",
         value: analyticsLoading ? "..." : String(analytics?.total_orders ?? 0),
-        tone: "#3b82f6",
+        tone: theme.colors.palette.semantic.info,
         sub: analyticsLoading
           ? ""
           : `${analytics?.completed_orders ?? 0} hoàn thành`,
@@ -175,17 +173,17 @@ export default function ShopDashboardView() {
         value: analyticsLoading
           ? "..."
           : formatVnd(analytics?.total_revenue ?? 0),
-        tone: "#22c55e",
+        tone: theme.colors.palette.semantic.success,
         sub: "7 ngày gần nhất",
       },
       {
         label: "Đánh giá",
         value: info?.rating?.toString() || "0",
-        tone: "#f59e0b",
+        tone: theme.colors.palette.semantic.warning,
         sub: info?.rating?.toFixed(1) || "0.0",
       },
     ],
-    [productsTotal, info, analyticsLoading, analytics],
+    [productsTotal, info, analyticsLoading, analytics, theme.colors],
   );
 
   const onSaveAddress = async () => {
@@ -217,25 +215,6 @@ export default function ShopDashboardView() {
       showErrorToast(error);
     } finally {
       setSavingAddress(false);
-    }
-  };
-
-  const onRegisterGhnShop = async () => {
-    if (!info?.id) return;
-    try {
-      setRegisteringGhn(true);
-      const res = await registerShopGhnService(Number(info.id));
-      const ghnShopId = Number(res?.data?.ghn_shop_id || 0);
-      showSuccessToast(
-        ghnShopId
-          ? `GHN shop đã sẵn sàng (shop_id: ${ghnShopId})`
-          : "Đăng ký GHN shop thành công",
-      );
-      dispatch(getShopInfo());
-    } catch (error) {
-      showErrorToast(error);
-    } finally {
-      setRegisteringGhn(false);
     }
   };
 
@@ -509,8 +488,8 @@ export default function ShopDashboardView() {
                     : order.status === "completed"
                       ? themed(styles.statusDelivered)
                       : {
-                          background: "rgba(239, 68, 68, 0.2)",
-                          color: "#fca5a5",
+                          background: theme.colors.palette.status.cancelled.bg,
+                          color: theme.colors.palette.status.cancelled.text,
                         };
 
               return (

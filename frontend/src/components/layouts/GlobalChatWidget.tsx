@@ -361,7 +361,7 @@ export default function GlobalChatWidget() {
 
             <button
               type="button"
-              style={themed(styles.aiItem(mode === "assistant"))}
+              style={themed((theme) => styles.aiItem(theme, mode === "assistant"))}
               onClick={() => {
                 setMode("assistant");
                 setActivePeerId(BOT_PEER_ID);
@@ -387,7 +387,7 @@ export default function GlobalChatWidget() {
                 <button
                   key={item.peer_user_id}
                   type="button"
-                  style={themed(styles.conversationItem(activePeerId === item.peer_user_id))}
+                  style={themed((theme) => styles.conversationItem(theme, activePeerId === item.peer_user_id))}
                   onClick={() => onSelectConversation(Number(item.peer_user_id))}
                 >
                   <span style={themed(styles.conversationAvatar)}>

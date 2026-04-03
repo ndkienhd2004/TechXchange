@@ -12,7 +12,7 @@ interface HeroSlide {
   subtitle?: string;
   buttonText: string;
   buttonLink: string;
-  gradient: string;
+  gradientKey: "brand_primary" | "brand_promo";
 }
 
 const slides: HeroSlide[] = [
@@ -22,7 +22,7 @@ const slides: HeroSlide[] = [
     title: "Upgrade smart, Work faster, Play harder",
     buttonText: "Start Buying",
     buttonLink: "/products",
-    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    gradientKey: "brand_primary",
   },
   {
     id: 2,
@@ -30,12 +30,12 @@ const slides: HeroSlide[] = [
     title: "Black Friday Deals",
     buttonText: "Start Buying",
     buttonLink: "/promotions",
-    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    gradientKey: "brand_promo",
   },
 ];
 
 export default function HeroCarousel() {
-  const { themed } = useAppTheme();
+  const { theme, themed } = useAppTheme();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -63,6 +63,10 @@ export default function HeroCarousel() {
   }, [isHovered, nextSlide]);
 
   const currentSlideData = slides[currentSlide];
+  const slideGradients: Record<HeroSlide["gradientKey"], string> = {
+    brand_primary: `linear-gradient(135deg, ${theme.colors.palette.brand.purple[700]} 0%, ${theme.colors.palette.brand.purple[500]} 100%)`,
+    brand_promo: `linear-gradient(135deg, ${theme.colors.palette.brand.pink[700]} 0%, ${theme.colors.palette.brand.pink[500]} 100%)`,
+  };
 
   return (
     <div
@@ -75,7 +79,7 @@ export default function HeroCarousel() {
         className={carouselStyles.slideContainer}
         style={{
           ...themed(styles.slideContainer),
-          background: currentSlideData.gradient,
+          background: slideGradients[currentSlideData.gradientKey],
         }}
       >
         <div style={themed(styles.slideContent)}>

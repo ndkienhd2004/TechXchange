@@ -1,4 +1,5 @@
 const ProductService = require("../service/productService");
+const RecommendationService = require("../service/recommendationService");
 const { response } = require("../utils/response");
 
 /**
@@ -128,6 +129,70 @@ class ProductController {
       return response.success(res, "Lấy chi tiết sản phẩm thành công", product);
     } catch (error) {
       return response.notFound(res, error.message);
+    }
+  }
+
+  /**
+   * Lấy danh sách gợi ý sản phẩm theo product id
+   * GET /products/:id/recommendations
+   */
+  static async getProductRecommendations(req, res) {
+    try {
+      const productId = Number(req.params.id);
+      if (!productId) {
+        return response.badRequest(res, "ID sản phẩm không hợp lệ");
+      }
+
+      const recommendationData = await RecommendationService.getSimilarProducts(
+        productId,
+        {
+          limit: req.query.limit,
+          mode: req.query.mode,
+        },
+      );
+
+      return response.success(
+        res,
+        "Lấy gợi ý sản phẩm thành công",
+        recommendationData,
+      );
+    } catch (error) {
+      return response.serverError(
+        res,
+        error.message || "Không thể lấy gợi ý sản phẩm",
+      );
+    }
+  }
+
+  /**
+   * Lấy danh sách gợi ý cá nhân cho user đăng nhập
+   * GET /products/recommendations/me
+   */
+  static async getMyRecommendations(req, res) {
+    try {
+      const userId = Number(req.user?.id || 0);
+      if (!userId) {
+        return response.unauthorized(res, "Chưa xác thực người dùng");
+      }
+
+      const recommendationData = await RecommendationService.getUserRecommendations(
+        userId,
+        {
+          limit: req.query.limit,
+          mode: req.query.mode,
+        },
+      );
+
+      return response.success(
+        res,
+        "Lấy gợi ý cá nhân thành công",
+        recommendationData,
+      );
+    } catch (error) {
+      return response.serverError(
+        res,
+        error.message || "Không thể lấy gợi ý cá nhân",
+      );
     }
   }
 

@@ -2,44 +2,45 @@
 
 import type React from "react";
 import toast, { Toaster } from "react-hot-toast";
-
-const PALE_GREEN = "#f0fdf4";
-const ACCENT_GREEN = "#22c55e";
-const TEXT_GREEN = "#166534";
-
-const successToastStyle = (): React.CSSProperties => ({
-  background: PALE_GREEN,
-  color: TEXT_GREEN,
-  border: "1px solid " + ACCENT_GREEN,
-  borderRadius: 12,
-  padding: "12px 16px",
-  boxShadow: "0 4px 20px rgba(34, 197, 94, 0.15)",
-});
+import { useAppTheme } from "@/theme/ThemeProvider";
 
 export function ThemedToaster() {
+  const { theme } = useAppTheme();
+
+  const successToastStyle: React.CSSProperties = {
+    background: theme.colors.palette.status.delivered.bg,
+    color: theme.colors.palette.status.delivered.text,
+    border: `1px solid ${theme.colors.palette.semantic.success}`,
+    borderRadius: 12,
+    padding: "12px 16px",
+    boxShadow: theme.shadows.md,
+  };
+
+  const errorToastStyle: React.CSSProperties = {
+    ...successToastStyle,
+    background: theme.colors.palette.status.cancelled.bg,
+    color: theme.colors.palette.status.cancelled.text,
+    border: `1px solid ${theme.colors.palette.semantic.error}`,
+  };
+
   return (
     <Toaster
       position="top-center"
       toastOptions={{
         duration: 4000,
-        style: successToastStyle(),
+        style: successToastStyle,
         success: {
-          style: successToastStyle(),
+          style: successToastStyle,
           iconTheme: {
-            primary: ACCENT_GREEN,
-            secondary: PALE_GREEN,
+            primary: theme.colors.palette.semantic.success,
+            secondary: theme.colors.palette.status.delivered.bg,
           },
         },
         error: {
-          style: {
-            ...successToastStyle(),
-            background: "#fef2f2",
-            color: "#991b1b",
-            border: "1px solid #dc2626",
-          },
+          style: errorToastStyle,
           iconTheme: {
-            primary: "#dc2626",
-            secondary: "#fef2f2",
+            primary: theme.colors.palette.semantic.error,
+            secondary: theme.colors.palette.status.cancelled.bg,
           },
         },
       }}

@@ -321,14 +321,17 @@ export const paginationRow = (theme: Theme): CSSProperties => ({
   marginTop: theme.spacing.lg,
 });
 
-export const modalOverlay = (_theme: Theme): CSSProperties => ({
+export const modalOverlay = (theme: Theme): CSSProperties => ({
   position: "fixed",
   inset: 0,
-  background: "rgba(2, 6, 23, 0.72)",
+  background:
+    theme.theme === "dark"
+      ? "rgba(2, 6, 23, 0.72)"
+      : "rgba(2, 6, 23, 0.45)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "16px",
+  padding: theme.spacing.md,
   zIndex: 1100,
 });
 

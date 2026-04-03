@@ -19,7 +19,7 @@ export default function AdminLayout({
     { label: "Cửa hàng", href: "/admin/stores" },
     { label: "Thương hiệu", href: "/admin/brands" },
     { label: "Sản phẩm", href: "/admin/products" },
-    { label: "Đánh giá", href: "/admin/reviews" },
+    { label: "Yêu cầu sản phẩm", href: "/admin/reviews" },
     { label: "Danh mục", href: "/admin/categories" },
     { label: "Người dùng", href: "/admin/users" },
   ];

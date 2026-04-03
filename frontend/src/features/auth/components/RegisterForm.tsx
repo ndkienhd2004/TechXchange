@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "./AuthLayout";
 import { SignUp } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
 import { selectError, selectLoading } from "../store/authSelectors";
+import {
+  buildAuthRedirectHref,
+  resolveSafeRedirectTarget,
+} from "../utils/redirect";
 
 export default function RegisterForm() {
   const [username, setUsername] = useState("");
@@ -15,9 +19,12 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { themed } = useAppTheme();
   const isLoading = useAppSelector(selectLoading);
   const error = useAppSelector(selectError);
+  const nextPath = resolveSafeRedirectTarget(searchParams.get("next"), "/");
+  const loginHref = buildAuthRedirectHref("/login", nextPath);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +32,7 @@ export default function RegisterForm() {
       SignUp({ id: "", email, password, username, gender: "", phone: "" })
     );
     if (SignUp.fulfilled.match(result)) {
-      router.push("/login");
+      router.push(loginHref);
       router.refresh();
     }
   };
@@ -34,7 +41,7 @@ export default function RegisterForm() {
     <AuthLayout
       title="Đăng ký"
       footerLabel="Đã có tài khoản?"
-      footerLinkHref="/login"
+      footerLinkHref={loginHref}
       footerLinkText="Đăng nhập"
     >
       <form style={themed(styles.form)} onSubmit={handleSubmit}>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAppSelector } from "@/store/hooks";
+import { useAppTheme } from "@/theme/ThemeProvider";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import {
   ChatConversation,
@@ -12,6 +13,7 @@ import {
   openStoreConversationService,
 } from "../services/chatApi";
 import { API_BASE_URL } from "@/config/api";
+import * as styles from "./styles";
 
 function resolveSocketUrl() {
   return API_BASE_URL.replace(/\/api\/?$/, "");
@@ -26,6 +28,7 @@ function dedupeById(rows: ChatMessage[]) {
 }
 
 export default function ChatView() {
+  const { themed } = useAppTheme();
   const auth = useAppSelector((state) => state.auth);
   const token = auth.token;
   const me = auth.user;
@@ -209,65 +212,58 @@ export default function ChatView() {
   };
 
   if (!token) {
-    return <div style={{ padding: 20 }}>Vui lòng đăng nhập để sử dụng chat.</div>;
+    return (
+      <div style={themed(styles.page)}>
+        <div style={themed(styles.unauthenticated)}>
+          Vui lòng đăng nhập để sử dụng chat.
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "320px 1fr",
-        gap: 16,
-        padding: 20,
-        minHeight: "80vh",
-      }}
-    >
-      <aside style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-        <h2 style={{ marginTop: 0 }}>Hội thoại</h2>
+    <div style={themed(styles.page)}>
+      <div style={themed(styles.layout)}>
+      <aside style={themed(styles.panel)}>
+        <h2 style={themed(styles.panelTitle)}>Hội thoại</h2>
         {me?.role !== "shop" && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <div style={themed(styles.openChatRow)}>
             <input
               placeholder="Nhập store_id"
               value={storeIdInput}
               onChange={(e) => setStoreIdInput(e.target.value)}
-              style={{ flex: 1, padding: "8px 10px" }}
+              style={{ ...themed(styles.input), flex: 1 }}
             />
-            <button type="button" onClick={onOpenStoreChat}>
+            <button
+              type="button"
+              onClick={onOpenStoreChat}
+              style={themed(styles.primaryButton)}
+            >
               Mở
             </button>
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={themed(styles.conversationList)}>
           {conversations.map((item) => (
             <button
               key={item.peer_user_id}
               type="button"
               onClick={() => setActivePeerId(item.peer_user_id)}
-              style={{
-                textAlign: "left",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                padding: 10,
-                background: activePeerId === item.peer_user_id ? "#eef6ff" : "#fff",
-              }}
+              style={
+                activePeerId === item.peer_user_id
+                  ? themed(styles.conversationButtonActive)
+                  : themed(styles.conversationButton)
+              }
             >
-              <div style={{ fontWeight: 700 }}>
+              <div style={themed(styles.conversationName)}>
                 {item.peer?.username || `User #${item.peer_user_id}`}
               </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  opacity: 0.75,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
+              <div style={themed(styles.conversationPreview)}>
                 {item.last_message}
               </div>
               {item.unread_count > 0 && (
-                <div style={{ color: "#d00", fontSize: 12 }}>
+                <div style={themed(styles.unreadText)}>
                   {item.unread_count} tin chưa đọc
                 </div>
               )}
@@ -276,47 +272,35 @@ export default function ChatView() {
         </div>
       </aside>
 
-      <section style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-        <h2 style={{ marginTop: 0 }}>
+      <section style={themed(styles.panel)}>
+        <h2 style={themed(styles.panelTitle)}>
           {activeConversation?.peer?.username ||
             (activePeerId ? `User #${activePeerId}` : "Chưa chọn hội thoại")}
         </h2>
 
-        <div
-          style={{
-            border: "1px solid #eee",
-            borderRadius: 8,
-            padding: 10,
-            minHeight: 420,
-            maxHeight: 420,
-            overflowY: "auto",
-            background: "#fafafa",
-          }}
-        >
-          {loading && <div>Đang tải...</div>}
+        <div style={themed(styles.messageBox)}>
+          {loading && <div style={themed(styles.loadingText)}>Đang tải...</div>}
           {!loading &&
             messages.map((msg) => {
               const mine = Number(msg.sender_id) === Number(me?.id);
               return (
                 <div
                   key={msg.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: mine ? "flex-end" : "flex-start",
-                    marginBottom: 8,
-                  }}
+                  style={
+                    mine
+                      ? themed(styles.messageRowMine)
+                      : themed(styles.messageRowOther)
+                  }
                 >
                   <div
                     style={{
-                      maxWidth: "70%",
-                      background: mine ? "#dff0ff" : "#fff",
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      padding: "8px 10px",
+                      ...(mine
+                        ? themed(styles.messageBubbleMine)
+                        : themed(styles.messageBubbleOther)),
                     }}
                   >
                     <div>{msg.message}</div>
-                    <div style={{ fontSize: 11, opacity: 0.65 }}>
+                    <div style={themed(styles.messageMeta)}>
                       {new Date(msg.sent_at).toLocaleString("vi-VN")}
                     </div>
                   </div>
@@ -325,7 +309,7 @@ export default function ChatView() {
             })}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div style={themed(styles.composerRow)}>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -333,14 +317,20 @@ export default function ChatView() {
             onKeyDown={(e) => {
               if (e.key === "Enter") onSend();
             }}
-            style={{ flex: 1, padding: "10px 12px" }}
+            style={{ ...themed(styles.input), flex: 1 }}
             disabled={!activePeerId}
           />
-          <button type="button" onClick={onSend} disabled={!activePeerId}>
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={!activePeerId}
+            style={themed(styles.primaryButton)}
+          >
             Gửi
           </button>
         </div>
       </section>
+      </div>
     </div>
   );
 }

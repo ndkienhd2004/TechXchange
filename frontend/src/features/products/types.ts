@@ -22,7 +22,7 @@ export interface Product {
   images?: { id: number; url: string; sort_order: number }[];
   brand?: { id: string; name: string; image: string | null };
   category?: { id: string; name: string };
-  store?: { id: string; name: string; rating: number };
+  store?: { id: string; name: string; rating: number; logo?: string | null; description?: string | null };
   catalog?: {
     id?: string | number;
     name?: string;

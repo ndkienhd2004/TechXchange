@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { getAxiosInstance } from "@/services/axiosConfig";
@@ -14,6 +15,7 @@ import { buildProductDisplayName } from "@/features/products/utils/displayName";
 type StoreInfo = {
   id: number;
   name: string;
+  logo?: string | null;
   description?: string | null;
   rating?: number | null;
   address_line?: string | null;
@@ -64,6 +66,7 @@ export default function ShopView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("latest");
+  const [storeLogoError, setStoreLogoError] = useState(false);
 
   useEffect(() => {
     const update = () => setViewportWidth(window.innerWidth || 1280);
@@ -128,6 +131,10 @@ export default function ShopView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId, page, debouncedSearch, sortBy]);
 
+  useEffect(() => {
+    setStoreLogoError(false);
+  }, [store?.logo]);
+
   const visibleProducts = useMemo(() => products, [products]);
 
   if (!storeId) {
@@ -145,6 +152,12 @@ export default function ShopView() {
     [store?.district, store?.province].filter(Boolean).join(", ") || "Việt Nam";
   const isTablet = viewportWidth < 1180;
   const isMobile = viewportWidth < 500;
+  const storeLogoUrl = String(store?.logo || "").trim();
+  const hasStoreLogo =
+    Boolean(storeLogoUrl) &&
+    storeLogoUrl !== "null" &&
+    storeLogoUrl !== "undefined" &&
+    !storeLogoError;
 
   return (
     <div style={themed(styles.page)}>
@@ -172,7 +185,18 @@ export default function ShopView() {
               >
                 <div style={themed(styles.avatarWrap)}>
                   <div style={themed(styles.avatarBox)}>
-                    {(store.name || "S").charAt(0).toUpperCase()}
+                    {hasStoreLogo ? (
+                      <Image
+                        fill
+                        src={storeLogoUrl}
+                        alt={store.name || "Store logo"}
+                        sizes="160px"
+                        style={themed(styles.avatarImage)}
+                        onError={() => setStoreLogoError(true)}
+                      />
+                    ) : (
+                      (store.name || "S").charAt(0).toUpperCase()
+                    )}
                   </div>
                   <span style={themed(styles.verifiedDot)}>✓</span>
                 </div>

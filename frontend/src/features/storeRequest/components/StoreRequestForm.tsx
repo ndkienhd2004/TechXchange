@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectIsAuthenticated, selectUser } from "@/features/auth";
 import { useAppTheme } from "@/theme/ThemeProvider";
@@ -25,10 +25,16 @@ import {
   type GhnProvince,
   type GhnWard,
 } from "@/services/ghnApi";
+import {
+  buildAuthRedirectHref,
+  buildCurrentPath,
+} from "@/features/auth/utils/redirect";
 
 export default function StoreRequestForm() {
   const { themed } = useAppTheme();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const user = useAppSelector(selectUser);
@@ -49,6 +55,10 @@ export default function StoreRequestForm() {
   const submitLoading = useAppSelector(selectStoreRequestSubmitLoading);
   const error = useAppSelector(selectStoreRequestError);
   const canSubmitRequest = isAuthenticated && user?.role === "user" && total === 0;
+  const loginHref = buildAuthRedirectHref(
+    "/login",
+    buildCurrentPath(pathname, searchParams),
+  );
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -77,7 +87,7 @@ export default function StoreRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      router.replace("/login");
+      router.replace(loginHref);
       return;
     }
     if (!canSubmitRequest) {

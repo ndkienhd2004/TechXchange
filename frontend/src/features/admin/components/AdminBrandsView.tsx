@@ -37,7 +37,7 @@ type BrandOption = { id: number; name: string; image?: string };
 const BRAND_PAGE_SIZE = 10;
 
 export default function AdminBrandsView() {
-  const { themed } = useAppTheme();
+  const { theme, themed } = useAppTheme();
   const dispatch = useAppDispatch();
   const { items, page, totalPages, total, status, loading } =
     useAppSelector(selectAdminBrandRequests);
@@ -316,7 +316,7 @@ export default function AdminBrandsView() {
                             height: "42px",
                             objectFit: "cover",
                             borderRadius: "6px",
-                            border: "1px solid rgba(148,163,184,0.25)",
+                            border: `1px solid ${theme.colors.palette.borders.default}`,
                           }}
                         />
                       ) : (
@@ -534,7 +534,7 @@ export default function AdminBrandsView() {
                       height: "80px",
                       objectFit: "cover",
                       borderRadius: "8px",
-                      border: "1px solid rgba(148,163,184,0.25)",
+                      border: `1px solid ${theme.colors.palette.borders.default}`,
                     }}
                   />
                 ) : null}

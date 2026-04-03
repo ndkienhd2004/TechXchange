@@ -27,6 +27,12 @@ export default function RevenueDailyChart({
   const lineColor = themed((theme) => ({
     stroke: theme.colors.palette.brand.purple[400],
   }));
+  const tooltipStyle = themed((theme) => ({
+    background: theme.colors.palette.backgrounds.card,
+    border: `1px solid ${theme.colors.palette.borders.default}`,
+    color: theme.colors.palette.text.primary,
+    borderRadius: theme.spacing.sm,
+  }));
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -34,13 +40,7 @@ export default function RevenueDailyChart({
         <CartesianGrid strokeDasharray="3 3" stroke={grid.stroke} />
         <XAxis dataKey="label" tick={text} axisLine={false} tickLine={false} />
         <YAxis tick={text} axisLine={false} tickLine={false} />
-        <Tooltip
-          contentStyle={{
-            background: "#1f1f1f",
-            border: "1px solid #2f2f2f",
-            color: "#fff",
-          }}
-        />
+        <Tooltip contentStyle={tooltipStyle} />
         <Line
           type="monotone"
           dataKey="revenue"
