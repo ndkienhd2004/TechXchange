@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import type { CSSProperties, RefObject } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import type { Theme } from "@/theme";
+import { getAxiosInstance } from "@/services/axiosConfig";
 import {
   selectIsAuthenticated,
   selectUser,
@@ -14,6 +15,7 @@ import {
 } from "@/features/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import * as styles from "./styles";
+import menuCss from "./header.module.css";
 import { selectCatalogCategoriesTree } from "@/features/catalog/store/catalogSelectors";
 import type { CatalogCategory } from "@/features/catalog/store/catalogSlice";
 import { selectCartTotalItems } from "@/features/cart/store/cartSelectors";
@@ -269,135 +271,294 @@ const Actions = ({
   </div>
 );
 
+const getCategoryColumns = (
+  roots: CatalogCategory[],
+  path: number[]
+): CatalogCategory[][] => {
+  const columns: CatalogCategory[][] = [roots];
+  let currentNodes = roots;
+
+  for (const id of path) {
+    const selected = currentNodes.find((item) => Number(item.id) === Number(id));
+    if (!selected || !Array.isArray(selected.children) || selected.children.length === 0) {
+      break;
+    }
+    columns.push(selected.children);
+    currentNodes = selected.children;
+  }
+
+  return columns;
+};
+
 const Nav = ({
   themed,
   hoveredElement,
   setHoveredElement,
-  items,
+  categoriesTree,
+  brands,
   categoriesOpen,
   setCategoriesOpen,
   categoriesRef,
+  brandsOpen,
+  setBrandsOpen,
+  brandsRef,
+  activeBrandId,
 }: {
   themed: Themed;
   hoveredElement: string | null;
   setHoveredElement: (v: string | null) => void;
-  items: { name: string; value: string }[];
+  categoriesTree: CatalogCategory[];
+  brands: { id: number; name: string }[];
   categoriesOpen: boolean;
   setCategoriesOpen: (v: boolean) => void;
   categoriesRef: RefObject<HTMLDivElement | null>;
-}) => (
-  <nav style={themed(styles.nav)}>
-    <Link href="/" style={themed(styles.navLinkActive)}>
-      Trang chủ
-    </Link>
-    <Link
-      href="/products"
-      style={
-        hoveredElement === "products"
-          ? themed(styles.navLinkHover)
-          : themed(styles.navLink)
-      }
-      onMouseEnter={() => setHoveredElement("products")}
-      onMouseLeave={() => setHoveredElement(null)}
-    >
-      Sản phẩm
-    </Link>
-    <div ref={categoriesRef} style={themed(styles.navDropdownWrap)}>
-      <button
-        type="button"
+  brandsOpen: boolean;
+  setBrandsOpen: (v: boolean) => void;
+  brandsRef: RefObject<HTMLDivElement | null>;
+  activeBrandId: number | null;
+}) => {
+  const firstColumnNodes = useMemo(() => {
+    if (
+      categoriesTree.length === 1 &&
+      Array.isArray(categoriesTree[0]?.children) &&
+      categoriesTree[0].children.length > 0
+    ) {
+      return categoriesTree[0].children;
+    }
+    return categoriesTree;
+  }, [categoriesTree]);
+
+  const [categoryPath, setCategoryPath] = useState<number[]>([]);
+
+  const categoryColumns = useMemo(
+    () => getCategoryColumns(firstColumnNodes, categoryPath),
+    [firstColumnNodes, categoryPath]
+  );
+
+  const onCategoryItemHover = (
+    item: CatalogCategory,
+    columnIndex: number,
+    hasChildren: boolean
+  ) => {
+    setCategoryPath((prev) => {
+      const nextBase = prev.slice(0, columnIndex);
+      if (!hasChildren) return nextBase;
+      return [...nextBase, Number(item.id)];
+    });
+  };
+
+  return (
+    <nav style={themed(styles.nav)}>
+      <Link href="/" style={themed(styles.navLinkActive)}>
+        Trang chủ
+      </Link>
+      <Link
+        href="/products"
         style={
-          hoveredElement === "categories" || categoriesOpen
-            ? {
-                ...themed(styles.navLinkButton),
-                ...themed(styles.navLinkHover),
-              }
-            : themed(styles.navLinkButton)
+          hoveredElement === "products"
+            ? themed(styles.navLinkHover)
+            : themed(styles.navLink)
         }
-        onMouseEnter={() => setHoveredElement("categories")}
+        onMouseEnter={() => setHoveredElement("products")}
         onMouseLeave={() => setHoveredElement(null)}
-        onClick={() => setCategoriesOpen(!categoriesOpen)}
       >
-        Danh mục
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            transform: categoriesOpen ? "rotate(180deg)" : "none",
-            transition: "transform 0.2s ease",
+        Sản phẩm
+      </Link>
+      <div ref={categoriesRef} style={themed(styles.navDropdownWrap)}>
+        <button
+          type="button"
+          style={
+            hoveredElement === "categories" || categoriesOpen
+              ? {
+                  ...themed(styles.navLinkButton),
+                  ...themed(styles.navLinkHover),
+                }
+              : themed(styles.navLinkButton)
+          }
+          onMouseEnter={() => setHoveredElement("categories")}
+          onMouseLeave={() => setHoveredElement(null)}
+          onClick={() => {
+            if (categoriesOpen) {
+              setCategoriesOpen(false);
+              setCategoryPath([]);
+              return;
+            }
+            setCategoryPath([]);
+            setCategoriesOpen(true);
           }}
         >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
-      {categoriesOpen && (
-        <div style={themed(styles.navDropdownMenu)}>
-          {items.map((category) => (
-            <Link
-              key={category.value}
-              href={
-                category.value === "all"
-                  ? "/products"
-                  : `/products?category_id=${category.value}`
-              }
-              style={themed(styles.navDropdownItem)}
-              onClick={() => setCategoriesOpen(false)}
-            >
-              {category.name}
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-    <Link
-      href="/promotions"
-      style={
-        hoveredElement === "promotions"
-          ? themed(styles.navLinkHover)
-          : themed(styles.navLink)
-      }
-      onMouseEnter={() => setHoveredElement("promotions")}
-      onMouseLeave={() => setHoveredElement(null)}
-    >
-      Khuyến mãi
-    </Link>
-  </nav>
-);
+          Danh mục
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: categoriesOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.2s ease",
+            }}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        {categoriesOpen && (
+          <div style={themed(styles.navCategoryMegaMenu)}>
+            {categoryColumns.map((column, columnIndex) => (
+              <div
+                key={`column-${columnIndex}`}
+                style={{
+                  ...themed(styles.navCategoryColumn),
+                  borderRight:
+                    columnIndex === categoryColumns.length - 1
+                      ? "none"
+                      : themed(styles.navCategoryColumn).borderRight,
+                }}
+                className={menuCss.hideScrollbar}
+              >
+                {columnIndex === 0 && (
+                  <Link
+                    href="/products"
+                    style={themed(styles.navDropdownItem)}
+                    onClick={() => {
+                      setCategoriesOpen(false);
+                      setCategoryPath([]);
+                    }}
+                  >
+                    Tất cả danh mục
+                  </Link>
+                )}
 
-const BrandList = ({
-  themed,
-  hoveredElement,
-  setHoveredElement,
-  items,
-}: {
-  themed: Themed;
-  hoveredElement: string | null;
-  setHoveredElement: (v: string | null) => void;
-  items: { name: string; label: string }[];
-}) => (
-  <div style={themed(styles.brandsBar)}>
-    {items.map((brand) => (
+                {column.map((category) => {
+                  const hasChildren =
+                    Array.isArray(category.children) && category.children.length > 0;
+                  const isActive =
+                    hasChildren && categoryPath[columnIndex] === Number(category.id);
+
+                  return (
+                    <Link
+                      key={category.id}
+                      href={`/products?category_id=${category.id}`}
+                      style={
+                        isActive
+                          ? {
+                              ...themed(styles.navDropdownItem),
+                              ...themed(styles.navDropdownItemActive),
+                            }
+                          : themed(styles.navDropdownItem)
+                      }
+                      onMouseEnter={() =>
+                        onCategoryItemHover(category, columnIndex, hasChildren)
+                      }
+                      onClick={() => {
+                        setCategoriesOpen(false);
+                        setCategoryPath([]);
+                      }}
+                    >
+                      <span>{category.name}</span>
+                      {hasChildren && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={themed(styles.navCategoryArrow)}
+                        >
+                          <path d="m9 18 6-6-6-6" />
+                        </svg>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div ref={brandsRef} style={themed(styles.navDropdownWrap)}>
+        <button
+          type="button"
+          style={
+            hoveredElement === "brands" || brandsOpen
+              ? {
+                  ...themed(styles.navLinkButton),
+                  ...themed(styles.navLinkHover),
+                }
+              : themed(styles.navLinkButton)
+          }
+          onMouseEnter={() => setHoveredElement("brands")}
+          onMouseLeave={() => setHoveredElement(null)}
+          onClick={() => setBrandsOpen(!brandsOpen)}
+        >
+          Hãng
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: brandsOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.2s ease",
+            }}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        {brandsOpen && (
+          <div style={themed(styles.navDropdownMenu)} className={menuCss.hideScrollbar}>
+            <Link
+              href="/products?page=1"
+              style={themed(styles.navDropdownItem)}
+              onClick={() => setBrandsOpen(false)}
+            >
+              Tất cả hãng
+            </Link>
+            {brands.map((brand) => (
+              <Link
+                key={brand.id}
+                href={`/products?brand_id=${brand.id}&page=1`}
+                style={
+                  activeBrandId === brand.id
+                    ? {
+                        ...themed(styles.navDropdownItem),
+                        ...themed(styles.navDropdownItemActive),
+                      }
+                    : themed(styles.navDropdownItem)
+                }
+                onClick={() => setBrandsOpen(false)}
+              >
+                {brand.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
       <Link
-        key={brand.label}
-        href={`/brand/${brand.label.toLowerCase()}`}
+        href="/promotions"
         style={
-          hoveredElement === `brand-${brand.label}`
-            ? themed(styles.brandLogoHover)
-            : themed(styles.brandLogo)
+          hoveredElement === "promotions"
+            ? themed(styles.navLinkHover)
+            : themed(styles.navLink)
         }
-        onMouseEnter={() => setHoveredElement(`brand-${brand.label}`)}
+        onMouseEnter={() => setHoveredElement("promotions")}
         onMouseLeave={() => setHoveredElement(null)}
       >
-        {brand.name}
+        Khuyến mãi
       </Link>
-    ))}
-  </div>
-);
+    </nav>
+  );
+};
 
 export default function Header() {
   const { themed } = useAppTheme();
@@ -410,16 +571,24 @@ export default function Header() {
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const categoriesRef = useRef<HTMLDivElement | null>(null);
+  const [brandsOpen, setBrandsOpen] = useState(false);
+  const brandsRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
+  const [brands, setBrands] = useState<Array<{ id: number; name: string }>>([]);
   const categoryTree = useAppSelector(selectCatalogCategoriesTree);
   const cartTotalItems = useAppSelector(selectCartTotalItems);
   const currentPath = buildCurrentPath(pathname, searchParams);
   const loginHref = buildAuthRedirectHref("/login", currentPath);
   const registerHref = buildAuthRedirectHref("/register", currentPath);
+  const activeBrandId = (() => {
+    const value = searchParams.get("brand_id");
+    const parsed = value ? Number(value) : NaN;
+    return Number.isFinite(parsed) ? parsed : null;
+  })();
 
   const flattenWithDepth = (
     nodes: CatalogCategory[],
@@ -440,16 +609,38 @@ export default function Header() {
     })),
   ];
 
-  const brands = [
-    { name: "Apple", label: "Apple" },
-    { name: "Nikon", label: "Nikon" },
-    { name: "hp", label: "HP" },
-    { name: "realme", label: "Realme" },
-    { name: "LG", label: "LG" },
-    { name: "SAMSUNG", label: "Samsung" },
-    { name: "OPPO", label: "Oppo" },
-    { name: "DJI", label: "DJI" },
-  ];
+  useEffect(() => {
+    let active = true;
+    const loadBrands = async () => {
+      try {
+        const api = getAxiosInstance();
+        const response = await api.get("/brands");
+        const payload = response?.data as
+          | Array<{ id: number | string; name: string }>
+          | { data?: Array<{ id: number | string; name: string }> };
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+        if (!active) return;
+        setBrands(
+          rows
+            .map((item) => ({
+              id: Number(item.id),
+              name: String(item.name || "").trim(),
+            }))
+            .filter((item) => item.id && item.name),
+        );
+      } catch {
+        if (active) setBrands([]);
+      }
+    };
+    void loadBrands();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -473,6 +664,21 @@ export default function Header() {
     }
     return () => document.removeEventListener("click", handleClickOutside);
   }, [categoriesOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        brandsRef.current &&
+        !brandsRef.current.contains(e.target as Node)
+      ) {
+        setBrandsOpen(false);
+      }
+    };
+    if (brandsOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [brandsOpen]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -508,6 +714,8 @@ export default function Header() {
     if (category && category !== "all") {
       params.set("category_id", category);
     }
+    const currentBrandId = searchParams.get("brand_id");
+    if (currentBrandId) params.set("brand_id", currentBrandId);
     params.set("page", "1");
     router.push(`/products${params.toString() ? `?${params.toString()}` : ""}`);
   };
@@ -546,16 +754,15 @@ export default function Header() {
         themed={themed}
         hoveredElement={hoveredElement}
         setHoveredElement={setHoveredElement}
-        items={categories}
+        categoriesTree={categoryTree}
+        brands={brands}
         categoriesOpen={categoriesOpen}
         setCategoriesOpen={setCategoriesOpen}
         categoriesRef={categoriesRef}
-      />
-      <BrandList
-        themed={themed}
-        hoveredElement={hoveredElement}
-        setHoveredElement={setHoveredElement}
-        items={brands}
+        brandsOpen={brandsOpen}
+        setBrandsOpen={setBrandsOpen}
+        brandsRef={brandsRef}
+        activeBrandId={activeBrandId}
       />
     </header>
   );

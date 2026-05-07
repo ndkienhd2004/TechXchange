@@ -54,21 +54,14 @@ router.get(
 
 /**
  * @swagger
- * /admin/users/{id}:
+ * /admin/users/stats:
  *   get:
  *     tags:
  *       - Admin
- *     summary: Lấy thông tin người dùng
- *     description: Lấy thông tin chi tiết của một người dùng (admin only)
+ *     summary: Lấy thống kê user
+ *     description: Lấy thống kê về số lượng user (admin only)
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID của người dùng
  *     responses:
  *       200:
  *         $ref: '#/components/responses/Ok200'
@@ -76,14 +69,14 @@ router.get(
  *         $ref: '#/components/responses/Unauthorized401'
  *       403:
  *         $ref: '#/components/responses/Forbidden403'
- *       404:
- *         $ref: '#/components/responses/NotFound404'
+ *       500:
+ *         $ref: '#/components/responses/ServerError500'
  */
 router.get(
-  "/users/:id",
+  "/users/stats",
   authMiddleware,
   adminMiddleware,
-  UserController.getUserById
+  UserController.getUserStats
 );
 
 /**
@@ -144,14 +137,21 @@ router.get(
 
 /**
  * @swagger
- * /admin/users/stats:
+ * /admin/users/{id}:
  *   get:
  *     tags:
  *       - Admin
- *     summary: Lấy thống kê user
- *     description: Lấy thống kê về số lượng user (admin only)
+ *     summary: Lấy thông tin người dùng
+ *     description: Lấy thông tin chi tiết của một người dùng (admin only)
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của người dùng
  *     responses:
  *       200:
  *         $ref: '#/components/responses/Ok200'
@@ -159,14 +159,14 @@ router.get(
  *         $ref: '#/components/responses/Unauthorized401'
  *       403:
  *         $ref: '#/components/responses/Forbidden403'
- *       500:
- *         $ref: '#/components/responses/ServerError500'
+ *       404:
+ *         $ref: '#/components/responses/NotFound404'
  */
 router.get(
-  "/users/stats",
+  "/users/:id",
   authMiddleware,
   adminMiddleware,
-  UserController.getUserStats
+  UserController.getUserById
 );
 
 /**

@@ -13,7 +13,10 @@ export const page = (theme: Theme): CSSProperties => ({
 export const sidebar = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.secondary,
   borderRight: `1px solid ${theme.colors.palette.borders.dark}`,
-  padding: theme.spacing.lg,
+  paddingTop: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
+  paddingBottom: theme.spacing.lg,
+  paddingLeft: theme.spacing.lg,
   display: "flex",
   flexDirection: "column",
   gap: theme.spacing.lg,
@@ -28,11 +31,28 @@ export const backLink = (theme: Theme): CSSProperties => ({
   gap: theme.spacing[2],
 });
 
+export const logoutButton = (theme: Theme): CSSProperties => ({
+  ...navItem(theme),
+  width: "100%",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  color: theme.colors.palette.semantic.error,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  fontSize: theme.typography.fontSize.base.size,
+  fontWeight: theme.typography.fontWeight.medium,
+});
+
 export const adminCard = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing.md,
-  padding: theme.spacing.md,
+  paddingTop: theme.spacing.md,
+  paddingRight: theme.spacing.md,
+  paddingBottom: theme.spacing.md,
+  paddingLeft: theme.spacing.md,
   borderRadius: theme.spacing.lg,
   background: theme.colors.palette.backgrounds.card,
   border: `1px solid ${theme.colors.palette.borders.default}`,
@@ -68,7 +88,10 @@ export const nav = (theme: Theme): CSSProperties => ({
 export const navItem = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.secondary,
   textDecoration: "none",
-  padding: `${theme.spacing[3]} ${theme.spacing.md}`,
+  paddingTop: theme.spacing[3],
+  paddingBottom: theme.spacing[3],
+  paddingLeft: theme.spacing.md,
+  paddingRight: theme.spacing.md,
   borderRadius: theme.spacing.md,
   transition: "background 0.2s ease, color 0.2s ease",
 });
@@ -81,7 +104,10 @@ export const navItemActive = (theme: Theme): CSSProperties => ({
 });
 
 export const content = (theme: Theme): CSSProperties => ({
-  padding: theme.spacing["2xl"],
+  paddingTop: theme.spacing["2xl"],
+  paddingRight: theme.spacing["2xl"],
+  paddingBottom: theme.spacing["2xl"],
+  paddingLeft: theme.spacing["2xl"],
 });
 
 export const pageHeader = (theme: Theme): CSSProperties => ({
@@ -110,7 +136,10 @@ export const statCard = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.card,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   borderRadius: theme.spacing.lg,
-  padding: theme.spacing.lg,
+  paddingTop: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
+  paddingBottom: theme.spacing.lg,
+  paddingLeft: theme.spacing.lg,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -143,11 +172,43 @@ export const cardRow = (theme: Theme): CSSProperties => ({
   gap: theme.spacing.lg,
 });
 
+export const dashboardWideCard = (theme: Theme): CSSProperties => ({
+  ...card(theme),
+  marginTop: theme.spacing.lg,
+  marginBottom: theme.spacing.lg,
+});
+
+export const topShopRow = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
+  paddingTop: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: 0,
+  paddingRight: 0,
+  borderBottom: `1px solid ${theme.colors.palette.borders.dark}`,
+});
+
+export const topShopRank = (theme: Theme): CSSProperties => ({
+  fontWeight: theme.typography.fontWeight.bold,
+  color: theme.colors.palette.brand.pink[500],
+  minWidth: theme.spacing["2xl"],
+});
+
+export const topShopMeta = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.sm.size,
+});
+
 export const card = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.card,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   borderRadius: theme.spacing.lg,
-  padding: theme.spacing.lg,
+  paddingTop: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
+  paddingBottom: theme.spacing.lg,
+  paddingLeft: theme.spacing.lg,
 });
 
 export const cardHeader = (theme: Theme): CSSProperties => ({
@@ -171,7 +232,10 @@ export const cardLink = (theme: Theme): CSSProperties => ({
 export const emptyState = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.muted,
   textAlign: "center",
-  padding: `${theme.spacing.xl} 0`,
+  paddingTop: theme.spacing.xl,
+  paddingBottom: theme.spacing.xl,
+  paddingLeft: 0,
+  paddingRight: 0,
 });
 
 export const toolbar = (theme: Theme): CSSProperties => ({
@@ -186,7 +250,10 @@ export const searchWrap = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing[2],
-  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  paddingTop: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: theme.spacing[3],
+  paddingRight: theme.spacing[3],
   borderRadius: theme.spacing.md,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   background: theme.colors.palette.backgrounds.secondary,
@@ -211,7 +278,10 @@ export const tabGroup = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing[2],
-  padding: theme.spacing[2],
+  paddingTop: theme.spacing[2],
+  paddingRight: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: theme.spacing[2],
   background: theme.colors.palette.backgrounds.secondary,
   borderRadius: theme.spacing.md,
   border: `1px solid ${theme.colors.palette.borders.default}`,
@@ -223,7 +293,10 @@ export const tabButton = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.secondary,
   fontSize: theme.typography.fontSize.sm.size,
   cursor: "pointer",
-  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  paddingTop: theme.spacing[1],
+  paddingBottom: theme.spacing[1],
+  paddingLeft: theme.spacing[2],
+  paddingRight: theme.spacing[2],
   borderRadius: theme.spacing.md,
 });
 
@@ -236,7 +309,6 @@ export const tabButtonActive = (theme: Theme): CSSProperties => ({
 
 export const tableCard = (theme: Theme): CSSProperties => ({
   ...card(theme),
-  padding: theme.spacing.lg,
 });
 
 export const table = (theme: Theme): CSSProperties => ({
@@ -249,16 +321,25 @@ export const th = (theme: Theme): CSSProperties => ({
   textAlign: "left",
   color: theme.colors.palette.text.secondary,
   fontWeight: theme.typography.fontWeight.semibold,
-  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  paddingTop: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: theme.spacing[3],
+  paddingRight: theme.spacing[3],
 });
 
 export const td = (theme: Theme): CSSProperties => ({
-  padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+  paddingTop: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: theme.spacing[3],
+  paddingRight: theme.spacing[3],
   borderTop: `1px solid ${theme.colors.palette.borders.dark}`,
 });
 
 export const statusPill = (theme: Theme): CSSProperties => ({
-  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+  paddingTop: theme.spacing[1],
+  paddingBottom: theme.spacing[1],
+  paddingLeft: theme.spacing[2],
+  paddingRight: theme.spacing[2],
   borderRadius: theme.spacing.md,
   fontSize: theme.typography.fontSize.xs.size,
   fontWeight: theme.typography.fontWeight.semibold,
@@ -304,7 +385,10 @@ export const muted = (theme: Theme): CSSProperties => ({
 });
 
 export const primaryButton = (theme: Theme): CSSProperties => ({
-  padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
+  paddingTop: theme.spacing[2],
+  paddingBottom: theme.spacing[2],
+  paddingLeft: theme.spacing[4],
+  paddingRight: theme.spacing[4],
   borderRadius: theme.spacing.md,
   background: theme.colors.palette.brand.pink[600],
   color: theme.colors.palette.text.primary,
@@ -325,13 +409,14 @@ export const modalOverlay = (theme: Theme): CSSProperties => ({
   position: "fixed",
   inset: 0,
   background:
-    theme.theme === "dark"
-      ? "rgba(2, 6, 23, 0.72)"
-      : "rgba(2, 6, 23, 0.45)",
+    theme.theme === "dark" ? "rgba(2, 6, 23, 0.72)" : "rgba(2, 6, 23, 0.45)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: theme.spacing.md,
+  paddingTop: theme.spacing.md,
+  paddingRight: theme.spacing.md,
+  paddingBottom: theme.spacing.md,
+  paddingLeft: theme.spacing.md,
   zIndex: 1100,
 });
 
@@ -349,7 +434,10 @@ export const modalHeader = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+  paddingTop: theme.spacing.md,
+  paddingBottom: theme.spacing.md,
+  paddingLeft: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
   borderBottom: `1px solid ${theme.colors.palette.borders.dark}`,
   background:
     "linear-gradient(180deg, rgba(236,72,153,0.14) 0%, rgba(236,72,153,0.02) 100%)",
@@ -362,7 +450,10 @@ export const modalTitle = (theme: Theme): CSSProperties => ({
 });
 
 export const modalBody = (theme: Theme): CSSProperties => ({
-  padding: theme.spacing.lg,
+  paddingTop: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
+  paddingBottom: theme.spacing.lg,
+  paddingLeft: theme.spacing.lg,
   display: "grid",
   gap: theme.spacing.md,
 });
@@ -372,7 +463,10 @@ export const modalSection = (theme: Theme): CSSProperties => ({
   gap: theme.spacing[2],
   border: `1px solid ${theme.colors.palette.borders.dark}`,
   borderRadius: theme.spacing.md,
-  padding: theme.spacing.md,
+  paddingTop: theme.spacing.md,
+  paddingRight: theme.spacing.md,
+  paddingBottom: theme.spacing.md,
+  paddingLeft: theme.spacing.md,
   background: theme.colors.palette.backgrounds.secondary,
 });
 
@@ -380,6 +474,9 @@ export const modalFooter = (theme: Theme): CSSProperties => ({
   display: "flex",
   justifyContent: "flex-end",
   gap: theme.spacing[2],
-  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+  paddingTop: theme.spacing.md,
+  paddingBottom: theme.spacing.md,
+  paddingLeft: theme.spacing.lg,
+  paddingRight: theme.spacing.lg,
   borderTop: `1px solid ${theme.colors.palette.borders.dark}`,
 });

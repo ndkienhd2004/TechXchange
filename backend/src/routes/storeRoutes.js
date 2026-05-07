@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const StoreRequestController = require("../app/controller/storeRequestController");
 const StoreController = require("../app/controller/storeController");
+const ShopInventoryController = require("../app/controller/shopInventoryController");
 const { authMiddleware, shopMiddleware } = require("../app/middleware/auth");
 
 /**
@@ -109,6 +110,24 @@ router.post(
   authMiddleware,
   shopMiddleware,
   StoreController.registerMyStoreWithGhn,
+);
+router.get(
+  "/me/inventory",
+  authMiddleware,
+  shopMiddleware,
+  ShopInventoryController.getInventoryOverview,
+);
+router.get(
+  "/me/inventory/:productId/transactions",
+  authMiddleware,
+  shopMiddleware,
+  ShopInventoryController.getProductInventoryTransactions,
+);
+router.post(
+  "/me/inventory/import",
+  authMiddleware,
+  shopMiddleware,
+  ShopInventoryController.importStock,
 );
 router.get("/:id", StoreController.getStoreById);
 

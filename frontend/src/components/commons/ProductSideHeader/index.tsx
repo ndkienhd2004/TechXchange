@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import * as styles from "./styles";
 import { useAppSelector } from "@/store/hooks";
-import { selectCatalogCategoriesFlat } from "@/features/catalog/store/catalogSelectors";
+import {
+  selectCatalogCategoriesTree,
+} from "@/features/catalog/store/catalogSelectors";
+import type { CatalogCategory } from "@/features/catalog/store/catalogSlice";
+import sideCss from "./productSideHeader.module.css";
 
 export interface ProductSideHeaderFilters {
   newArrivalsOnly: boolean;
@@ -28,7 +32,8 @@ export default function ProductSideHeader({
   const [openNew, setOpenNew] = useState(true);
   const [openSale, setOpenSale] = useState(true);
   const [openCategories, setOpenCategories] = useState(true);
-  const categories = useAppSelector(selectCatalogCategoriesFlat);
+  const categoriesTree = useAppSelector(selectCatalogCategoriesTree);
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
 
   const isControlled = controlledFilters !== undefined;
   const newArrivalsOnly = isControlled
@@ -39,11 +44,23 @@ export default function ProductSideHeader({
     ? controlledFilters.categoryId
     : internalCategoryId;
 
+  const categoryRoots = useMemo(() => {
+    if (
+      categoriesTree.length === 1 &&
+      Array.isArray(categoriesTree[0]?.children) &&
+      categoriesTree[0].children.length > 0
+    ) {
+      return categoriesTree[0].children;
+    }
+    return categoriesTree;
+  }, [categoriesTree]);
+
   const updateFilters = (patch: Partial<ProductSideHeaderFilters>) => {
     const next = {
       newArrivalsOnly: patch.newArrivalsOnly ?? newArrivalsOnly,
       onSale: patch.onSale ?? onSale,
-      categoryId: patch.categoryId ?? categoryId,
+      categoryId:
+        patch.categoryId !== undefined ? patch.categoryId : categoryId,
     };
     if (!isControlled) {
       setInternalNew(next.newArrivalsOnly);
@@ -51,6 +68,78 @@ export default function ProductSideHeader({
       setInternalCategoryId(next.categoryId);
     }
     onFiltersChange?.(next);
+  };
+
+  const toggleCategoryExpand = (id: number) => {
+    setExpandedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const renderCategoryNode = (node: CatalogCategory, depth = 0): React.ReactNode => {
+    const id = Number(node.id);
+    const children = Array.isArray(node.children) ? node.children : [];
+    const hasChildren = children.length > 0;
+    const expanded = expandedCategoryIds.includes(id);
+    const isSelected = categoryId === id;
+
+    return (
+      <div key={id} style={themed(styles.categoryNode)}>
+        <div
+          style={{
+            ...themed(styles.checkboxRow),
+            ...styles.categoryNodeRow(),
+            ...styles.categoryDepthIndent(depth),
+          }}
+        >
+          <button
+            type="button"
+            style={themed(styles.optionRow)}
+            onClick={() => updateFilters({ categoryId: id })}
+            aria-label={node.name}
+          >
+            <span style={themed(styles.optionLabel)}>{node.name}</span>
+            {isSelected && <span style={themed(styles.optionSelectedCheck)}>✓</span>}
+          </button>
+
+          {hasChildren && (
+            <button
+              type="button"
+              style={themed(styles.categoryExpandButton)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleCategoryExpand(id);
+              }}
+              aria-label={expanded ? "Thu gọn danh mục con" : "Mở danh mục con"}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {hasChildren && expanded && (
+          <div style={themed(styles.categoryChildren)}>
+            {children.map((child) => renderCategoryNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -101,20 +190,19 @@ export default function ProductSideHeader({
         </button>
         {openNew && (
           <div style={themed(styles.sectionContent)}>
-            <label style={themed(styles.checkboxRow)}>
-              <input
-                type="checkbox"
-                checked={newArrivalsOnly}
-                onChange={(e) =>
-                  updateFilters({ newArrivalsOnly: e.target.checked })
-                }
-                style={themed(styles.checkbox)}
-                aria-label="Chỉ sản phẩm mới"
-              />
-              <span style={themed(styles.checkboxLabel)}>
-                New arrivals only
-              </span>
-            </label>
+            <button
+              type="button"
+              style={themed(styles.optionRow)}
+              onClick={() =>
+                updateFilters({ newArrivalsOnly: !newArrivalsOnly })
+              }
+              aria-label="Chỉ sản phẩm mới"
+            >
+              <span style={themed(styles.optionLabel)}>New arrivals only</span>
+              {newArrivalsOnly && (
+                <span style={themed(styles.optionSelectedCheck)}>✓</span>
+              )}
+            </button>
           </div>
         )}
       </div>
@@ -144,16 +232,15 @@ export default function ProductSideHeader({
         </button>
         {openSale && (
           <div style={themed(styles.sectionContent)}>
-            <label style={themed(styles.checkboxRow)}>
-              <input
-                type="checkbox"
-                checked={onSale}
-                onChange={(e) => updateFilters({ onSale: e.target.checked })}
-                style={themed(styles.checkbox)}
-                aria-label="Đang giảm giá"
-              />
-              <span style={themed(styles.checkboxLabel)}>On sale</span>
-            </label>
+            <button
+              type="button"
+              style={themed(styles.optionRow)}
+              onClick={() => updateFilters({ onSale: !onSale })}
+              aria-label="Đang giảm giá"
+            >
+              <span style={themed(styles.optionLabel)}>On sale</span>
+              {onSale && <span style={themed(styles.optionSelectedCheck)}>✓</span>}
+            </button>
           </div>
         )}
       </div>
@@ -182,31 +269,23 @@ export default function ProductSideHeader({
           </svg>
         </button>
         {openCategories && (
-          <div style={themed(styles.sectionContent)}>
-            <label key="all" style={themed(styles.checkboxRow)}>
-              <input
-                type="radio"
-                name="category"
-                checked={categoryId == null}
-                onChange={() => updateFilters({ categoryId: null })}
-                style={themed(styles.checkbox)}
-                aria-label="Tất cả"
-              />
-              <span style={themed(styles.checkboxLabel)}>Tất cả</span>
-            </label>
-            {categories.map((cat) => (
-              <label key={cat.id} style={themed(styles.checkboxRow)}>
-                <input
-                  type="radio"
-                  name="category"
-                  checked={categoryId === Number(cat.id)}
-                  onChange={() => updateFilters({ categoryId: Number(cat.id) })}
-                  style={themed(styles.checkbox)}
-                  aria-label={cat.name}
-                />
-                <span style={themed(styles.checkboxLabel)}>{cat.name}</span>
-              </label>
-            ))}
+          <div
+            style={themed(styles.categoriesTreeContainer)}
+            className={sideCss.hideScrollbar}
+          >
+            <button
+              key="all"
+              type="button"
+              style={themed(styles.optionRow)}
+              onClick={() => updateFilters({ categoryId: null })}
+              aria-label="Tất cả"
+            >
+              <span style={themed(styles.optionLabel)}>Tất cả</span>
+              {categoryId == null && (
+                <span style={themed(styles.optionSelectedCheck)}>✓</span>
+              )}
+            </button>
+            {categoryRoots.map((cat) => renderCategoryNode(cat, 0))}
           </div>
         )}
       </div>

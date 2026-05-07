@@ -46,9 +46,28 @@ export const registerShopGhnService = async (storeId: number) => {
   return response.data;
 };
 
-export const getShopAnalyticsService = async (range: "7d" | "30d" | "90d" | "all") => {
+type ShopAnalyticsRange = "7d" | "30d" | "90d" | "all";
+
+export const getShopAnalyticsService = async (
+  query:
+    | ShopAnalyticsRange
+    | {
+        range?: ShopAnalyticsRange;
+        fromDate?: string;
+        toDate?: string;
+      },
+) => {
+  const params =
+    typeof query === "string"
+      ? { range: query }
+      : {
+          ...(query.range ? { range: query.range } : {}),
+          ...(query.fromDate ? { from_date: query.fromDate } : {}),
+          ...(query.toDate ? { to_date: query.toDate } : {}),
+        };
+
   const response = await api().get("/orders/shop/analytics", {
-    params: { range },
+    params,
   });
   return response.data;
 };
@@ -60,11 +79,19 @@ export const getShopAnalyticsService = async (range: "7d" | "30d" | "90d" | "all
 export const getShopProductsService = async ({
   page,
   limit,
+  q,
 }: {
   page: number;
   limit: number;
+  q?: string;
 }) => {
-  const response = await api().get(`/products/me?page=${page}&limit=${limit}`);
+  const response = await api().get("/products/me", {
+    params: {
+      page,
+      limit,
+      ...(q ? { q } : {}),
+    },
+  });
   return response.data;
 };
 
@@ -127,7 +154,6 @@ export const createShopProductService = async (payload: {
   catalog_id: number;
   store_id: number;
   price: number;
-  quantity: number;
   description?: string;
   images?: { url: string; sort_order: number }[];
   variant_options?: Record<string, string>;
@@ -140,7 +166,6 @@ export const updateShopProductService = async (
   productId: number,
   payload: {
     price?: number;
-    quantity?: number;
     description?: string;
     status?: "active" | "inactive" | "sold_out";
     images?: { url: string; sort_order: number }[];
@@ -208,5 +233,47 @@ export const getMyCatalogSpecRequestsService = async ({
   const response = await api().get(
     `/products/catalog-spec-requests?page=${page}&limit=${limit}${status ? `&status=${status}` : ""}`,
   );
+  return response.data;
+};
+
+export const getShopInventoryOverviewService = async (query?: {
+  q?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const response = await api().get("/stores/me/inventory", {
+    params: {
+      ...(query?.q ? { q: query.q } : {}),
+      ...(query?.page ? { page: query.page } : {}),
+      ...(query?.limit ? { limit: query.limit } : {}),
+    },
+  });
+  return response.data;
+};
+
+export const getShopInventoryTransactionsService = async (
+  productId: number,
+  query?: { limit?: number; offset?: number },
+) => {
+  const response = await api().get(
+    `/stores/me/inventory/${productId}/transactions`,
+    {
+      params: {
+        ...(query?.limit ? { limit: query.limit } : {}),
+        ...(query?.offset ? { offset: query.offset } : {}),
+      },
+    },
+  );
+  return response.data;
+};
+
+export const importShopInventoryService = async (payload: {
+  product_id: number;
+  serial_id: number;
+  quantity: number;
+  unit_cost: number;
+  note?: string;
+}) => {
+  const response = await api().post("/stores/me/inventory/import", payload);
   return response.data;
 };

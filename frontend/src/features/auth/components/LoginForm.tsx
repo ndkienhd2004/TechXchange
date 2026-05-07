@@ -29,8 +29,11 @@ export default function LoginForm() {
     e.preventDefault();
     const result = await dispatch(SignIn({ email, password }));
     if (SignIn.fulfilled.match(result)) {
-      router.replace(nextPath);
-      router.refresh();
+      const userRole = result.payload?.user?.role;
+      const isAdmin =
+        typeof userRole === "string" && userRole.toLowerCase() === "admin";
+      const destination = isAdmin ? "/admin" : nextPath;
+      router.replace(destination);
     }
   };
 

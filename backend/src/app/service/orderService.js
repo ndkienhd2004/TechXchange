@@ -1,4 +1,4 @@
-const { Op } = require("sequelize");
+const { Op, QueryTypes } = require("sequelize");
 const {
   sequelize,
   CartItem,
@@ -6,6 +6,7 @@ const {
   OrderItem,
   Product,
   ProductInventory,
+  ShopInventoryLedger,
   ProductSerial,
   ProductImage,
   Review,
@@ -21,6 +22,42 @@ const UserEventService = require("./userEventService");
 class OrderService {
   static BANK_TRANSFER_EXPIRE_MINUTES = 10;
 
+  static async getShopImportCostMap(storeIds = []) {
+    if (!Array.isArray(storeIds) || storeIds.length === 0) return new Map();
+
+    try {
+      const rows = await sequelize.query(
+        `
+          SELECT
+            sil.product_id::bigint AS product_id,
+            COALESCE(
+              SUM(sil.quantity * sil.unit_cost) / NULLIF(SUM(sil.quantity), 0),
+              0
+            ) AS avg_import_cost
+          FROM shop_inventory_ledger sil
+          WHERE sil.store_id = ANY(:storeIds)
+            AND sil.type = 'import'
+            AND sil.unit_cost IS NOT NULL
+          GROUP BY sil.product_id
+        `,
+        {
+          replacements: { storeIds },
+          type: QueryTypes.SELECT,
+        },
+      );
+
+      return new Map(
+        rows.map((row) => [
+          Number(row.product_id),
+          Number(row.avg_import_cost || 0),
+        ]),
+      );
+    } catch (error) {
+      // Table may not exist yet in some environments; fallback to 0-cost.
+      return new Map();
+    }
+  }
+
   static normalizeAnalyticsRange(rangeParam) {
     const raw = String(rangeParam || "7d")
       .trim()
@@ -29,6 +66,56 @@ class OrderService {
     if (raw === "90d" || raw === "90") return { key: "90d", days: 90 };
     if (raw === "30d" || raw === "30") return { key: "30d", days: 30 };
     return { key: "7d", days: 7 };
+  }
+
+  static parseAnalyticsDate(dateValue, endOfDay = false) {
+    const raw = String(dateValue || "").trim();
+    if (!raw) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      throw new Error("Ngày lọc không hợp lệ. Định dạng đúng: YYYY-MM-DD");
+    }
+
+    const date = new Date(
+      `${raw}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`,
+    );
+    if (Number.isNaN(date.getTime())) {
+      throw new Error("Ngày lọc không hợp lệ. Định dạng đúng: YYYY-MM-DD");
+    }
+    return date;
+  }
+
+  static resolveAnalyticsWindow(filters = {}) {
+    const fromDate = this.parseAnalyticsDate(
+      filters.from_date || filters.fromDate,
+      false,
+    );
+    const toDate = this.parseAnalyticsDate(
+      filters.to_date || filters.toDate,
+      true,
+    );
+
+    if (fromDate || toDate) {
+      const startDate = fromDate || new Date(0);
+      const endDate = toDate || new Date();
+      if (!toDate) endDate.setHours(23, 59, 59, 999);
+
+      if (startDate.getTime() > endDate.getTime()) {
+        throw new Error("from_date phải nhỏ hơn hoặc bằng to_date");
+      }
+
+      return { key: "custom", startDate, endDate };
+    }
+
+    const range = this.normalizeAnalyticsRange(filters.range);
+    if (!range.days) {
+      return { key: range.key, startDate: null, endDate: null };
+    }
+
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - (range.days - 1));
+
+    return { key: range.key, startDate, endDate: null };
   }
 
   static normalizePaymentMethod(method) {
@@ -737,7 +824,7 @@ class OrderService {
         throw new Error(`Sản phẩm "${product?.name || pid}" không đủ tồn kho`);
       }
       await this.syncProductAvailableQuantity(pid, transaction);
-      return;
+      return { allocations: [] };
     }
 
     if (action === "consume") {
@@ -749,7 +836,7 @@ class OrderService {
       // Backward compatibility: old orders already deducted on_hand at checkout.
       if (totalReserved <= 0) {
         await this.syncProductAvailableQuantity(pid, transaction);
-        return;
+        return { allocations: [] };
       }
 
       if (totalReserved < qty) {
@@ -759,6 +846,7 @@ class OrderService {
       }
 
       let remaining = qty;
+      const allocations = [];
       for (const row of rows) {
         if (remaining <= 0) break;
         const onHand = Number(row.on_hand || 0);
@@ -777,11 +865,16 @@ class OrderService {
           },
           { transaction },
         );
+        allocations.push({
+          inventory_id: Number(row.id),
+          serial_id: Number(row.serial_id),
+          quantity: Number(consumeQty),
+        });
         remaining -= consumeQty;
       }
 
       await this.syncProductAvailableQuantity(pid, transaction);
-      return;
+      return { allocations };
     }
 
     if (action === "release") {
@@ -810,23 +903,80 @@ class OrderService {
       }
 
       await this.syncProductAvailableQuantity(pid, transaction);
-      return;
+      return { allocations: [] };
     }
 
     throw new Error("Hành động tồn kho không hợp lệ");
   }
 
-  static async consumeReservedStockForOrderItems(orderItems, transaction) {
+  static isMissingInventoryLedgerTableError(error) {
+    const message = String(error?.message || "").toLowerCase();
+    return (
+      message.includes("shop_inventory_ledger") &&
+      (message.includes("does not exist") || message.includes("doesn't exist"))
+    );
+  }
+
+  static async createExportLedgerEntries(entries = [], transaction) {
+    if (!Array.isArray(entries) || entries.length === 0) return;
+    try {
+      await ShopInventoryLedger.bulkCreate(entries, { transaction });
+    } catch (error) {
+      if (this.isMissingInventoryLedgerTableError(error)) {
+        console.warn(
+          "[InventoryLedger] shop_inventory_ledger chưa tồn tại, bỏ qua log xuất kho",
+        );
+        return;
+      }
+      throw error;
+    }
+  }
+
+  static async consumeReservedStockForOrderItems(
+    orderItems,
+    transaction,
+    options = {},
+  ) {
+    const {
+      storeId = null,
+      actorUserId = null,
+      referenceType = "order",
+      referenceId = null,
+    } = options;
+    const exportLedgerEntries = [];
+
     for (const item of orderItems || []) {
       // eslint-disable-next-line no-await-in-loop
-      await this.adjustInventoryForOrderLine({
+      const result = await this.adjustInventoryForOrderLine({
         productId: item.product_id,
         serialId: item.serial_id || null,
         quantity: item.quantity,
         transaction,
         action: "consume",
       });
+
+      if (!storeId) continue;
+      const allocations = Array.isArray(result?.allocations)
+        ? result.allocations
+        : [];
+      allocations.forEach((alloc) => {
+        exportLedgerEntries.push({
+          store_id: Number(storeId),
+          product_id: Number(item.product_id),
+          serial_id: Number(alloc.serial_id),
+          inventory_id: Number(alloc.inventory_id),
+          type: "export",
+          quantity: Number(alloc.quantity),
+          unit_cost: null,
+          note: `Xuất kho từ đơn #${referenceId || ""}`.trim(),
+          reference_type: referenceType,
+          reference_id: referenceId ? Number(referenceId) : null,
+          created_by: actorUserId ? Number(actorUserId) : null,
+        });
+      });
     }
+
+    await this.createExportLedgerEntries(exportLedgerEntries, transaction);
   }
 
   static async releaseReservedStockForOrderItems(orderItems, transaction) {
@@ -1363,6 +1513,7 @@ class OrderService {
   }
 
   static async getShopAnalytics(shopUserId, filters = {}) {
+    const window = this.resolveAnalyticsWindow(filters);
     const stores = await Store.findAll({
       where: { owner_id: shopUserId },
       attributes: ["id", "name"],
@@ -1370,11 +1521,12 @@ class OrderService {
     const storeIds = stores.map((s) => Number(s.id)).filter(Boolean);
     if (storeIds.length === 0) {
       return {
-        range: this.normalizeAnalyticsRange(filters.range).key,
+        range: window.key,
         total_orders: 0,
         completed_orders: 0,
         total_revenue: 0,
-        average_order_value: 0,
+        total_profit: 0,
+        total_shipping_fee: 0,
         completion_rate: 0,
         status_counts: {
           pending: 0,
@@ -1387,14 +1539,13 @@ class OrderService {
         top_products: [],
       };
     }
+    const importCostMap = await this.getShopImportCostMap(storeIds);
 
-    const range = this.normalizeAnalyticsRange(filters.range);
     const whereClause = { store_id: { [Op.in]: storeIds } };
-    if (range.days) {
-      const startDate = new Date();
-      startDate.setHours(0, 0, 0, 0);
-      startDate.setDate(startDate.getDate() - (range.days - 1));
-      whereClause.created_at = { [Op.gte]: startDate };
+    if (window.startDate || window.endDate) {
+      whereClause.created_at = {};
+      if (window.startDate) whereClause.created_at[Op.gte] = window.startDate;
+      if (window.endDate) whereClause.created_at[Op.lte] = window.endDate;
     }
 
     const orders = await Order.findAll({
@@ -1416,7 +1567,14 @@ class OrderService {
         {
           model: Shipment,
           as: "shipments",
-          attributes: ["id", "status", "ghn_order_code", "ghn_status", "ghn_last_sync_at"],
+          attributes: [
+            "id",
+            "status",
+            "shipping_fee",
+            "ghn_order_code",
+            "ghn_status",
+            "ghn_last_sync_at",
+          ],
           separate: true,
           limit: 1,
           order: [["created_at", "DESC"]],
@@ -1440,6 +1598,8 @@ class OrderService {
     let totalOrders = 0;
     let completedOrders = 0;
     let totalRevenue = 0;
+    let totalProfit = 0;
+    let totalShippingFee = 0;
 
     for (const order of orders) {
       totalOrders += 1;
@@ -1451,24 +1611,22 @@ class OrderService {
       if (displayStatus !== "completed") continue;
 
       completedOrders += 1;
-      const orderRevenue = Number(order.total_price || 0);
-      totalRevenue += orderRevenue;
-
-      const createdAt = new Date(order.created_at);
-      const dayKey = createdAt.toISOString().slice(0, 10);
-      const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
-      dailyRevenueMap.set(dayKey, Number(dailyRevenueMap.get(dayKey) || 0) + orderRevenue);
-      monthlyRevenueMap.set(
-        monthKey,
-        Number(monthlyRevenueMap.get(monthKey) || 0) + orderRevenue,
-      );
-
+      const shipmentFee = Number(order.shipments?.[0]?.shipping_fee || 0);
+      totalShippingFee += Math.max(0, shipmentFee);
+      let orderRevenue = 0;
       for (const item of order.items || []) {
+        const quantity = Number(item.quantity || 0);
+        if (quantity <= 0) continue;
+
+        const lineRevenue = Number(item.price || 0) * quantity;
+        orderRevenue += lineRevenue;
+
         const productId = Number(item.product_id || item.product?.id || 0);
         const productName = item.product?.name || `#${productId || "unknown"}`;
-        const quantity = Number(item.quantity || 0);
-        const lineRevenue = Number(item.price || 0) * quantity;
         if (!productId || quantity <= 0) continue;
+        const avgImportCost = Number(importCostMap.get(productId) || 0);
+        const lineProfit = lineRevenue - avgImportCost * quantity;
+        totalProfit += lineProfit;
 
         const current = topProductsMap.get(productId) || {
           product_id: productId,
@@ -1480,6 +1638,25 @@ class OrderService {
         current.revenue += lineRevenue;
         topProductsMap.set(productId, current);
       }
+
+      // Fallback for legacy orders thiếu items.
+      if (orderRevenue <= 0) {
+        orderRevenue = Math.max(
+          0,
+          Number(order.total_price || 0) - Math.max(0, shipmentFee),
+        );
+      }
+
+      totalRevenue += orderRevenue;
+
+      const createdAt = new Date(order.created_at);
+      const dayKey = createdAt.toISOString().slice(0, 10);
+      const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
+      dailyRevenueMap.set(dayKey, Number(dailyRevenueMap.get(dayKey) || 0) + orderRevenue);
+      monthlyRevenueMap.set(
+        monthKey,
+        Number(monthlyRevenueMap.get(monthKey) || 0) + orderRevenue,
+      );
     }
 
     const dailyRevenue = Array.from(dailyRevenueMap.entries())
@@ -1511,17 +1688,16 @@ class OrderService {
       })
       .slice(0, 5);
 
-    const averageOrderValue =
-      completedOrders > 0 ? totalRevenue / completedOrders : 0;
     const completionRate =
       totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
     return {
-      range: range.key,
+      range: window.key,
       total_orders: totalOrders,
       completed_orders: completedOrders,
       total_revenue: totalRevenue,
-      average_order_value: averageOrderValue,
+      total_profit: totalProfit,
+      total_shipping_fee: totalShippingFee,
       completion_rate: completionRate,
       status_counts: statusCounts,
       daily_revenue: dailyRevenue,
@@ -1595,7 +1771,12 @@ class OrderService {
         !shipment ||
         String(shipment.status || "pending").toLowerCase() === "pending";
       if (shouldFinalizeInventory) {
-        await this.consumeReservedStockForOrderItems(orderItems, transaction);
+        await this.consumeReservedStockForOrderItems(orderItems, transaction, {
+          storeId: Number(order.store_id),
+          actorUserId: Number(shopUserId),
+          referenceType: "order",
+          referenceId: Number(order.id),
+        });
       }
 
       const metrics = this.getOrderShippingMetrics(orderItems);

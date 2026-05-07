@@ -42,6 +42,11 @@ function ProductsContent() {
     const parsed = value ? Number(value) : undefined;
     return parsed && Number.isFinite(parsed) ? parsed : undefined;
   }, [searchParams]);
+  const brandId = useMemo(() => {
+    const value = searchParams.get("brand_id");
+    const parsed = value ? Number(value) : undefined;
+    return parsed && Number.isFinite(parsed) ? parsed : undefined;
+  }, [searchParams]);
 
   const searchQuery = useMemo(() => {
     const value = searchParams.get("q");
@@ -77,10 +82,11 @@ function ProductsContent() {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
         category_id: categoryId,
+        brand_id: brandId,
         q: searchQuery,
       })
     );
-  }, [dispatch, currentPage, categoryId, searchQuery]);
+  }, [dispatch, currentPage, categoryId, brandId, searchQuery]);
 
   return (
     <div style={themed(styles.page)}>
@@ -140,6 +146,7 @@ function ProductsContent() {
                       queryParams={{
                         q: searchQuery,
                         category_id: categoryId,
+                        brand_id: brandId,
                       }}
                     />
                   )}

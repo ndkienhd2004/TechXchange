@@ -139,8 +139,58 @@ export const statIcon = (theme: Theme): CSSProperties => ({
 
 export const filterRow = (theme: Theme): CSSProperties => ({
   display: "flex",
+  alignItems: "center",
+  flexWrap: "wrap",
   gap: theme.spacing[2],
   marginBottom: theme.spacing.lg,
+});
+
+export const datePickerTrigger = (theme: Theme): CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  borderRadius: "12px",
+  padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
+  minHeight: "48px",
+  cursor: "pointer",
+  fontWeight: theme.typography.fontWeight.semibold,
+  fontSize: theme.typography.fontSize.lg.size,
+  boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+});
+
+export const datePickerIcon = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.brand.purple[400],
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+export const datePickerAnchor = (): CSSProperties => ({
+  position: "relative",
+  display: "inline-flex",
+});
+
+export const datePickerPopover = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  top: "calc(100% + 10px)",
+  left: 0,
+  width: "min(340px, 92vw)",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.card,
+  borderRadius: "16px",
+  boxShadow: theme.shadows.lg,
+  overflow: "hidden",
+  zIndex: 40,
+});
+
+export const datePickerHint = (theme: Theme): CSSProperties => ({
+  margin: `${theme.spacing[3]} ${theme.spacing.lg} ${theme.spacing[4]}`,
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.sm.size,
+  textAlign: "center",
 });
 
 export const filterButton = (theme: Theme): CSSProperties => ({

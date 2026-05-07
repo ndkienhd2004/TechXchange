@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/features/auth";
 import * as styles from "./styles";
 import AppIcon from "@/components/commons/AppIcon";
 
@@ -13,6 +15,8 @@ export default function AdminLayout({
 }) {
   const { themed } = useAppTheme();
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const navItems = [
     { label: "Dashboard", href: "/admin" },
@@ -27,10 +31,6 @@ export default function AdminLayout({
   return (
     <div style={themed(styles.page)}>
       <aside style={themed(styles.sidebar)}>
-        <Link href="/" style={themed(styles.backLink)}>
-          <span aria-hidden>←</span> Về trang chủ
-        </Link>
-
         <div style={themed(styles.adminCard)}>
           <div style={themed(styles.adminAvatar)}>
             <AppIcon name="settings" size={18} />
@@ -58,6 +58,16 @@ export default function AdminLayout({
               </Link>
             );
           })}
+          <button
+            type="button"
+            style={themed(styles.logoutButton)}
+            onClick={() => {
+              dispatch(logout());
+              router.replace("/");
+            }}
+          >
+            Đăng xuất
+          </button>
         </nav>
       </aside>
 

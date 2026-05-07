@@ -240,7 +240,6 @@ router.get("/catalogs", ProductCatalogController.getCatalogs);
  *               - catalog_id
  *               - store_id
  *               - price
- *               - quantity
  *             properties:
  *               catalog_id:
  *                 type: integer
@@ -248,8 +247,6 @@ router.get("/catalogs", ProductCatalogController.getCatalogs);
  *                 type: integer
  *               price:
  *                 type: number
- *               quantity:
- *                 type: integer
  *               description:
  *                 type: string
  *               images:

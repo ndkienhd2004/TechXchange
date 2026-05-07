@@ -7,7 +7,12 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "eslint .",
-    "db:reset:mock": "node scripts/reset_and_seed_mock.js"
+    "db:reset:mock": "node scripts/reset_and_seed_mock.js",
+    "catalog:import:preview": "node scripts/import_catalog_from_preview.js",
+    "categories:normalize:vi": "node scripts/normalize_categories_vi.js",
+    "categories:restructure:tree": "node scripts/restructure_categories_tree.js",
+    "seed:shop-c:components": "node scripts/seed_shop_c_components.js",
+    "import:pc-parts:shop-c": "node scripts/import_pc_parts_to_catalog_and_shop_c.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

@@ -64,10 +64,22 @@ export interface AdminProductRequest {
   category?: { id: number; name: string };
 }
 
+export interface AdminTopSellingShop {
+  storeId: number;
+  storeName: string;
+  completedOrders: number;
+  revenue: number;
+}
+
 export interface AdminUserStats {
   totalUsers?: number;
   totalShops?: number;
   totalAdmins?: number;
+  totalShopAccounts?: number;
+  totalCustomers?: number;
+  newCustomersLast7Days?: number;
+  newCustomersLast30Days?: number;
+  topSellingShops?: AdminTopSellingShop[];
   [key: string]: unknown;
 }
 

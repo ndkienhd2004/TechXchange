@@ -2,16 +2,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import Image from "next/image";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { Theme } from "@/theme";
 import type { Product as ProductRow } from "@/features/products/types";
-import { fetchProductById, clearSelectedProduct } from "@/features/products/store/productSlice";
-import { 
-  selectSelectedProduct, 
-  selectProductDetailLoading
+import {
+  fetchProductById,
+  clearSelectedProduct,
+} from "@/features/products/store/productSlice";
+import {
+  selectSelectedProduct,
+  selectProductDetailLoading,
 } from "@/features/products/store/productSelectors";
 import { addToCart } from "@/features/cart/store/cartSlice";
 import ItemCard from "@/components/commons/ItemCard";
@@ -26,14 +34,33 @@ import {
 } from "@/features/auth/utils/redirect";
 import * as styles from "./styles";
 
-function renderStars(
-  rating: number,
-  theme: Theme
-) {
+type DisplaySpecValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | DisplaySpecValue[]
+  | Record<string, unknown>;
+
+function toDisplaySpecsRecord(
+  input: unknown,
+): Record<string, DisplaySpecValue> | undefined {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
+  const entries = Object.entries(input as Record<string, unknown>).map(
+    ([key, value]) => [key, value as DisplaySpecValue] as const,
+  );
+  return Object.fromEntries(entries);
+}
+
+function renderStars(rating: number, theme: Theme) {
   const safeRating = Number.isFinite(Number(rating)) ? Number(rating) : 0;
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    const fillPercent = Math.max(0, Math.min(100, (safeRating - (i - 1)) * 100));
+    const fillPercent = Math.max(
+      0,
+      Math.min(100, (safeRating - (i - 1)) * 100),
+    );
     stars.push(
       <span
         key={`star-${i}`}
@@ -45,7 +72,13 @@ function renderStars(
           lineHeight: "16px",
         }}
       >
-        <span style={{ color: theme.colors.palette.text.muted, position: "absolute", inset: 0 }}>
+        <span
+          style={{
+            color: theme.colors.palette.text.muted,
+            position: "absolute",
+            inset: 0,
+          }}
+        >
           ★
         </span>
         <span
@@ -60,7 +93,7 @@ function renderStars(
         >
           ★
         </span>
-      </span>
+      </span>,
     );
   }
   return stars;
@@ -79,8 +112,8 @@ function formatVariantLabel(variant: {
 }) {
   if (variant.variant_label) return variant.variant_label;
   const attributes = variant.attributes || {};
-  const entries = Object.entries(attributes).filter(
-    ([key, value]) => Boolean(key && value),
+  const entries = Object.entries(attributes).filter(([key, value]) =>
+    Boolean(key && value),
   );
   if (entries.length > 0) {
     return entries
@@ -100,7 +133,7 @@ export default function ProductDetailPage() {
   const dispatch = useAppDispatch();
   const { theme, themed } = useAppTheme();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  
+
   const product = useAppSelector(selectSelectedProduct);
   const loading = useAppSelector(selectProductDetailLoading);
 
@@ -110,7 +143,9 @@ export default function ProductDetailPage() {
   >("description");
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({});
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>(
+    {},
+  );
   const [reviews, setReviews] = useState<
     Array<{
       id: number;
@@ -133,7 +168,7 @@ export default function ProductDetailPage() {
     if (id) {
       dispatch(fetchProductById(id));
     }
-    
+
     return () => {
       dispatch(clearSelectedProduct());
     };
@@ -145,9 +180,12 @@ export default function ProductDetailPage() {
       try {
         const api = getAxiosInstance();
         const res = await api.get(`/reviews/product/${id}`);
-        const rows = Array.isArray(res?.data?.data?.reviews) ? res.data.data.reviews : [];
+        const rows = Array.isArray(res?.data?.data?.reviews)
+          ? res.data.data.reviews
+          : [];
         setReviews(
-          rows.map((item) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          rows.map((item: any) => ({
             ...item,
             rating: toHalfStep(Number(item.rating || 0)),
           })),
@@ -232,7 +270,10 @@ export default function ProductDetailPage() {
   );
   const averageRating = useMemo(() => {
     if (reviews.length === 0) return Number(product?.rating || 0);
-    const total = reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+    const total = reviews.reduce(
+      (sum, item) => sum + Number(item.rating || 0),
+      0,
+    );
     return toHalfStep(total / reviews.length);
   }, [reviews, product?.rating]);
   const ratingSteps = useMemo(() => {
@@ -255,23 +296,30 @@ export default function ProductDetailPage() {
   }, [reviews, ratingSteps]);
   const filteredReviews = useMemo(() => {
     if (reviewFilter === "all") return reviews;
-    return reviews.filter((item) => toHalfStep(Number(item.rating || 0)) === reviewFilter);
+    return reviews.filter(
+      (item) => toHalfStep(Number(item.rating || 0)) === reviewFilter,
+    );
   }, [reviews, reviewFilter]);
 
   useEffect(() => {
     if (!product) return;
     const currentListingId = Number(id);
     const variantFromCurrentListing = Number.isFinite(currentListingId)
-      ? variantInventory.find((variant) =>
-          Array.isArray(variant.listing_ids) &&
-          variant.listing_ids.some((listingId) => Number(listingId) === currentListingId),
+      ? variantInventory.find(
+          (variant) =>
+            Array.isArray(variant.listing_ids) &&
+            variant.listing_ids.some(
+              (listingId) => Number(listingId) === currentListingId,
+            ),
         )
       : undefined;
     const defaultsFromCurrentListing = variantFromCurrentListing?.attributes
       ? { ...variantFromCurrentListing.attributes }
       : {};
     const defaultsFromFirstAvailable =
-      variantInventory.length > 0 ? { ...(variantInventory[0].attributes || {}) } : {};
+      variantInventory.length > 0
+        ? { ...(variantInventory[0].attributes || {}) }
+        : {};
     const defaults: Record<string, string> = {
       ...defaultsFromFirstAvailable,
       ...defaultsFromCurrentListing,
@@ -283,7 +331,9 @@ export default function ProductDetailPage() {
     });
 
     const matched = variantInventory.find((variant) =>
-      specOptions.every((opt) => defaults[opt.key] === variant.attributes?.[opt.key]),
+      specOptions.every(
+        (opt) => defaults[opt.key] === variant.attributes?.[opt.key],
+      ),
     );
     if (!matched && variantInventory[0]?.attributes) {
       setSelectedSpecs({ ...(variantInventory[0].attributes || {}) });
@@ -298,38 +348,64 @@ export default function ProductDetailPage() {
 
   if (loading && !product) {
     return (
-      <div style={{ ...themed(styles.page), display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: theme.colors.palette.text.primary }}>Đang tải thông tin sản phẩm...</p>
+      <div
+        style={{
+          ...themed(styles.page),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ color: theme.colors.palette.text.primary }}>
+          Đang tải thông tin sản phẩm...
+        </p>
       </div>
     );
   }
 
   if (!product && !loading) {
     return (
-      <div style={{ ...themed(styles.page), display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: theme.colors.palette.text.primary }}>Không tìm thấy sản phẩm.</p>
+      <div
+        style={{
+          ...themed(styles.page),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ color: theme.colors.palette.text.primary }}>
+          Không tìm thấy sản phẩm.
+        </p>
       </div>
     );
   }
 
-  const productImages = product?.images && product.images.length > 0 
-    ? product.images 
-    : [{ id: 0, url: product?.default_image || "", sort_order: 0 }];
+  const productImages =
+    product?.images && product.images.length > 0
+      ? product.images
+      : [{ id: 0, url: product?.default_image || "", sort_order: 0 }];
 
-  const currentMainImage = productImages[mainImageIndex]?.url || product?.default_image;
+  const currentMainImage =
+    productImages[mainImageIndex]?.url || product?.default_image;
 
   if (!product) return null;
 
-  const shopLogoUrl = String(product.store?.logo || resolvedStoreLogoUrl || "").trim();
+  const shopLogoUrl = String(
+    product.store?.logo || resolvedStoreLogoUrl || "",
+  ).trim();
   const hasShopLogo =
     Boolean(shopLogoUrl) &&
     shopLogoUrl !== "null" &&
     shopLogoUrl !== "undefined" &&
     !shopLogoError;
-  const shopInitial = String(product.store?.name || "S").charAt(0).toUpperCase();
+  const shopInitial = String(product.store?.name || "S")
+    .charAt(0)
+    .toUpperCase();
 
   const selectedVariant = variantInventory.find((variant) =>
-    specOptions.every((opt) => selectedSpecs[opt.key] === variant.attributes?.[opt.key]),
+    specOptions.every(
+      (opt) => selectedSpecs[opt.key] === variant.attributes?.[opt.key],
+    ),
   );
   const hasVariantSelection = specOptions.length > 0;
   const availableStock = hasVariantSelection
@@ -346,10 +422,7 @@ export default function ProductDetailPage() {
   const displayPrice = hasVariantSelection
     ? Number(selectedVariant?.min_price ?? product.price ?? 0)
     : Number(product.price || 0);
-  const displayProductName = buildProductDisplayName(
-    product.name,
-    hasVariantSelection ? selectedSpecs : product.primary_serial_specs,
-  );
+  const displayProductName = String(product.name || "").trim() || "Sản phẩm";
   const loginRedirectHref = buildAuthRedirectHref(
     "/login",
     buildCurrentPath(pathname, searchParams),
@@ -419,7 +492,9 @@ export default function ProductDetailPage() {
         }),
       ).unwrap();
       const addedLine = Array.isArray(cartData?.items)
-        ? cartData.items.find((item) => Number(item.product_id) === selectedListingId)
+        ? cartData.items.find(
+            (item) => Number(item.product_id) === selectedListingId,
+          )
         : undefined;
       if (addedLine?.id) {
         router.push(`/checkout?cart_item_ids=${addedLine.id}`);
@@ -459,33 +534,46 @@ export default function ProductDetailPage() {
                     key={img.id || i}
                     style={{
                       ...themed(styles.thumbnail),
-                      border: i === mainImageIndex ? `2px solid ${theme.colors.palette.brand.purple[500]}` : "none"
+                      border:
+                        i === mainImageIndex
+                          ? `2px solid ${theme.colors.palette.brand.purple[500]}`
+                          : "none",
                     }}
                     onClick={() => setMainImageIndex(i)}
                     role="button"
                     tabIndex={0}
                   >
                     {img.url ? (
-                      <Image 
-                        src={img.url} 
-                        alt={`${product.name} ${i}`} 
-                        width={80} 
-                        height={80} 
+                      <Image
+                        src={img.url}
+                        alt={`${product.name} ${i}`}
+                        width={80}
+                        height={80}
                         style={{ objectFit: "cover", borderRadius: "4px" }}
                       />
                     ) : (
-                      <div style={{ width: "100%", height: "100%", background: theme.colors.palette.backgrounds.secondary }} />
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          background:
+                            theme.colors.palette.backgrounds.secondary,
+                        }}
+                      />
                     )}
                   </div>
                 ))}
               </div>
               <div style={themed(styles.mainImage)}>
                 {currentMainImage ? (
-                  <Image 
-                    src={currentMainImage} 
-                    alt={product.name} 
+                  <Image
+                    src={currentMainImage}
+                    alt={product.name}
                     fill
-                    style={{ objectFit: "contain", borderRadius: theme.spacing.lg }}
+                    style={{
+                      objectFit: "contain",
+                      borderRadius: theme.spacing.lg,
+                    }}
                   />
                 ) : (
                   <div
@@ -506,15 +594,29 @@ export default function ProductDetailPage() {
                 )}
                 <button
                   type="button"
-                  style={{ ...themed(styles.galleryNav), left: theme.spacing[2] }}
-                  onClick={() => setMainImageIndex(prev => prev > 0 ? prev - 1 : productImages.length - 1)}
+                  style={{
+                    ...themed(styles.galleryNav),
+                    left: theme.spacing[2],
+                  }}
+                  onClick={() =>
+                    setMainImageIndex((prev) =>
+                      prev > 0 ? prev - 1 : productImages.length - 1,
+                    )
+                  }
                 >
                   ‹
                 </button>
                 <button
                   type="button"
-                  style={{ ...themed(styles.galleryNav), right: theme.spacing[2] }}
-                  onClick={() => setMainImageIndex(prev => (prev + 1) % productImages.length)}
+                  style={{
+                    ...themed(styles.galleryNav),
+                    right: theme.spacing[2],
+                  }}
+                  onClick={() =>
+                    setMainImageIndex(
+                      (prev) => (prev + 1) % productImages.length,
+                    )
+                  }
                 >
                   ›
                 </button>
@@ -528,10 +630,10 @@ export default function ProductDetailPage() {
                   {renderStars(averageRating, theme)}
                 </span>
                 <span>{averageRating.toFixed(1)}</span>
-                <span>({reviews.length || product.reviewCount || 0} đánh giá)</span>
-                {product.buyturn && (
-                  <span>| {product.buyturn} đã bán</span>
-                )}
+                <span>
+                  ({reviews.length || product.reviewCount || 0} đánh giá)
+                </span>
+                {product.buyturn && <span>| {product.buyturn} đã bán</span>}
               </div>
               <div style={themed(styles.priceRow)}>
                 <span style={themed(styles.price)}>
@@ -548,12 +650,13 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </div>
-              <p style={themed(styles.description)}>{product.description}</p>
 
               {product.brand && (
                 <div style={themed(styles.fieldRow)}>
                   <span style={themed(styles.fieldLabel)}>Thương hiệu</span>
-                  <span style={{ color: theme.colors.palette.text.primary }}>{product.brand.name}</span>
+                  <span style={{ color: theme.colors.palette.text.primary }}>
+                    {product.brand.name}
+                  </span>
                 </div>
               )}
 
@@ -564,9 +667,19 @@ export default function ProductDetailPage() {
                     {specOptions.map((spec) => (
                       <div
                         key={spec.key}
-                        style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          flexWrap: "wrap",
+                        }}
                       >
-                        <span style={{ minWidth: 90, color: theme.colors.palette.text.secondary }}>
+                        <span
+                          style={{
+                            minWidth: 90,
+                            color: theme.colors.palette.text.secondary,
+                          }}
+                        >
                           {spec.key}
                         </span>
                         <select
@@ -580,7 +693,10 @@ export default function ProductDetailPage() {
                           style={themed(styles.select)}
                         >
                           {spec.values.map((valueRow) => (
-                            <option key={`${spec.key}-${valueRow.value}`} value={valueRow.value}>
+                            <option
+                              key={`${spec.key}-${valueRow.value}`}
+                              value={valueRow.value}
+                            >
                               {valueRow.value}
                             </option>
                           ))}
@@ -597,7 +713,9 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     style={themed(styles.quantityBtn)}
-                    onClick={() => setQuantity(Math.max(1, normalizedQuantity - 1))}
+                    onClick={() =>
+                      setQuantity(Math.max(1, normalizedQuantity - 1))
+                    }
                     disabled={isOutOfStock}
                   >
                     −
@@ -609,7 +727,10 @@ export default function ProductDetailPage() {
                     value={normalizedQuantity}
                     onChange={(e) =>
                       setQuantity(
-                        Math.max(1, Math.min(maxStock, Number(e.target.value) || 1))
+                        Math.max(
+                          1,
+                          Math.min(maxStock, Number(e.target.value) || 1),
+                        ),
                       )
                     }
                     style={themed(styles.quantityInput)}
@@ -618,7 +739,9 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     style={themed(styles.quantityBtn)}
-                    onClick={() => setQuantity(Math.min(maxStock, normalizedQuantity + 1))}
+                    onClick={() =>
+                      setQuantity(Math.min(maxStock, normalizedQuantity + 1))
+                    }
                     disabled={isOutOfStock}
                   >
                     +
@@ -635,7 +758,9 @@ export default function ProductDetailPage() {
                       : {}),
                   }}
                 >
-                  {isOutOfStock ? "Không có hàng" : `${availableStock} sản phẩm có sẵn`}
+                  {isOutOfStock
+                    ? "Không có hàng"
+                    : `${availableStock} sản phẩm có sẵn`}
                 </span>
               </div>
               <div style={themed(styles.buttonRow)}>
@@ -645,8 +770,16 @@ export default function ProductDetailPage() {
                   onClick={handleAddToCart}
                   disabled={addingToCart}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
                     <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
                   </svg>
                   {addingToCart ? "Đang xử lý..." : "Thêm vào giỏ hàng"}
@@ -661,9 +794,15 @@ export default function ProductDetailPage() {
                 </button>
               </div>
               <ul style={themed(styles.policyList)}>
-                <li style={themed(styles.policyItem)}>✓ Miễn phí vận chuyển cho đơn hàng trên 500k</li>
-                <li style={themed(styles.policyItem)}>✓ Đổi trả trong vòng 30 ngày</li>
-                <li style={themed(styles.policyItem)}>✓ Thanh toán an toàn và bảo mật</li>
+                <li style={themed(styles.policyItem)}>
+                  ✓ Miễn phí vận chuyển cho đơn hàng trên 500k
+                </li>
+                <li style={themed(styles.policyItem)}>
+                  ✓ Đổi trả trong vòng 30 ngày
+                </li>
+                <li style={themed(styles.policyItem)}>
+                  ✓ Thanh toán an toàn và bảo mật
+                </li>
               </ul>
             </div>
           </div>
@@ -686,7 +825,9 @@ export default function ProductDetailPage() {
                 </span>
                 <div>
                   <h3 style={themed(styles.shopName)}>{product.store.name}</h3>
-                  <p style={themed(styles.shopMeta)}>★ {product.store.rating || 0} · 85 sản phẩm</p>
+                  <p style={themed(styles.shopMeta)}>
+                    ★ {product.store.rating || 0} · 85 sản phẩm
+                  </p>
                 </div>
               </div>
               <div style={themed(styles.shopButtons)}>
@@ -697,8 +838,13 @@ export default function ProductDetailPage() {
                 >
                   Chat ngay
                 </button>
-                <Link href={`/shops/${product.store_id}`} style={{ textDecoration: "none" }}>
-                  <button type="button" style={themed(styles.outlineButton)}>Xem cửa hàng</button>
+                <Link
+                  href={`/shops/${product.store_id}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <button type="button" style={themed(styles.outlineButton)}>
+                    Xem cửa hàng
+                  </button>
                 </Link>
               </div>
             </div>
@@ -708,39 +854,56 @@ export default function ProductDetailPage() {
             <div style={themed(styles.tabs)}>
               <button
                 type="button"
-                style={activeTab === "description" ? themed(styles.tabActive) : themed(styles.tab)}
+                style={
+                  activeTab === "description"
+                    ? themed(styles.tabActive)
+                    : themed(styles.tab)
+                }
                 onClick={() => setActiveTab("description")}
               >
                 Mô tả sản phẩm
               </button>
               <button
                 type="button"
-                style={activeTab === "specs" ? themed(styles.tabActive) : themed(styles.tab)}
+                style={
+                  activeTab === "specs"
+                    ? themed(styles.tabActive)
+                    : themed(styles.tab)
+                }
                 onClick={() => setActiveTab("specs")}
               >
                 Thông số kỹ thuật
               </button>
               <button
                 type="button"
-                style={activeTab === "reviews" ? themed(styles.tabActive) : themed(styles.tab)}
+                style={
+                  activeTab === "reviews"
+                    ? themed(styles.tabActive)
+                    : themed(styles.tab)
+                }
                 onClick={() => setActiveTab("reviews")}
               >
                 Đánh giá ({reviews.length})
               </button>
             </div>
-            
+
             {activeTab === "description" && (
               <div style={themed(styles.tabContent)}>
                 <p style={{ whiteSpace: "pre-line" }}>{product.description}</p>
               </div>
             )}
-            
+
             {activeTab === "specs" && (
               <div style={themed(styles.tabContent)}>
                 <div style={{ display: "grid", gap: 12 }}>
                   {variantInventory.length > 0 && (
                     <div>
-                      <h4 style={{ margin: "0 0 8px 0", color: theme.colors.palette.text.primary }}>
+                      <h4
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: theme.colors.palette.text.primary,
+                        }}
+                      >
                         Tồn kho theo biến thể
                       </h4>
                       <ul
@@ -760,7 +923,8 @@ export default function ProductDetailPage() {
                                 : `${variant.serial_code || "variant"}-${variantIndex}`
                             }
                           >
-                            <strong>{formatVariantLabel(variant)}</strong>: {variant.quantity} sản phẩm
+                            <strong>{formatVariantLabel(variant)}</strong>:{" "}
+                            {variant.quantity} sản phẩm
                           </li>
                         ))}
                       </ul>
@@ -772,7 +936,7 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             )}
-            
+
             {activeTab === "reviews" && (
               <div style={themed(styles.tabContent)}>
                 <div style={themed(styles.reviewFilterRow)}>
@@ -806,7 +970,13 @@ export default function ProductDetailPage() {
                 {reviews.length === 0 ? (
                   <p>Chưa có đánh giá nào cho sản phẩm này.</p>
                 ) : filteredReviews.length === 0 ? (
-                  <p>Không có đánh giá ở mức {reviewFilter === "all" ? "này" : `${Number(reviewFilter).toFixed(1)} sao`}.</p>
+                  <p>
+                    Không có đánh giá ở mức{" "}
+                    {reviewFilter === "all"
+                      ? "này"
+                      : `${Number(reviewFilter).toFixed(1)} sao`}
+                    .
+                  </p>
                 ) : (
                   <div style={{ display: "grid", gap: 12 }}>
                     {filteredReviews.map((review) => (
@@ -827,32 +997,43 @@ export default function ProductDetailPage() {
                             color: theme.colors.palette.text.secondary,
                           }}
                         >
-                          <span>{review.reviewer?.username || "Người dùng"}</span>
                           <span>
-                            {new Date(review.created_at).toLocaleDateString("vi-VN")}
+                            {review.reviewer?.username || "Người dùng"}
+                          </span>
+                          <span>
+                            {new Date(review.created_at).toLocaleDateString(
+                              "vi-VN",
+                            )}
                           </span>
                         </div>
-                        <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
+                        <div
+                          style={{ display: "flex", gap: 2, marginBottom: 8 }}
+                        >
                           {renderStars(review.rating, theme)}
-                          <span style={{ color: theme.colors.palette.text.secondary }}>
+                          <span
+                            style={{
+                              color: theme.colors.palette.text.secondary,
+                            }}
+                          >
                             {Number(review.rating || 0).toFixed(1)}
                           </span>
                         </div>
                         <div>{review.comment || "(Không có nhận xét)"}</div>
-                        {Array.isArray(review.images) && review.images.length > 0 && (
-                          <div style={themed(styles.reviewImagesGrid)}>
-                            {review.images.map((imageUrl, imageIndex) => (
-                              <Image
-                                key={`${review.id}-${imageIndex}`}
-                                src={imageUrl}
-                                alt={`review-${review.id}-${imageIndex + 1}`}
-                                width={120}
-                                height={88}
-                                style={themed(styles.reviewImageItem)}
-                              />
-                            ))}
-                          </div>
-                        )}
+                        {Array.isArray(review.images) &&
+                          review.images.length > 0 && (
+                            <div style={themed(styles.reviewImagesGrid)}>
+                              {review.images.map((imageUrl, imageIndex) => (
+                                <Image
+                                  key={`${review.id}-${imageIndex}`}
+                                  src={imageUrl}
+                                  alt={`review-${review.id}-${imageIndex + 1}`}
+                                  width={120}
+                                  height={88}
+                                  style={themed(styles.reviewImageItem)}
+                                />
+                              ))}
+                            </div>
+                          )}
                       </div>
                     ))}
                   </div>
@@ -881,9 +1062,7 @@ export default function ProductDetailPage() {
                         title={buildProductDisplayName(
                           recommendedProduct.name,
                           recommendedProduct.primary_serial_specs ||
-                            (recommendedProduct.catalog?.specs as
-                              | Record<string, unknown>
-                              | undefined),
+                            toDisplaySpecsRecord(recommendedProduct.catalog?.specs),
                         )}
                         price={`${Number(
                           recommendedProduct.price || 0,
@@ -908,7 +1087,6 @@ export default function ProductDetailPage() {
               )}
             </section>
           )}
-
         </div>
       </div>
     </div>

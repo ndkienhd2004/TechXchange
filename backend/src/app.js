@@ -15,6 +15,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const ghnRoutes = require("./routes/ghnRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const assistantRoutes = require("./routes/assistantRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const swaggerSpecs = require("./config/swagger");
@@ -67,6 +68,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/ghn", ghnRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/assistant", assistantRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/uploads", uploadRoutes);
 

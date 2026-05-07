@@ -25,6 +25,7 @@ const UserProductEvent = require("./userProductEvent")(sequelize, DataTypes);
 const ProductImage = require("./productImage")(sequelize, DataTypes);
 const ProductSerial = require("./productSerial")(sequelize, DataTypes);
 const ProductInventory = require("./productInventory")(sequelize, DataTypes);
+const ShopInventoryLedger = require("./shopInventoryLedger")(sequelize, DataTypes);
 const RefreshToken = require("./refreshToken")(sequelize, DataTypes);
 const StoreRequest = require("./storeRequest")(sequelize, DataTypes);
 const UserAddress = require("./userAddress")(sequelize, DataTypes);
@@ -225,6 +226,51 @@ ProductInventory.belongsTo(ProductSerial, {
   as: "serial",
 });
 
+Store.hasMany(ShopInventoryLedger, {
+  foreignKey: "store_id",
+  as: "inventoryLedgerEntries",
+});
+ShopInventoryLedger.belongsTo(Store, {
+  foreignKey: "store_id",
+  as: "store",
+});
+
+Product.hasMany(ShopInventoryLedger, {
+  foreignKey: "product_id",
+  as: "inventoryLedgerEntries",
+});
+ShopInventoryLedger.belongsTo(Product, {
+  foreignKey: "product_id",
+  as: "product",
+});
+
+ProductSerial.hasMany(ShopInventoryLedger, {
+  foreignKey: "serial_id",
+  as: "inventoryLedgerEntries",
+});
+ShopInventoryLedger.belongsTo(ProductSerial, {
+  foreignKey: "serial_id",
+  as: "serial",
+});
+
+ProductInventory.hasMany(ShopInventoryLedger, {
+  foreignKey: "inventory_id",
+  as: "ledgerEntries",
+});
+ShopInventoryLedger.belongsTo(ProductInventory, {
+  foreignKey: "inventory_id",
+  as: "inventory",
+});
+
+User.hasMany(ShopInventoryLedger, {
+  foreignKey: "created_by",
+  as: "createdInventoryLedgerEntries",
+});
+ShopInventoryLedger.belongsTo(User, {
+  foreignKey: "created_by",
+  as: "createdBy",
+});
+
 User.hasMany(RefreshToken, { foreignKey: "user_id", as: "refreshTokens" });
 RefreshToken.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
@@ -257,6 +303,7 @@ module.exports = {
   ProductImage,
   ProductSerial,
   ProductInventory,
+  ShopInventoryLedger,
   RefreshToken,
   StoreRequest,
   UserAddress,

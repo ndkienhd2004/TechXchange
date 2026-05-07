@@ -53,6 +53,7 @@ export default function AdminBrandsView() {
   const [brandName, setBrandName] = useState("");
   const [brandImage, setBrandImage] = useState("");
   const [brandImageUploading, setBrandImageUploading] = useState(false);
+  const [brandSaving, setBrandSaving] = useState(false);
   const maxUploadBytes = 10 * 1024 * 1024;
   const allowedUploadTypes = [
     "image/jpeg",
@@ -67,8 +68,9 @@ export default function AdminBrandsView() {
       const result = await getSimpleBrands();
       const rows = Array.isArray(result) ? result : [];
       setBrands(rows);
-    } catch {
+    } catch (error) {
       setBrands([]);
+      showErrorToast(error);
     } finally {
       setBrandsLoading(false);
     }
@@ -137,17 +139,26 @@ export default function AdminBrandsView() {
   };
 
   const onSaveBrand = async () => {
-    if (!brandName.trim()) return;
+    const trimmedName = brandName.trim();
+    if (!trimmedName) {
+      showErrorToast("Tên thương hiệu là bắt buộc");
+      return;
+    }
+    if (brandImageUploading || brandSaving) {
+      return;
+    }
+
     try {
+      setBrandSaving(true);
       if (editingBrandId) {
         await updateAdminBrand(editingBrandId, {
-          name: brandName.trim(),
+          name: trimmedName,
           image: brandImage.trim() || undefined,
         });
         showSuccessToast("Cập nhật thương hiệu thành công");
       } else {
         await createAdminBrand({
-          name: brandName.trim(),
+          name: trimmedName,
           image: brandImage.trim() || undefined,
         });
         showSuccessToast("Tạo thương hiệu thành công");
@@ -156,6 +167,8 @@ export default function AdminBrandsView() {
       await loadBrands();
     } catch (error) {
       showErrorToast(error);
+    } finally {
+      setBrandSaving(false);
     }
   };
 
@@ -553,9 +566,9 @@ export default function AdminBrandsView() {
                 type="button"
                 style={themed(styles.primaryButton)}
                 onClick={onSaveBrand}
-                disabled={brandImageUploading}
+                disabled={brandImageUploading || brandSaving || !brandName.trim()}
               >
-                Lưu
+                {brandSaving ? "Đang lưu..." : "Lưu"}
               </button>
             </div>
           </div>

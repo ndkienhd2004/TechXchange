@@ -27,6 +27,7 @@ export default function ShopLayout({
   const navItems = [
     { label: "Dashboard", href: "/shop" },
     { label: "Sản phẩm", href: "/shop/products" },
+    { label: "Kho hàng", href: "/shop/inventory" },
     { label: "Đơn hàng", href: "/shop/orders" },
     { label: "Thống kê", href: "/shop/analytics" },
     { label: "Thương hiệu", href: "/shop/brands/request" },
@@ -63,7 +64,10 @@ export default function ShopLayout({
 
         <nav style={themed(styles.nav)}>
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              item.href === "/shop"
+                ? pathname === "/shop"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}

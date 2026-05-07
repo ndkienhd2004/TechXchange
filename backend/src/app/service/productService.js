@@ -575,7 +575,6 @@ class ProductService {
     const {
       store_id,
       price,
-      quantity,
       description,
       images,
       catalog_id,
@@ -588,7 +587,6 @@ class ProductService {
           catalog_id,
           store_id,
           price,
-          quantity,
           description,
           images,
           variant_options,
@@ -652,13 +650,10 @@ class ProductService {
         updates.price = price;
       }
 
-      const hasQuantity = payload.quantity !== undefined;
-      if (hasQuantity) {
-        const quantity = Number(payload.quantity);
-        if (!Number.isInteger(quantity) || quantity < 0) {
-          throw new Error("Số lượng sản phẩm không hợp lệ");
-        }
-        updates.quantity = quantity;
+      if (payload.quantity !== undefined) {
+        throw new Error(
+          "Không thể sửa số lượng tại màn này. Vui lòng dùng nhập kho/xuất kho",
+        );
       }
 
       if (payload.description !== undefined) {
@@ -673,15 +668,6 @@ class ProductService {
           throw new Error("Trạng thái cập nhật không hợp lệ");
         }
         updates.status = nextStatus;
-      }
-
-      if (hasQuantity && payload.status === undefined) {
-        const quantity = Number(payload.quantity);
-        if (quantity <= 0) {
-          updates.status = "sold_out";
-        } else if (String(product.status || "").toLowerCase() === "sold_out") {
-          updates.status = "active";
-        }
       }
 
       const hasImages = Array.isArray(payload.images);
@@ -702,30 +688,6 @@ class ProductService {
 
       const updated = await sequelize.transaction(async (transaction) => {
         await product.update(updates, { transaction });
-
-        if (hasQuantity) {
-          const quantity = Number(updates.quantity);
-          const inventories = await ProductInventory.findAll({
-            where: { product_id: product.id },
-            order: [["id", "ASC"]],
-            transaction,
-          });
-
-          if (inventories.length > 0) {
-            for (let index = 0; index < inventories.length; index += 1) {
-              const inventory = inventories[index];
-              const nextOnHand = index === 0 ? quantity : 0;
-              const nextReserved = Math.min(
-                Number(inventory.reserved || 0),
-                nextOnHand,
-              );
-              await inventory.update(
-                { on_hand: nextOnHand, reserved: nextReserved },
-                { transaction },
-              );
-            }
-          }
-        }
 
         if (hasImages) {
           await ProductImage.destroy({
@@ -801,7 +763,6 @@ class ProductService {
       catalog_id,
       store_id,
       price,
-      quantity,
       description,
       images,
       variant_options,
@@ -866,7 +827,7 @@ class ProductService {
             seller_id: userId,
             store_id,
             price,
-            quantity,
+            quantity: 0,
             status: "active",
           },
           { transaction },
@@ -890,7 +851,7 @@ class ProductService {
           {
             product_id: product.id,
             serial_id: serial.id,
-            on_hand: Number(quantity || 0),
+            on_hand: 0,
             reserved: 0,
           },
           { transaction },

@@ -247,7 +247,6 @@ class ProductController {
 
       const payload = {
         price: parseNumber(req.body.price),
-        quantity: parseNumber(req.body.quantity),
         description:
           req.body.description !== undefined
             ? String(req.body.description || "").trim()
@@ -289,7 +288,6 @@ class ProductController {
       const catalog_id = parseNumber(req.body.catalog_id);
       const store_id = parseNumber(req.body.store_id);
       const price = parseNumber(req.body.price);
-      const quantity = parseNumber(req.body.quantity);
       const variant_options =
         req.body.variant_options &&
         typeof req.body.variant_options === "object" &&
@@ -307,10 +305,6 @@ class ProductController {
         return response.badRequest(res, "Thiếu thông tin bắt buộc");
       }
 
-      if (quantity === undefined) {
-        return response.badRequest(res, "Số lượng là bắt buộc");
-      }
-
       const images = Array.isArray(req.body.images)
         ? req.body.images
             .map((item) => ({
@@ -326,7 +320,6 @@ class ProductController {
         catalog_id,
         store_id,
         price,
-        quantity,
         description,
         images,
         variant_options,
@@ -357,7 +350,6 @@ class ProductController {
       const catalog_id = parseNumber(req.body.catalog_id);
       const store_id = parseNumber(req.body.store_id);
       const price = parseNumber(req.body.price);
-      const quantity = parseNumber(req.body.quantity);
       const variant_options =
         req.body.variant_options &&
         typeof req.body.variant_options === "object" &&
@@ -370,10 +362,6 @@ class ProductController {
 
       if (!catalog_id || !store_id || price === undefined) {
         return response.badRequest(res, "Thiếu thông tin bắt buộc");
-      }
-
-      if (quantity === undefined) {
-        return response.badRequest(res, "Số lượng là bắt buộc");
       }
 
       const images = Array.isArray(req.body.images)
@@ -391,7 +379,6 @@ class ProductController {
         catalog_id,
         store_id,
         price,
-        quantity,
         images,
         variant_options,
         serial_code,

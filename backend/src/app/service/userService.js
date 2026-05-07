@@ -1,4 +1,5 @@
-const { User, Store } = require("../../models");
+const { Op, QueryTypes } = require("sequelize");
+const { User, Store, sequelize } = require("../../models");
 
 /**
  * User Service - Quản lý thông tin người dùng
@@ -322,18 +323,72 @@ class UserService {
    */
   static async getUserStats() {
     try {
-      const [totalUsers, totalAdmins, totalShopAccounts, totalShops] =
-        await Promise.all([
-          User.count(),
-          User.count({ where: { role: "admin" } }),
-          User.count({ where: { role: "shop" } }),
-          Store.count(),
-        ]);
+      const now = new Date();
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const [
+        totalUsers,
+        totalAdmins,
+        totalShopAccounts,
+        totalShops,
+        newCustomersLast7Days,
+        newCustomersLast30Days,
+      ] = await Promise.all([
+        User.count(),
+        User.count({ where: { role: "admin" } }),
+        User.count({ where: { role: "shop" } }),
+        Store.count(),
+        User.count({
+          where: {
+            role: "user",
+            created_at: { [Op.gte]: sevenDaysAgo },
+          },
+        }),
+        User.count({
+          where: {
+            role: "user",
+            created_at: { [Op.gte]: thirtyDaysAgo },
+          },
+        }),
+      ]);
 
       const totalCustomers = Math.max(
         totalUsers - totalAdmins - totalShopAccounts,
         0
       );
+
+      const topSellingShopsRaw = await sequelize.query(
+        `
+        SELECT s.id AS "storeId",
+               s.name AS "storeName",
+               COUNT(DISTINCT o.id)::int AS "completedOrders",
+               COALESCE(
+                 SUM(COALESCE(oi.price, 0) * COALESCE(oi.quantity, 0)),
+                 0
+               )::float AS "revenue"
+        FROM orders o
+        INNER JOIN stores s ON s.id = o.store_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.status = 'completed' AND o.store_id IS NOT NULL
+        GROUP BY s.id, s.name
+        ORDER BY COALESCE(
+          SUM(COALESCE(oi.price, 0) * COALESCE(oi.quantity, 0)),
+          0
+        ) DESC
+        LIMIT 5
+        `,
+        { type: QueryTypes.SELECT }
+      );
+
+      const topSellingShops = (topSellingShopsRaw || []).map((row) => ({
+        storeId: Number(row.storeId),
+        storeName: row.storeName || "",
+        completedOrders: Number(row.completedOrders || 0),
+        revenue: Number(row.revenue || 0),
+      }));
 
       return {
         totalUsers,
@@ -341,6 +396,9 @@ class UserService {
         totalAdmins,
         totalShopAccounts,
         totalCustomers,
+        newCustomersLast7Days,
+        newCustomersLast30Days,
+        topSellingShops,
         // Backward-compatible fields for old clients
         total: totalUsers,
         admins: totalAdmins,

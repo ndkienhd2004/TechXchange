@@ -7,24 +7,60 @@ import * as styles from "./styles";
 
 const SOCIAL_ICONS = {
   facebook: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
     </svg>
   ),
   twitter: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
     </svg>
   ),
   instagram: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
     </svg>
   ),
   linkedin: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
       <rect width="4" height="12" x="2" y="9" />
       <circle cx="4" cy="4" r="2" />
@@ -57,21 +93,25 @@ export default function Footer() {
             <p style={themed(styles.contactText)}>sales@techxchange.com</p>
             <p style={themed(styles.contactText)}>0123456789</p>
             <div style={themed(styles.socialRow)}>
-              {(["facebook", "twitter", "instagram", "linkedin"] as const).map((key) => (
-                <a
-                  key={key}
-                  href="#"
-                  style={{
-                    ...themed(styles.socialLink),
-                    ...(hoveredSocial === key ? themed(styles.linkHover) : {}),
-                  }}
-                  onMouseEnter={() => setHoveredSocial(key)}
-                  onMouseLeave={() => setHoveredSocial(null)}
-                  aria-label={key}
-                >
-                  {SOCIAL_ICONS[key]}
-                </a>
-              ))}
+              {(["facebook", "twitter", "instagram", "linkedin"] as const).map(
+                (key) => (
+                  <a
+                    key={key}
+                    href="#"
+                    style={{
+                      ...themed(styles.socialLink),
+                      ...(hoveredSocial === key
+                        ? themed(styles.linkHover)
+                        : {}),
+                    }}
+                    onMouseEnter={() => setHoveredSocial(key)}
+                    onMouseLeave={() => setHoveredSocial(null)}
+                    aria-label={key}
+                  >
+                    {SOCIAL_ICONS[key]}
+                  </a>
+                ),
+              )}
             </div>
           </div>
 
@@ -90,7 +130,9 @@ export default function Footer() {
                     href={href}
                     style={{
                       ...themed(styles.link),
-                      ...(hoveredLink === label ? themed(styles.linkHover) : {}),
+                      ...(hoveredLink === label
+                        ? themed(styles.linkHover)
+                        : {}),
                     }}
                     onMouseEnter={() => setHoveredLink(label)}
                     onMouseLeave={() => setHoveredLink(null)}
@@ -110,14 +152,16 @@ export default function Footer() {
                 { label: "About Us", href: "/about" },
                 { label: "Contact Us", href: "/contact" },
                 { label: "Our Location", href: "/location" },
-                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Policy", href: "/policy" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link
                     href={href}
                     style={{
                       ...themed(styles.link),
-                      ...(hoveredLink === label ? themed(styles.linkHover) : {}),
+                      ...(hoveredLink === label
+                        ? themed(styles.linkHover)
+                        : {}),
                     }}
                     onMouseEnter={() => setHoveredLink(label)}
                     onMouseLeave={() => setHoveredLink(null)}
@@ -144,7 +188,9 @@ export default function Footer() {
                     href={href}
                     style={{
                       ...themed(styles.link),
-                      ...(hoveredLink === label ? themed(styles.linkHover) : {}),
+                      ...(hoveredLink === label
+                        ? themed(styles.linkHover)
+                        : {}),
                     }}
                     onMouseEnter={() => setHoveredLink(label)}
                     onMouseLeave={() => setHoveredLink(null)}
@@ -162,7 +208,10 @@ export default function Footer() {
             <p style={themed(styles.newsletterText)}>
               Đăng ký để nhận thông tin khuyến mãi mới nhất
             </p>
-            <form style={themed(styles.newsletterForm)} onSubmit={handleNewsletterSubmit}>
+            <form
+              style={themed(styles.newsletterForm)}
+              onSubmit={handleNewsletterSubmit}
+            >
               <input
                 type="email"
                 value={email}
@@ -171,8 +220,21 @@ export default function Footer() {
                 style={themed(styles.newsletterInput)}
                 aria-label="Email đăng ký newsletter"
               />
-              <button type="submit" style={themed(styles.newsletterButton)} aria-label="Đăng ký">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <button
+                type="submit"
+                style={themed(styles.newsletterButton)}
+                aria-label="Đăng ký"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                   <polyline points="22,6 12,13 2,6" />
                 </svg>
@@ -192,7 +254,6 @@ export default function Footer() {
           </div>
         </div>
       </footer>
-
     </>
   );
 }

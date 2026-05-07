@@ -350,8 +350,14 @@ export default function ShopDashboardView() {
           Quản lý sản phẩm
         </Link>
         <Link
-          href="/shop/orders"
+          href="/shop/inventory"
           style={{ ...themed(styles.actionCard), ...themed(styles.actionBlue) }}
+        >
+          Quản lý kho
+        </Link>
+        <Link
+          href="/shop/orders"
+          style={{ ...themed(styles.actionCard), ...themed(styles.actionGreen) }}
         >
           Xử lý đơn hàng
         </Link>
@@ -359,7 +365,7 @@ export default function ShopDashboardView() {
           href="/shop/analytics"
           style={{
             ...themed(styles.actionCard),
-            ...themed(styles.actionGreen),
+            ...themed(styles.actionPurple),
           }}
         >
           Xem thống kê

@@ -162,7 +162,7 @@ export const userMenuButtonHover = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.text.primary,
 });
 
-export const userMenuWrap = (theme: Theme): CSSProperties => ({
+export const userMenuWrap = (): CSSProperties => ({
   position: "relative",
   display: "flex",
   alignItems: "center",
@@ -263,7 +263,9 @@ export const navDropdownMenu = (theme: Theme): CSSProperties => ({
   top: "100%",
   left: 0,
   marginTop: theme.spacing[1],
-  minWidth: "180px",
+  minWidth: "220px",
+  maxHeight: "320px",
+  overflowY: "auto",
   background: theme.colors.palette.backgrounds.card,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   borderRadius: theme.spacing[2],
@@ -275,16 +277,56 @@ export const navDropdownMenu = (theme: Theme): CSSProperties => ({
   zIndex: 100,
 });
 
+export const navCategoryMegaMenu = (theme: Theme): CSSProperties => ({
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  marginTop: theme.spacing[1],
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing[2],
+  boxShadow: theme.shadows.lg,
+  display: "flex",
+  alignItems: "stretch",
+  minWidth: "260px",
+  maxWidth: "780px",
+  zIndex: 120,
+  overflow: "hidden",
+});
+
+export const navCategoryColumn = (theme: Theme): CSSProperties => ({
+  minWidth: "240px",
+  maxHeight: "360px",
+  overflowY: "auto",
+  padding: theme.spacing[2],
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing[1],
+  borderRight: `1px solid ${theme.colors.palette.borders.default}`,
+});
+
 export const navDropdownItem = (theme: Theme): CSSProperties => ({
   ...navLink(theme),
   padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
   borderRadius: theme.spacing[2],
-  display: "block",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+});
+
+export const navDropdownItemActive = (theme: Theme): CSSProperties => ({
+  ...navLinkHover(theme),
+  background: theme.colors.palette.backgrounds.hover,
 });
 
 export const navDropdownItemHover = (theme: Theme): CSSProperties => ({
   ...navLinkHover(theme),
   background: theme.colors.palette.backgrounds.hover,
+});
+
+export const navCategoryArrow = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  flexShrink: 0,
 });
 
 export const brandsBar = (theme: Theme): CSSProperties => ({

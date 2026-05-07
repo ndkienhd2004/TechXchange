@@ -78,7 +78,6 @@ export default function AddProductModal({
     {},
   );
   const [price, setPrice] = useState("");
-  const [quantity, setQuantity] = useState("10");
   const [shopDescription, setShopDescription] = useState("");
   const [specRequestOpen, setSpecRequestOpen] = useState(false);
   const [specRequestMode, setSpecRequestMode] = useState<"existing" | "new">(
@@ -203,8 +202,8 @@ export default function AddProductModal({
   );
 
   const handleAddExisting = async () => {
-    if (!selectedCatalogId || !price || !quantity) {
-      alert("Vui lòng nhập đầy đủ thông tin giá và số lượng");
+    if (!selectedCatalogId || !price) {
+      alert("Vui lòng nhập đầy đủ thông tin giá");
       return;
     }
     const shopId = info?.id;
@@ -218,7 +217,6 @@ export default function AddProductModal({
           catalog_id: parseInt(selectedCatalogId),
           store_id: parseInt(shopId),
           price: parseFloat(price),
-          quantity: parseInt(quantity),
           variant_options:
             Object.keys(selectedSpecs).length > 0 ? selectedSpecs : undefined,
           description: shopDescription.trim() || undefined,
@@ -491,21 +489,6 @@ export default function AddProductModal({
                                     type="number"
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
-                                    style={themed(styles.modalInputFull)}
-                                  />
-                                  <label
-                                    style={themed(
-                                      styles.modalProductSmallLabel,
-                                    )}
-                                  >
-                                    Số lượng
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={quantity}
-                                    onChange={(e) =>
-                                      setQuantity(e.target.value)
-                                    }
                                     style={themed(styles.modalInputFull)}
                                   />
                                   <label

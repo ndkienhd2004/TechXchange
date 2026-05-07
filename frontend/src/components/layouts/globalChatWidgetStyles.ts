@@ -260,10 +260,76 @@ export const bubble = (theme: Theme, mine: boolean): CSSProperties => ({
   lineHeight: 1.4,
 });
 
+export const markdownRoot = (): CSSProperties => ({
+  fontSize: "inherit",
+  lineHeight: 1.5,
+  overflowWrap: "anywhere",
+});
+
+export const markdownParagraph = (): CSSProperties => ({
+  margin: "0 0 6px",
+});
+
+export const markdownHeading = (): CSSProperties => ({
+  margin: "0 0 6px",
+  fontSize: "inherit",
+  fontWeight: 700,
+  lineHeight: 1.4,
+});
+
+export const markdownList = (): CSSProperties => ({
+  margin: "0 0 6px 18px",
+  padding: 0,
+});
+
+export const markdownListItem = (): CSSProperties => ({
+  marginBottom: 4,
+});
+
+export const markdownCodeInline = (theme: Theme, mine: boolean): CSSProperties => ({
+  padding: "1px 5px",
+  borderRadius: 6,
+  fontSize: "0.9em",
+  border: `1px solid ${mine ? "rgba(255,255,255,0.28)" : theme.colors.palette.borders.default}`,
+  background: mine ? "rgba(255,255,255,0.12)" : theme.colors.palette.backgrounds.primary,
+});
+
+export const markdownCodeBlock = (theme: Theme, mine: boolean): CSSProperties => ({
+  margin: "0 0 6px",
+  padding: "8px 10px",
+  borderRadius: 8,
+  border: `1px solid ${mine ? "rgba(255,255,255,0.22)" : theme.colors.palette.borders.default}`,
+  background: mine ? "rgba(0,0,0,0.18)" : theme.colors.palette.backgrounds.primary,
+  overflowX: "auto",
+  fontSize: "0.86em",
+  lineHeight: 1.45,
+  whiteSpace: "pre-wrap",
+});
+
+export const markdownLink = (mine: boolean): CSSProperties => ({
+  color: mine ? "#fff" : "#8b5cf6",
+  textDecoration: "underline",
+  textUnderlineOffset: 2,
+  fontWeight: 600,
+});
+
+export const markdownBlockquote = (theme: Theme, mine: boolean): CSSProperties => ({
+  margin: "0 0 6px",
+  padding: "4px 0 4px 10px",
+  borderLeft: `3px solid ${mine ? "rgba(255,255,255,0.35)" : theme.colors.palette.brand.purple[500]}`,
+  opacity: 0.95,
+});
+
 export const bubbleTime = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.sm.size,
   opacity: 0.7,
   marginTop: 4,
+});
+
+export const assistantCitationList = (theme: Theme): CSSProperties => ({
+  marginTop: 6,
+  fontSize: theme.typography.fontSize.xs.size,
+  opacity: 0.85,
 });
 
 export const inputBar = (theme: Theme): CSSProperties => ({

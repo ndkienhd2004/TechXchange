@@ -1,0 +1,158 @@
+/* ── Wrapper ── */
+.calendarRoot {
+  padding: 14px 16px 8px;
+}
+
+.calendar {
+  width: 100%;
+  color: var(--tx-date-picker-text);
+}
+
+.calendar :global(.rdp-root) {
+  margin: 0;
+  width: 100%;
+  --rdp-accent-color: var(--tx-date-picker-accent);
+  --rdp-background-color: var(--tx-date-picker-range);
+}
+
+.calendar :global(.rdp-months) {
+  display: flex;
+}
+
+/* ── Month: positioning context for nav overlay ── */
+.calendar :global(.rdp-month) {
+  width: 100%;
+  position: relative;
+}
+
+/* ── Caption: centered title ── */
+.calendar :global(.rdp-month_caption) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  margin-bottom: 12px;
+}
+
+.calendar :global(.rdp-caption_label) {
+  color: var(--tx-date-picker-text);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: lowercase;
+  pointer-events: none;
+}
+
+/* ── Nav: absolute overlay aligned to caption row ── */
+.calendar :global(.rdp-nav) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.calendar :global(.rdp-button_previous),
+.calendar :global(.rdp-button_next) {
+  pointer-events: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--tx-date-picker-border);
+  color: var(--tx-date-picker-text);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.1s ease, background 0.1s ease;
+}
+
+.calendar :global(.rdp-chevron) {
+  fill: currentColor;
+}
+
+.calendar :global(.rdp-button_previous:hover),
+.calendar :global(.rdp-button_next:hover) {
+  color: var(--tx-date-picker-accent);
+  background: var(--tx-date-picker-range);
+  border-color: transparent;
+}
+
+/* ── Weekday header ── */
+.calendar :global(.rdp-weekdays) {
+  border: none;
+}
+
+.calendar :global(.rdp-weekday) {
+  color: var(--tx-date-picker-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  height: 32px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── Days grid ── */
+.calendar :global(.rdp-weeks) {
+  margin-top: 2px;
+}
+
+.calendar :global(.rdp-day) {
+  padding: 2px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.calendar :global(.rdp-day_button) {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--tx-date-picker-text);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s ease;
+}
+
+.calendar :global(.rdp-day_button:hover) {
+  background: var(--tx-date-picker-range);
+}
+
+/* Range middle */
+.calendar :global(.rdp-range_middle .rdp-day_button) {
+  background: var(--tx-date-picker-range);
+  color: var(--tx-date-picker-text);
+  border-radius: 0;
+}
+
+/* Selected / range start & end */
+.calendar :global(.rdp-range_start .rdp-day_button),
+.calendar :global(.rdp-range_end .rdp-day_button),
+.calendar :global(.rdp-selected .rdp-day_button) {
+  background: var(--tx-date-picker-accent);
+  color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
+}
+
+/* Disabled */
+.calendar :global(.rdp-disabled .rdp-day_button) {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Outside current month */
+.calendar :global(.rdp-outside .rdp-day_button) {
+  color: var(--tx-date-picker-muted);
+  opacity: 0.35;
+}

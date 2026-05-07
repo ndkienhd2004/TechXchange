@@ -2,9 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import AppIcon from "@/components/commons/AppIcon";
 import { showErrorToast } from "@/components/commons/Toast";
 import { API_BASE_URL } from "@/config/api";
+import {
+  AssistantConversation,
+  AssistantMessage,
+  getAssistantConversationsService,
+  getAssistantMessagesService,
+  sendAssistantMessageService,
+} from "@/features/chat/services/assistantApi";
 import {
   ChatConversation,
   ChatMessage,
@@ -19,8 +29,68 @@ import * as styles from "./globalChatWidgetStyles";
 
 type OpenChatEvent = CustomEvent<{ storeId?: number }>;
 type ChatMode = "assistant" | "store";
+type AssistantWidgetMessage = {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  sent_at: string;
+  citations: Array<{ title?: string; uri?: string }>;
+};
 
-const BOT_PEER_ID = -1;
+function extractJsonFenceBody(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("```") || !trimmed.endsWith("```")) {
+    return trimmed;
+  }
+  const inner = trimmed.slice(3, -3).trim();
+  if (inner.toLowerCase().startsWith("json")) {
+    return inner.slice(4).trim();
+  }
+  return inner;
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  for (let index = start; index < text.length; index += 1) {
+    const ch = text[index];
+    if (ch === "{") depth += 1;
+    else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, index + 1);
+      }
+    }
+  }
+  return null;
+}
+
+function normalizeAssistantContent(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+
+  const cleaned = extractJsonFenceBody(raw);
+  const candidates: string[] = [cleaned];
+  const objectFragment = extractFirstJsonObject(cleaned);
+  if (objectFragment && objectFragment !== cleaned) {
+    candidates.push(objectFragment);
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as { answer?: unknown };
+      if (parsed && typeof parsed === "object" && typeof parsed.answer === "string") {
+        const answer = parsed.answer.trim();
+        if (answer) return answer;
+      }
+    } catch {
+      // Keep trying next parse candidate.
+    }
+  }
+
+  return cleaned;
+}
 
 function resolveSocketUrl() {
   return API_BASE_URL.replace(/\/api\/?$/, "");
@@ -31,6 +101,16 @@ function formatTime(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString("vi-VN");
+}
+
+function normalizeAssistantRows(rows: AssistantMessage[]): AssistantWidgetMessage[] {
+  return rows.map((item) => ({
+    id: Number(item.id),
+    role: item.role === "assistant" ? "assistant" : "user",
+    content: normalizeAssistantContent(item.content),
+    sent_at: item.created_at || new Date().toISOString(),
+    citations: Array.isArray(item.citations_json) ? item.citations_json : [],
+  }));
 }
 
 export default function GlobalChatWidget() {
@@ -51,6 +131,11 @@ export default function GlobalChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [assistantDraft, setAssistantDraft] = useState("");
+  const [assistantConversationId, setAssistantConversationId] = useState<number | null>(null);
+  const [assistantMessages, setAssistantMessages] = useState<AssistantWidgetMessage[]>([]);
+  const [assistantConversations, setAssistantConversations] = useState<AssistantConversation[]>([]);
+  const [loadingAssistantMessages, setLoadingAssistantMessages] = useState(false);
+  const [sendingAssistant, setSendingAssistant] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageLimit, setMessageLimit] = useState(30);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -112,6 +197,41 @@ export default function GlobalChatWidget() {
       (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
     );
   };
+
+  const loadAssistantHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      setLoadingAssistantMessages(true);
+      const conversationRes = await getAssistantConversationsService(20);
+      const rows = (conversationRes?.data?.conversations || []) as AssistantConversation[];
+      setAssistantConversations(rows);
+
+      if (rows.length === 0) {
+        setAssistantConversationId(null);
+        setAssistantMessages([]);
+        return;
+      }
+
+      const latestConversationId = Number(rows[0]?.id || 0);
+      if (!latestConversationId) {
+        setAssistantConversationId(null);
+        setAssistantMessages([]);
+        return;
+      }
+
+      setAssistantConversationId(latestConversationId);
+      const messageRes = await getAssistantMessagesService(latestConversationId, 100);
+      const messageRows = (messageRes?.data?.messages || []) as AssistantMessage[];
+      setAssistantMessages(normalizeAssistantRows(messageRows));
+    } catch (error) {
+      setAssistantConversationId(null);
+      setAssistantMessages([]);
+      setAssistantConversations([]);
+      showErrorToast(error);
+    } finally {
+      setLoadingAssistantMessages(false);
+    }
+  }, [token]);
 
   const loadConversations = async () => {
     if (!token) return;
@@ -230,10 +350,15 @@ export default function GlobalChatWidget() {
     setIsOpen(false);
     setMode("assistant");
     setConversations([]);
+    setAssistantConversations([]);
     setActivePeerId(null);
     setMessages([]);
+    setAssistantConversationId(null);
+    setAssistantMessages([]);
     setDraft("");
     setAssistantDraft("");
+    setSendingAssistant(false);
+    setLoadingAssistantMessages(false);
     setMessageLimit(30);
     setHasMoreMessages(true);
     restoreScrollRef.current = null;
@@ -250,6 +375,11 @@ export default function GlobalChatWidget() {
   }, [activePeerId, loadStoreMessages, messageLimit, mode]);
 
   useEffect(() => {
+    if (!token || !isOpen || mode !== "assistant") return;
+    void loadAssistantHistory();
+  }, [token, isOpen, mode, loadAssistantHistory]);
+
+  useEffect(() => {
     const node = messageBodyRef.current;
     if (!node) return;
     if (restoreScrollRef.current) {
@@ -259,10 +389,10 @@ export default function GlobalChatWidget() {
       loadingOlderRef.current = false;
       return;
     }
-    if (mode === "store") {
+    if (mode === "store" || mode === "assistant") {
       node.scrollTop = node.scrollHeight;
     }
-  }, [messages, mode]);
+  }, [messages, assistantMessages, mode]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -331,12 +461,112 @@ export default function GlobalChatWidget() {
     setMessageLimit((prev) => prev + 30);
   };
 
-  const onSendAssistant = () => {
+  const onSendAssistant = async () => {
     const text = assistantDraft.trim();
-    if (!text) return;
+    if (!text || sendingAssistant) return;
+
+    const tempUserMessageId = Date.now();
+    const optimisticUserMessage: AssistantWidgetMessage = {
+      id: tempUserMessageId,
+      role: "user",
+      content: text,
+      sent_at: new Date().toISOString(),
+      citations: [],
+    };
+
+    setAssistantMessages((prev) => [...prev, optimisticUserMessage]);
     setAssistantDraft("");
-    showErrorToast("API chatbot chưa được kết nối");
+    setSendingAssistant(true);
+
+    try {
+      const res = await sendAssistantMessageService(
+        text,
+        assistantConversationId,
+        "vi-VN",
+      );
+      const data = res?.data || {};
+      const nextConversationId = Number(data?.conversation_id || 0);
+      if (nextConversationId > 0) {
+        setAssistantConversationId(nextConversationId);
+      }
+
+      const answer = normalizeAssistantContent(data?.answer);
+      if (!answer) {
+        throw new Error("Chatbot không trả về nội dung hợp lệ");
+      }
+
+      const assistantMessage: AssistantWidgetMessage = {
+        id: Number(data?.message_id || Date.now() + 1),
+        role: "assistant",
+        content: answer,
+        sent_at: new Date().toISOString(),
+        citations: Array.isArray(data?.citations) ? data.citations : [],
+      };
+
+      setAssistantMessages((prev) => [...prev, assistantMessage]);
+      await loadAssistantHistory();
+    } catch (error) {
+      setAssistantMessages((prev) =>
+        prev.filter((item) => Number(item.id) !== tempUserMessageId),
+      );
+      setAssistantDraft(text);
+      showErrorToast(error);
+    } finally {
+      setSendingAssistant(false);
+    }
   };
+
+  const renderAssistantMarkdown = useCallback(
+    (content: string, mine: boolean) => (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          p: ({ children }) => <p style={themed(styles.markdownParagraph)}>{children}</p>,
+          h1: ({ children }) => <h1 style={themed(styles.markdownHeading)}>{children}</h1>,
+          h2: ({ children }) => <h2 style={themed(styles.markdownHeading)}>{children}</h2>,
+          h3: ({ children }) => <h3 style={themed(styles.markdownHeading)}>{children}</h3>,
+          ul: ({ children }) => <ul style={themed(styles.markdownList)}>{children}</ul>,
+          ol: ({ children }) => <ol style={themed(styles.markdownList)}>{children}</ol>,
+          li: ({ children }) => <li style={themed(styles.markdownListItem)}>{children}</li>,
+          blockquote: ({ children }) => (
+            <blockquote style={themed((theme) => styles.markdownBlockquote(theme, mine))}>
+              {children}
+            </blockquote>
+          ),
+          pre: ({ children }) => (
+            <pre style={themed((theme) => styles.markdownCodeBlock(theme, mine))}>
+              {children}
+            </pre>
+          ),
+          code: ({ children, className }) => {
+            const text = String(children ?? "");
+            const isBlock = Boolean(className?.includes("language-")) || text.includes("\n");
+            if (isBlock) {
+              return <code>{children}</code>;
+            }
+            return (
+              <code style={themed((theme) => styles.markdownCodeInline(theme, mine))}>
+                {children}
+              </code>
+            );
+          },
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer noopener"
+              style={themed(() => styles.markdownLink(mine))}
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    ),
+    [themed],
+  );
 
   if (!shouldShowWidget) {
     return null;
@@ -364,7 +594,7 @@ export default function GlobalChatWidget() {
               style={themed((theme) => styles.aiItem(theme, mode === "assistant"))}
               onClick={() => {
                 setMode("assistant");
-                setActivePeerId(BOT_PEER_ID);
+                setActivePeerId(null);
               }}
             >
               <span style={themed(styles.botAvatar)}>
@@ -421,7 +651,9 @@ export default function GlobalChatWidget() {
                     : activeConversation?.peer?.username || "Tin nhắn cửa hàng"}
                 </div>
                 <div style={themed(styles.headerSubtitle)}>
-                  {mode === "assistant" ? "AI Assistant" : "Chat shop"}
+                  {mode === "assistant"
+                    ? `AI Assistant${assistantConversations.length ? ` • ${assistantConversations.length} hội thoại` : ""}`
+                    : "Chat shop"}
                 </div>
               </span>
               <button
@@ -440,11 +672,43 @@ export default function GlobalChatWidget() {
               onScroll={onMessageScroll}
             >
               {mode === "assistant" ? (
-                <div style={themed(styles.messageRow(false))}>
-                  <div style={themed((theme) => styles.bubble(theme, false))}>
-                    Xin chào! Tôi là trợ lý build PC. Bạn gửi ngân sách để tôi tư vấn cấu hình.
+                loadingAssistantMessages ? (
+                  <div style={themed(styles.hintText)}>Đang tải lịch sử trợ lý...</div>
+                ) : assistantMessages.length === 0 ? (
+                  <div style={themed(styles.messageRow(false))}>
+                    <div style={themed((theme) => styles.bubble(theme, false))}>
+                      Xin chào! Tôi là trợ lý build PC. Bạn có thể hỏi ví dụ:
+                      Build PC 20 triệu, chính sách bảo hành, sản phẩm bán chạy.
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  assistantMessages.map((item) => {
+                    const mine = item.role === "user";
+                    return (
+                      <div key={item.id} style={themed(styles.messageRow(mine))}>
+                        <div style={themed((theme) => styles.bubble(theme, mine))}>
+                          <div style={themed(styles.markdownRoot)}>
+                            {renderAssistantMarkdown(item.content, mine)}
+                          </div>
+                          {!mine && item.citations.length > 0 && (
+                            <div style={themed(styles.assistantCitationList)}>
+                              Nguồn:{" "}
+                              {item.citations.slice(0, 3).map((citation, index) => (
+                                <span key={`${item.id}-${index}`}>
+                                  {index > 0 ? ", " : ""}
+                                  {citation?.title || citation?.uri || `Tài liệu ${index + 1}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div style={themed(styles.bubbleTime)}>
+                            {formatTime(item.sent_at)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )
               ) : loadingMessages ? (
                 <div style={themed(styles.hintText)}>Đang tải tin nhắn...</div>
               ) : messages.length === 0 ? (
@@ -480,19 +744,27 @@ export default function GlobalChatWidget() {
                 }
                 onKeyDown={(event) => {
                   if (event.key !== "Enter") return;
-                  if (mode === "assistant") onSendAssistant();
+                  if (mode === "assistant") void onSendAssistant();
                   else void onSendStoreMessage();
                 }}
-                disabled={mode === "store" && !activePeerId}
+                disabled={
+                  mode === "assistant"
+                    ? sendingAssistant || loadingAssistantMessages
+                    : !activePeerId
+                }
               />
               <button
                 type="button"
                 onClick={() => {
-                  if (mode === "assistant") onSendAssistant();
+                  if (mode === "assistant") void onSendAssistant();
                   else void onSendStoreMessage();
                 }}
                 style={themed(styles.sendButton)}
-                disabled={mode === "store" && !activePeerId}
+                disabled={
+                  mode === "assistant"
+                    ? sendingAssistant || loadingAssistantMessages
+                    : !activePeerId
+                }
               >
                 <AppIcon name="message" size={16} />
               </button>

@@ -72,10 +72,13 @@ export const getShopInfo = createAsyncThunk(
 
 export const getShopProducts = createAsyncThunk(
   "shop/getShopProducts",
-  async (arg: { page: number; limit: number; append?: boolean }, thunkAPI) => {
+  async (
+    arg: { page: number; limit: number; append?: boolean; q?: string },
+    thunkAPI,
+  ) => {
     try {
-      const { page, limit } = arg;
-      const response = await getShopProductsService({ page, limit });
+      const { page, limit, q } = arg;
+      const response = await getShopProductsService({ page, limit, q });
       return normalizeProductsResponse(response);
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -118,7 +121,6 @@ export const createShopProduct = createAsyncThunk(
       catalog_id: number;
       store_id: number;
       price: number;
-      quantity: number;
       variant_options?: Record<string, string>;
       description?: string;
       images?: { url: string; sort_order: number }[];

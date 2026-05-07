@@ -4,7 +4,7 @@ import { useAppTheme } from "@/theme/ThemeProvider";
 import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getMyCatalogSpecRequests,
   getMyProductRequests,
@@ -25,7 +25,6 @@ type EditProductForm = {
   id: number;
   name: string;
   price: string;
-  quantity: string;
   status: "active" | "inactive" | "sold_out";
   description: string;
 };
@@ -46,6 +45,7 @@ export default function ShopProductsView() {
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [viewingProduct, setViewingProduct] = useState<(typeof products)[number] | null>(
     null,
   );
@@ -53,20 +53,18 @@ export default function ShopProductsView() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [requestStatus, setRequestStatus] = useState("all");
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const totalItems = productsTotal;
-  const normalizedSearch = searchKeyword.trim().toLowerCase();
-  const filteredProducts = normalizedSearch
-    ? products.filter((product) =>
-        String(product.name || "")
-          .toLowerCase()
-          .includes(normalizedSearch),
-      )
-    : products;
 
   useEffect(() => {
-    dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
-  }, [dispatch]);
+    dispatch(
+      getShopProducts({
+        page,
+        limit: PAGE_SIZE,
+        append: false,
+        q: appliedSearch || undefined,
+      }),
+    );
+  }, [dispatch, page, appliedSearch]);
 
   useEffect(() => {
     dispatch(
@@ -76,32 +74,6 @@ export default function ShopProductsView() {
       getMyCatalogSpecRequests({ page: 1, limit: 10, status: requestStatus }),
     );
   }, [dispatch, requestStatus]);
-
-  useEffect(() => {
-    const sentinel = loadMoreRef.current;
-    if (!sentinel || productsTotalPages <= 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (!entry.isIntersecting || loading || page >= productsTotalPages)
-          return;
-        const nextPage = page + 1;
-        dispatch(
-          getShopProducts({
-            page: nextPage,
-            limit: PAGE_SIZE,
-            append: true,
-          }),
-        );
-        setPage(nextPage);
-      },
-      { rootMargin: "200px", threshold: 0.1 },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [dispatch, loading, page, productsTotalPages]);
 
   const totalPages = Math.max(1, productsTotalPages);
   const hasPrev = page > 1;
@@ -116,7 +88,6 @@ export default function ShopProductsView() {
 
   const handlePageChange = (next: number) => {
     setPage(next);
-    dispatch(getShopProducts({ page: next, limit: PAGE_SIZE, append: false }));
   };
 
   const openViewProduct = (product: (typeof products)[number]) => {
@@ -125,13 +96,11 @@ export default function ShopProductsView() {
 
   const openEditProduct = (product: (typeof products)[number]) => {
     const safePrice = Number(product.price ?? product.msrp ?? 0);
-    const safeQuantity = Number(product.quantity ?? 0);
     const status = String(product.status || "active").toLowerCase();
     setEditingProduct({
       id: Number(product.id),
       name: product.name || "",
       price: Number.isFinite(safePrice) ? String(safePrice) : "0",
-      quantity: Number.isFinite(safeQuantity) ? String(safeQuantity) : "0",
       status:
         status === "inactive" || status === "sold_out" ? status : "active",
       description: String(product.description || ""),
@@ -146,13 +115,8 @@ export default function ShopProductsView() {
   const onSaveEditProduct = async () => {
     if (!editingProduct) return;
     const price = Number(editingProduct.price);
-    const quantity = Number(editingProduct.quantity);
     if (!Number.isFinite(price) || price < 0) {
       showErrorToast("Giá sản phẩm không hợp lệ");
-      return;
-    }
-    if (!Number.isInteger(quantity) || quantity < 0) {
-      showErrorToast("Số lượng sản phẩm phải là số nguyên >= 0");
       return;
     }
 
@@ -160,13 +124,19 @@ export default function ShopProductsView() {
       setSavingEdit(true);
       await updateShopProductService(editingProduct.id, {
         price,
-        quantity,
         status: editingProduct.status,
         description: editingProduct.description.trim() || "",
       });
       showSuccessToast("Cập nhật sản phẩm thành công");
       setEditingProduct(null);
-      dispatch(getShopProducts({ page, limit: PAGE_SIZE, append: false }));
+      dispatch(
+        getShopProducts({
+          page,
+          limit: PAGE_SIZE,
+          append: false,
+          q: appliedSearch || undefined,
+        }),
+      );
     } catch (error) {
       showErrorToast(error);
     } finally {
@@ -187,7 +157,6 @@ export default function ShopProductsView() {
       setDeletingProductId(productId);
       await deleteShopProductService(productId);
       showSuccessToast("Xoá sản phẩm thành công");
-      dispatch(getShopProducts({ page: 1, limit: PAGE_SIZE, append: false }));
       setPage(1);
     } catch (error) {
       showErrorToast(error);
@@ -215,6 +184,13 @@ export default function ShopProductsView() {
             style={themed(styles.search)}
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const nextSearch = searchKeyword.trim();
+                setPage(1);
+                setAppliedSearch(nextSearch);
+              }
+            }}
           />
           <button
             type="button"
@@ -250,7 +226,7 @@ export default function ShopProductsView() {
                   Đang tải...
                 </td>
               </tr>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
@@ -260,13 +236,13 @@ export default function ShopProductsView() {
                     padding: 24,
                   }}
                 >
-                  {products.length === 0
-                    ? "Chưa có sản phẩm nào."
-                    : "Không tìm thấy sản phẩm phù hợp."}
+                  {appliedSearch
+                    ? "Không tìm thấy sản phẩm phù hợp."
+                    : "Chưa có sản phẩm nào."}
                 </td>
               </tr>
             ) : (
-              filteredProducts.map((product) => (
+              products.map((product) => (
                 <tr key={product.id}>
                   <td style={themed(styles.td)}>
                     <div
@@ -323,25 +299,6 @@ export default function ShopProductsView() {
             )}
           </tbody>
         </table>
-
-        {productsTotalPages > 1 && page < productsTotalPages && (
-          <div
-            ref={loadMoreRef}
-            style={{
-              minHeight: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-            }}
-          >
-            {loading && products.length > 0 && (
-              <span style={themed(styles.paginationInfo)}>
-                Đang tải thêm...
-              </span>
-            )}
-          </div>
-        )}
 
         {!loading && productsTotalPages > 0 && (
           <div style={themed(styles.paginationRow)}>
@@ -520,20 +477,6 @@ export default function ShopProductsView() {
                     onChange={(e) =>
                       setEditingProduct((prev) =>
                         prev ? { ...prev, price: e.target.value } : prev,
-                      )
-                    }
-                    style={themed(styles.modalInput)}
-                  />
-                </label>
-
-                <label style={themed(styles.modalLabel)}>
-                  Số lượng kho
-                  <input
-                    type="number"
-                    value={editingProduct.quantity}
-                    onChange={(e) =>
-                      setEditingProduct((prev) =>
-                        prev ? { ...prev, quantity: e.target.value } : prev,
                       )
                     }
                     style={themed(styles.modalInput)}

@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const { Brand, Product, ProductCatalog } = require("../../models");
 
 /**
@@ -17,7 +18,13 @@ class BrandService {
     const { name, image } = payload;
 
     try {
-      const existing = await Brand.findOne({ where: { name } });
+      const existing = await Brand.findOne({
+        where: {
+          name: {
+            [Op.iLike]: name,
+          },
+        },
+      });
       if (existing) {
         throw new Error("Thương hiệu đã tồn tại");
       }
@@ -61,7 +68,16 @@ class BrandService {
       }
 
       if (payload.name && payload.name !== brand.name) {
-        const existing = await Brand.findOne({ where: { name: payload.name } });
+        const existing = await Brand.findOne({
+          where: {
+            id: {
+              [Op.ne]: brandId,
+            },
+            name: {
+              [Op.iLike]: payload.name,
+            },
+          },
+        });
         if (existing) {
           throw new Error("Tên thương hiệu đã được sử dụng");
         }

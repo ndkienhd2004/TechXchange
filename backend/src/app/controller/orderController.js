@@ -46,6 +46,8 @@ class OrderController {
     try {
       const analytics = await OrderService.getShopAnalytics(req.user.id, {
         range: req.query.range,
+        from_date: req.query.from_date,
+        to_date: req.query.to_date,
       });
       return response.success(res, "Lấy thống kê shop thành công", analytics);
     } catch (error) {
