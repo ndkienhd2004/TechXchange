@@ -18,6 +18,7 @@ type IconName =
   | "payment"
   | "note"
   | "box"
+  | "left-forward"
   | "close";
 
 export default function AppIcon({
@@ -174,6 +175,13 @@ export default function AppIcon({
     return (
       <svg {...common}>
         <path d="M6 6l12 12M18 6 6 18" />
+      </svg>
+    );
+  }
+  if (name === "left-forward") {
+    return (
+      <svg {...common}>
+        <path d="M15 18l-6-6 6-6" />
       </svg>
     );
   }

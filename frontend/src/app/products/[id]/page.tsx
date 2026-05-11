@@ -721,17 +721,19 @@ export default function ProductDetailPage() {
                     −
                   </button>
                   <input
-                    type="number"
-                    min={1}
-                    max={maxStock}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={normalizedQuantity}
                     onChange={(e) =>
-                      setQuantity(
-                        Math.max(
+                      setQuantity(() => {
+                        const digitsOnly = e.target.value.replace(/\D/g, "");
+                        if (!digitsOnly) return 1;
+                        return Math.max(
                           1,
-                          Math.min(maxStock, Number(e.target.value) || 1),
-                        ),
-                      )
+                          Math.min(maxStock, Number(digitsOnly) || 1),
+                        );
+                      })
                     }
                     style={themed(styles.quantityInput)}
                     disabled={isOutOfStock}

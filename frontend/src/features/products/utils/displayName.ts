@@ -7,7 +7,7 @@ type ProductSpecValue =
   | ProductSpecValue[]
   | Record<string, unknown>;
 
-function normalizeSpecValue(value: ProductSpecValue): string {
+function normalizeSpecValue(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
@@ -50,7 +50,7 @@ function normalizeSpecValue(value: ProductSpecValue): string {
   return String(value).trim();
 }
 
-export function buildSpecsSuffix(specs?: Record<string, ProductSpecValue> | null): string {
+export function buildSpecsSuffix(specs?: Record<string, unknown> | null): string {
   if (!specs || typeof specs !== "object") {
     return "";
   }
@@ -72,7 +72,7 @@ export function buildSpecsSuffix(specs?: Record<string, ProductSpecValue> | null
 
 export function buildProductDisplayName(
   baseName: string,
-  specs?: Record<string, ProductSpecValue> | null,
+  specs?: Record<string, unknown> | null,
 ): string {
   const safeBaseName = String(baseName || "").trim();
   const suffix = buildSpecsSuffix(specs);

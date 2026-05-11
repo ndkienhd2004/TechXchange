@@ -14,6 +14,7 @@ interface CatalogState {
   categoriesTree: CatalogCategory[];
   categoriesFlat: CatalogCategory[];
   loading: boolean;
+  loaded: boolean;
   error: string | null;
 }
 
@@ -21,6 +22,7 @@ const initialState: CatalogState = {
   categoriesTree: [],
   categoriesFlat: [],
   loading: false,
+  loaded: false,
   error: null,
 };
 
@@ -54,11 +56,13 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchCatalogCategories.fulfilled, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.categoriesTree = Array.isArray(action.payload) ? action.payload : [];
         state.categoriesFlat = flatten(state.categoriesTree);
       })
       .addCase(fetchCatalogCategories.rejected, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.error =
           (action.payload as { message?: string } | undefined)?.message ??
           "Không tải được danh mục";

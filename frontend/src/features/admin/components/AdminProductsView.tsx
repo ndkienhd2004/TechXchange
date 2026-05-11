@@ -33,6 +33,8 @@ type CategoryNode = {
   children?: CategoryNode[];
 };
 
+type CategoryOption = { id: number; name: string; level?: number };
+
 type CatalogRow = {
   id: number;
   name?: string;
@@ -66,7 +68,7 @@ export default function AdminProductsView() {
   const [editingBrandId, setEditingBrandId] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState("");
   const [brandOptions, setBrandOptions] = useState<Array<{ id: number; name: string }>>([]);
-  const [categoryOptions, setCategoryOptions] = useState<Array<{ id: number; name: string; level?: number }>>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   useEffect(() => {
     dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
@@ -83,7 +85,7 @@ export default function AdminProductsView() {
         const rawCats: CategoryNode[] = Array.isArray(categories?.data)
           ? (categories.data as CategoryNode[])
           : [];
-        const flat = (nodes: CategoryNode[], depth = 0) =>
+        const flat = (nodes: CategoryNode[], depth = 0): CategoryOption[] =>
           nodes.flatMap((n) => [
             { id: Number(n.id), name: n.name, level: Number(n.level || depth + 1) },
             ...(Array.isArray(n.children) ? flat(n.children, depth + 1) : []),

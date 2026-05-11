@@ -15,6 +15,9 @@ async function syncDatabase() {
   try {
     console.log("🔄 Syncing database models...");
 
+    // Create tables before running compatibility ALTER statements.
+    await sequelize.sync({ alter: false });
+
     // Ensure optional profile columns exist before app queries them.
     await sequelize.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT"
@@ -43,9 +46,6 @@ async function syncDatabase() {
     await sequelize.query(
       "CREATE INDEX IF NOT EXISTS idx_shipments_ghn_order_code ON shipments(ghn_order_code)"
     );
-
-    // Sync all models (creates tables if they don't exist)
-    await sequelize.sync({ alter: false });
 
     console.log("✅ Database sync completed");
   } catch (error) {

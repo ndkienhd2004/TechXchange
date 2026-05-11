@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { io, Socket } from "socket.io-client";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -22,6 +24,9 @@ import {
   getMessagesService,
   openStoreConversationService,
 } from "@/features/chat/services/chatApi";
+import { getProductById } from "@/features/products/services/productApi";
+import type { Product } from "@/features/products/types";
+import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import { OPEN_CHAT_WITH_STORE_EVENT } from "@/features/chat/utils/openChat";
 import { useAppSelector } from "@/store/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
@@ -29,12 +34,22 @@ import * as styles from "./globalChatWidgetStyles";
 
 type OpenChatEvent = CustomEvent<{ storeId?: number }>;
 type ChatMode = "assistant" | "store";
+type AssistantView = "list" | "chat";
 type AssistantWidgetMessage = {
   id: number;
   role: "user" | "assistant";
   content: string;
   sent_at: string;
   citations: Array<{ title?: string; uri?: string }>;
+};
+
+type AssistantCitation = { title?: string; uri?: string };
+type ProductPreview = {
+  id: number;
+  uri: string;
+  title: string;
+  priceText: string;
+  imageUrl: string;
 };
 
 function extractJsonFenceBody(text: string): string {
@@ -92,6 +107,49 @@ function normalizeAssistantContent(value: unknown): string {
   return cleaned;
 }
 
+function normalizeProductUri(uri?: string): string | null {
+  const value = String(uri || "").trim();
+  if (!value) return null;
+  const match = value.match(/^\/products\/(\d+)(?:\/)?$/);
+  return match ? `/products/${match[1]}` : null;
+}
+
+function extractProductIdFromUri(uri?: string): number | null {
+  const normalized = normalizeProductUri(uri);
+  if (!normalized) return null;
+  const match = normalized.match(/^\/products\/(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function dedupeCitations(citations: AssistantCitation[]): AssistantCitation[] {
+  const seen = new Set<string>();
+  const rows: AssistantCitation[] = [];
+  for (const citation of citations) {
+    const uri = String(citation?.uri || "").trim();
+    const title = String(citation?.title || "").trim();
+    const key = `${uri}::${title}`;
+    if (!key.trim() || seen.has(key)) continue;
+    seen.add(key);
+    rows.push(citation);
+  }
+  return rows;
+}
+
+function decorateAssistantContent(content: string, citations: AssistantCitation[]): string {
+  let next = String(content || "");
+  const productUris = dedupeCitations(citations)
+    .map((citation) => normalizeProductUri(citation.uri))
+    .filter((value): value is string => Boolean(value));
+
+  for (const uri of productUris) {
+    const escaped = uri.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    next = next.replace(new RegExp(`uri=${escaped}`, "g"), `uri=[${uri}](${uri})`);
+    next = next.replace(new RegExp(`(?<!\\]\\()${escaped}`, "g"), `[${uri}](${uri})`);
+  }
+
+  return next;
+}
+
 function resolveSocketUrl() {
   return API_BASE_URL.replace(/\/api\/?$/, "");
 }
@@ -103,17 +161,64 @@ function formatTime(value?: string) {
   return date.toLocaleString("vi-VN");
 }
 
+function formatPriceVnd(value: string | number | undefined): string {
+  const parsed = Number(value || 0);
+  if (!Number.isFinite(parsed) || parsed <= 0) return "Chưa có giá";
+  return `${parsed.toLocaleString("vi-VN")} VND`;
+}
+
+function normalizeSearchText(value: string): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildPreviewMatchKeys(preview: ProductPreview): string[] {
+  const normalizedTitle = normalizeSearchText(preview.title);
+  if (!normalizedTitle) return [];
+
+  const baseTitle = normalizedTitle.split("(")[0]?.trim() || normalizedTitle;
+  const tokens = baseTitle.split(" ").filter(Boolean);
+  const keys = new Set<string>([baseTitle]);
+
+  if (tokens.length >= 2) {
+    keys.add(tokens.slice(0, 2).join(" "));
+  }
+  if (tokens.length >= 3) {
+    keys.add(tokens.slice(0, 3).join(" "));
+  }
+
+  return Array.from(keys).filter((item) => item.length >= 4);
+}
+
 function normalizeAssistantRows(rows: AssistantMessage[]): AssistantWidgetMessage[] {
   return rows.map((item) => ({
     id: Number(item.id),
     role: item.role === "assistant" ? "assistant" : "user",
     content: normalizeAssistantContent(item.content),
     sent_at: item.created_at || new Date().toISOString(),
-    citations: Array.isArray(item.citations_json) ? item.citations_json : [],
+    citations: Array.isArray(item.citations)
+      ? item.citations
+      : Array.isArray(item.citations_json)
+        ? item.citations_json
+        : [],
   }));
 }
 
+function buildAssistantConversationPreview(title?: string, updatedAt?: string): string {
+  const safeTitle = String(title || "").trim();
+  if (!safeTitle) return "Hội thoại mới";
+  const time = formatTime(updatedAt);
+  return time ? `${safeTitle} • ${time}` : safeTitle;
+}
+
 export default function GlobalChatWidget() {
+  const router = useRouter();
   const auth = useAppSelector((state) => state.auth);
   const token = auth.token;
   const me = auth.user;
@@ -126,6 +231,7 @@ export default function GlobalChatWidget() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ChatMode>("assistant");
+  const [assistantView, setAssistantView] = useState<AssistantView>("list");
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activePeerId, setActivePeerId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -134,6 +240,7 @@ export default function GlobalChatWidget() {
   const [assistantConversationId, setAssistantConversationId] = useState<number | null>(null);
   const [assistantMessages, setAssistantMessages] = useState<AssistantWidgetMessage[]>([]);
   const [assistantConversations, setAssistantConversations] = useState<AssistantConversation[]>([]);
+  const [assistantProductCache, setAssistantProductCache] = useState<Record<number, Product>>({});
   const [loadingAssistantMessages, setLoadingAssistantMessages] = useState(false);
   const [sendingAssistant, setSendingAssistant] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -198,38 +305,30 @@ export default function GlobalChatWidget() {
     );
   };
 
-  const loadAssistantHistory = useCallback(async () => {
-    if (!token) return;
+  const loadAssistantMessages = useCallback(async (conversationId: number) => {
+    if (!token || !conversationId) return;
     try {
       setLoadingAssistantMessages(true);
-      const conversationRes = await getAssistantConversationsService(20);
-      const rows = (conversationRes?.data?.conversations || []) as AssistantConversation[];
-      setAssistantConversations(rows);
-
-      if (rows.length === 0) {
-        setAssistantConversationId(null);
-        setAssistantMessages([]);
-        return;
-      }
-
-      const latestConversationId = Number(rows[0]?.id || 0);
-      if (!latestConversationId) {
-        setAssistantConversationId(null);
-        setAssistantMessages([]);
-        return;
-      }
-
-      setAssistantConversationId(latestConversationId);
-      const messageRes = await getAssistantMessagesService(latestConversationId, 100);
+      const messageRes = await getAssistantMessagesService(conversationId, 100);
       const messageRows = (messageRes?.data?.messages || []) as AssistantMessage[];
+      setAssistantConversationId(conversationId);
       setAssistantMessages(normalizeAssistantRows(messageRows));
     } catch (error) {
-      setAssistantConversationId(null);
-      setAssistantMessages([]);
-      setAssistantConversations([]);
       showErrorToast(error);
     } finally {
       setLoadingAssistantMessages(false);
+    }
+  }, [token]);
+
+  const loadAssistantConversations = useCallback(async () => {
+    if (!token) return;
+    try {
+      const conversationRes = await getAssistantConversationsService(20);
+      const rows = (conversationRes?.data?.conversations || []) as AssistantConversation[];
+      setAssistantConversations(rows);
+    } catch (error) {
+      setAssistantConversations([]);
+      showErrorToast(error);
     }
   }, [token]);
 
@@ -349,6 +448,7 @@ export default function GlobalChatWidget() {
     if (shouldShowWidget) return;
     setIsOpen(false);
     setMode("assistant");
+    setAssistantView("list");
     setConversations([]);
     setAssistantConversations([]);
     setActivePeerId(null);
@@ -376,8 +476,13 @@ export default function GlobalChatWidget() {
 
   useEffect(() => {
     if (!token || !isOpen || mode !== "assistant") return;
-    void loadAssistantHistory();
-  }, [token, isOpen, mode, loadAssistantHistory]);
+    void loadAssistantConversations();
+  }, [token, isOpen, mode, loadAssistantConversations]);
+
+  useEffect(() => {
+    if (!token || !isOpen || mode !== "assistant" || assistantView !== "chat" || !assistantConversationId) return;
+    void loadAssistantMessages(assistantConversationId);
+  }, [token, isOpen, mode, assistantView, assistantConversationId, loadAssistantMessages]);
 
   useEffect(() => {
     const node = messageBodyRef.current;
@@ -393,6 +498,50 @@ export default function GlobalChatWidget() {
       node.scrollTop = node.scrollHeight;
     }
   }, [messages, assistantMessages, mode]);
+
+  useEffect(() => {
+    const productIds = Array.from(
+      new Set(
+        assistantMessages.flatMap((item) =>
+          dedupeCitations(item.citations)
+            .map((citation) => extractProductIdFromUri(citation.uri))
+            .filter((value): value is number => Boolean(value)),
+        ),
+      ),
+    ).filter((productId) => !assistantProductCache[productId]);
+
+    if (productIds.length === 0) return;
+
+    let cancelled = false;
+    const run = async () => {
+      const entries = await Promise.all(
+        productIds.map(async (productId) => {
+          try {
+            const response = await getProductById(productId);
+            const product = (response?.data || response?.product || response) as Product | undefined;
+            if (!product) return null;
+            return [productId, product] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (cancelled) return;
+      setAssistantProductCache((prev) => {
+        const next = { ...prev };
+        for (const entry of entries) {
+          if (!entry) continue;
+          next[entry[0]] = entry[1];
+        }
+        return next;
+      });
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [assistantMessages, assistantProductCache]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -504,7 +653,11 @@ export default function GlobalChatWidget() {
       };
 
       setAssistantMessages((prev) => [...prev, assistantMessage]);
-      await loadAssistantHistory();
+      await loadAssistantConversations();
+      if (nextConversationId > 0) {
+        setAssistantConversationId(nextConversationId);
+      }
+      setAssistantView("chat");
     } catch (error) {
       setAssistantMessages((prev) =>
         prev.filter((item) => Number(item.id) !== tempUserMessageId),
@@ -517,7 +670,7 @@ export default function GlobalChatWidget() {
   };
 
   const renderAssistantMarkdown = useCallback(
-    (content: string, mine: boolean) => (
+    (content: string, mine: boolean, citations: AssistantCitation[] = []) => (
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
@@ -550,23 +703,112 @@ export default function GlobalChatWidget() {
               </code>
             );
           },
-          a: ({ children, href }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noreferrer noopener"
-              style={themed(() => styles.markdownLink(mine))}
-            >
-              {children}
-            </a>
-          ),
+          a: ({ children, href }) => {
+            const internalUri = normalizeProductUri(href);
+            if (internalUri) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push(internalUri);
+                  }}
+                  style={themed(() => styles.markdownLink(mine))}
+                >
+                  {children}
+                </button>
+              );
+            }
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer noopener"
+                style={themed(() => styles.markdownLink(mine))}
+              >
+                {children}
+              </a>
+            );
+          },
         }}
       >
-        {content}
+        {decorateAssistantContent(content, citations)}
       </ReactMarkdown>
     ),
-    [themed],
+    [router, themed],
   );
+
+  const onNavigateFromCitation = useCallback(
+    (citation: AssistantCitation) => {
+      const internalUri = normalizeProductUri(citation?.uri);
+      if (!internalUri) return;
+      setIsOpen(false);
+      router.push(internalUri);
+    },
+    [router],
+  );
+
+  const buildCitationProductPreviews = useCallback(
+    (citations: AssistantCitation[]): ProductPreview[] =>
+      dedupeCitations(citations)
+        .map((citation) => {
+          const uri = normalizeProductUri(citation.uri);
+          const productId = extractProductIdFromUri(citation.uri);
+          if (!uri || !productId) return null;
+          const product = assistantProductCache[productId];
+          const title =
+            product
+              ? buildProductDisplayName(product.name, product.catalog?.specs)
+              : citation.title || `Sản phẩm #${productId}`;
+          return {
+            id: productId,
+            uri,
+            title,
+            priceText: product ? formatPriceVnd(product.price) : "Đang tải giá...",
+            imageUrl: product?.images?.[0]?.url || product?.default_image || "",
+          };
+        })
+        .filter((value): value is ProductPreview => Boolean(value)),
+    [assistantProductCache],
+  );
+
+  const selectVisibleProductPreviews = useCallback(
+    (content: string, citations: AssistantCitation[]): ProductPreview[] => {
+      const previews = buildCitationProductPreviews(citations);
+      if (previews.length <= 1) return previews;
+
+      const normalizedContent = normalizeSearchText(content);
+      if (!normalizedContent) return previews.slice(0, 3);
+
+      const matched = previews.filter((preview) =>
+        buildPreviewMatchKeys(preview).some((key) => normalizedContent.includes(key)),
+      );
+
+      return (matched.length > 0 ? matched : previews).slice(0, 3);
+    },
+    [buildCitationProductPreviews],
+  );
+
+  const onStartNewAssistantChat = useCallback(() => {
+    setMode("assistant");
+    setAssistantView("chat");
+    setAssistantConversationId(null);
+    setAssistantMessages([]);
+    setAssistantDraft("");
+  }, []);
+
+  const onSelectAssistantConversation = useCallback((conversationId: number) => {
+    setMode("assistant");
+    setAssistantView("chat");
+    setAssistantConversationId(conversationId);
+  }, []);
+
+  const onBackToAssistantList = useCallback(() => {
+    setMode("assistant");
+    setAssistantView("list");
+    setAssistantMessages([]);
+    setAssistantDraft("");
+  }, []);
 
   if (!shouldShowWidget) {
     return null;
@@ -594,6 +836,7 @@ export default function GlobalChatWidget() {
               style={themed((theme) => styles.aiItem(theme, mode === "assistant"))}
               onClick={() => {
                 setMode("assistant");
+                setAssistantView("list");
                 setActivePeerId(null);
               }}
             >
@@ -641,18 +884,32 @@ export default function GlobalChatWidget() {
 
           <div style={themed(styles.content)}>
             <header style={themed(styles.contentHeader)}>
+              {mode === "assistant" && assistantView === "chat" ? (
+                <button
+                  type="button"
+                  onClick={onBackToAssistantList}
+                  style={themed(styles.headerIconBtn)}
+                  aria-label="Quay lại danh sách hội thoại AI"
+                >
+                  <AppIcon name="left-forward" size={18} />
+                </button>
+              ) : null}
               <span style={themed(styles.botAvatar)}>
                 <AppIcon name={mode === "assistant" ? "settings" : "bag"} size={16} />
               </span>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <div style={themed(styles.headerTitle)}>
                   {mode === "assistant"
-                    ? "Tư vấn Build PC"
+                    ? assistantView === "list"
+                      ? "AI Assistant"
+                      : "Tư vấn Build PC"
                     : activeConversation?.peer?.username || "Tin nhắn cửa hàng"}
                 </div>
                 <div style={themed(styles.headerSubtitle)}>
                   {mode === "assistant"
-                    ? `AI Assistant${assistantConversations.length ? ` • ${assistantConversations.length} hội thoại` : ""}`
+                    ? assistantView === "list"
+                      ? `${assistantConversations.length} hội thoại`
+                      : `AI Assistant${assistantConversations.length ? ` • ${assistantConversations.length} hội thoại` : ""}`
                     : "Chat shop"}
                 </div>
               </span>
@@ -672,7 +929,51 @@ export default function GlobalChatWidget() {
               onScroll={onMessageScroll}
             >
               {mode === "assistant" ? (
-                loadingAssistantMessages ? (
+                assistantView === "list" ? (
+                  <>
+                    <div style={themed(styles.sectionHeaderRow)}>
+                      <div style={themed(styles.sectionLabel)}>AI hội thoại</div>
+                      <button
+                        type="button"
+                        onClick={onStartNewAssistantChat}
+                        style={themed(styles.assistantNewChatButton)}
+                      >
+                        Chat mới
+                      </button>
+                    </div>
+                    <div style={themed(styles.conversationList)}>
+                      {assistantConversations.length === 0 ? (
+                        <div style={themed(styles.emptyState)}>Chưa có hội thoại AI.</div>
+                      ) : (
+                        assistantConversations.map((item) => (
+                          <button
+                            key={`assistant-list-${item.id}`}
+                            type="button"
+                            style={themed((theme) =>
+                              styles.conversationItem(
+                                theme,
+                                assistantConversationId === Number(item.id),
+                              ),
+                            )}
+                            onClick={() => onSelectAssistantConversation(Number(item.id))}
+                          >
+                            <span style={themed(styles.conversationAvatar)}>
+                              <AppIcon name="settings" size={16} />
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <div style={themed(styles.conversationTitle)}>
+                                {item.title || `Hội thoại #${item.id}`}
+                              </div>
+                              <div style={themed(styles.conversationPreview)}>
+                                {buildAssistantConversationPreview(item.title, item.updated_at)}
+                              </div>
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : loadingAssistantMessages ? (
                   <div style={themed(styles.hintText)}>Đang tải lịch sử trợ lý...</div>
                 ) : assistantMessages.length === 0 ? (
                   <div style={themed(styles.messageRow(false))}>
@@ -688,18 +989,53 @@ export default function GlobalChatWidget() {
                       <div key={item.id} style={themed(styles.messageRow(mine))}>
                         <div style={themed((theme) => styles.bubble(theme, mine))}>
                           <div style={themed(styles.markdownRoot)}>
-                            {renderAssistantMarkdown(item.content, mine)}
+                            {renderAssistantMarkdown(item.content, mine, item.citations)}
                           </div>
                           {!mine && item.citations.length > 0 && (
-                            <div style={themed(styles.assistantCitationList)}>
-                              Nguồn:{" "}
-                              {item.citations.slice(0, 3).map((citation, index) => (
-                                <span key={`${item.id}-${index}`}>
-                                  {index > 0 ? ", " : ""}
-                                  {citation?.title || citation?.uri || `Tài liệu ${index + 1}`}
-                                </span>
-                              ))}
-                            </div>
+                            <>
+                              {selectVisibleProductPreviews(item.content, item.citations).length > 0 && (
+                                <div style={themed(styles.assistantProductCards)}>
+                                  {selectVisibleProductPreviews(item.content, item.citations).map((product) => (
+                                      <button
+                                        key={`${item.id}-product-${product.id}`}
+                                        type="button"
+                                        onClick={() =>
+                                          onNavigateFromCitation({
+                                            title: product.title,
+                                            uri: product.uri,
+                                          })
+                                        }
+                                        style={themed(styles.assistantProductCard)}
+                                      >
+                                        {product.imageUrl ? (
+                                          <Image
+                                            src={product.imageUrl}
+                                            alt={product.title}
+                                            width={56}
+                                            height={56}
+                                            style={themed(styles.assistantProductThumb)}
+                                          />
+                                        ) : (
+                                          <div style={themed(styles.assistantProductThumbFallback)}>
+                                            SP
+                                          </div>
+                                        )}
+                                        <div style={themed(styles.assistantProductMeta)}>
+                                          <div style={themed(styles.assistantProductTitle)}>
+                                            {product.title}
+                                          </div>
+                                          <div style={themed(styles.assistantProductPrice)}>
+                                            {product.priceText}
+                                          </div>
+                                          <div style={themed(styles.assistantProductHint)}>
+                                            Xem chi tiết sản phẩm
+                                          </div>
+                                        </div>
+                                      </button>
+                                    ))}
+                                </div>
+                              )}
+                            </>
                           )}
                           <div style={themed(styles.bubbleTime)}>
                             {formatTime(item.sent_at)}
@@ -731,43 +1067,51 @@ export default function GlobalChatWidget() {
             </div>
 
             <div style={themed(styles.inputBar)}>
-              <input
-                value={mode === "assistant" ? assistantDraft : draft}
-                onChange={(event) =>
-                  mode === "assistant"
-                    ? setAssistantDraft(event.target.value)
-                    : setDraft(event.target.value)
-                }
-                style={themed(styles.input)}
-                placeholder={
-                  mode === "assistant" ? "VD: Build PC 20 triệu" : "Nhập tin nhắn..."
-                }
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  if (mode === "assistant") void onSendAssistant();
-                  else void onSendStoreMessage();
-                }}
-                disabled={
-                  mode === "assistant"
-                    ? sendingAssistant || loadingAssistantMessages
-                    : !activePeerId
-                }
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (mode === "assistant") void onSendAssistant();
-                  else void onSendStoreMessage();
-                }}
-                style={themed(styles.sendButton)}
-                disabled={
-                  mode === "assistant"
-                    ? sendingAssistant || loadingAssistantMessages
-                    : !activePeerId
-                }
-              >
-                <AppIcon name="message" size={16} />
-              </button>
+              {mode === "assistant" && assistantView === "list" ? (
+                <div style={themed(styles.hintText)}>
+                  Chọn một hội thoại AI hoặc bấm `Chat mới` để bắt đầu.
+                </div>
+              ) : (
+                <>
+                  <input
+                    value={mode === "assistant" ? assistantDraft : draft}
+                    onChange={(event) =>
+                      mode === "assistant"
+                        ? setAssistantDraft(event.target.value)
+                        : setDraft(event.target.value)
+                    }
+                    style={themed(styles.input)}
+                    placeholder={
+                      mode === "assistant" ? "VD: Build PC 20 triệu" : "Nhập tin nhắn..."
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      if (mode === "assistant") void onSendAssistant();
+                      else void onSendStoreMessage();
+                    }}
+                    disabled={
+                      mode === "assistant"
+                        ? sendingAssistant || loadingAssistantMessages
+                        : !activePeerId
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mode === "assistant") void onSendAssistant();
+                      else void onSendStoreMessage();
+                    }}
+                    style={themed(styles.sendButton)}
+                    disabled={
+                      mode === "assistant"
+                        ? sendingAssistant || loadingAssistantMessages
+                        : !activePeerId
+                    }
+                  >
+                    <AppIcon name="message" size={16} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </section>

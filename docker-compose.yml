@@ -1,26 +1,74 @@
 services:
-  redis:
-    image: redis:latest
-    container_name: redis
-    restart: always
+  backend:
+    build:
+      context: ./backend
+    container_name: techxchange-backend
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_NAME: ${DB_NAME:-techxchange}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_LOGGING: ${DB_LOGGING:-false}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      SEPAY_API_KEY: ${SEPAY_API_KEY:-}
+      SEPAY_BANK_CODE: ${SEPAY_BANK_CODE:-Vietcombank}
+      SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME:-}
+      SEPAY_VIRTUAL_ACCOUNT: ${SEPAY_VIRTUAL_ACCOUNT:-}
+      SEPAY_ORDER_CODE_PREFIX: ${SEPAY_ORDER_CODE_PREFIX:-ORDER_}
+      SEPAY_LOG_RAW_WEBHOOK: ${SEPAY_LOG_RAW_WEBHOOK:-false}
+      SEPAY_REQUIRE_SUB_ACCOUNT: ${SEPAY_REQUIRE_SUB_ACCOUNT:-true}
+      GHN_BASE_URL: ${GHN_BASE_URL:-https://online-gateway.ghn.vn}
+      GHN_TOKEN: ${GHN_TOKEN:-}
+      GHN_SHOP_ID: ${GHN_SHOP_ID:-}
+      GHN_STATUS_SYNC_INTERVAL_SECONDS: ${GHN_STATUS_SYNC_INTERVAL_SECONDS:-120}
+      AWS_REGION: ${AWS_REGION:-us-east-2}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
+      RECOMMENDATION_SERVICE_URL: ${RECOMMENDATION_SERVICE_URL:-http://host.docker.internal:8010}
+      RECOMMENDATION_SERVICE_TIMEOUT_MS: ${RECOMMENDATION_SERVICE_TIMEOUT_MS:-5000}
+      CHATBOT_SERVICE_URL: ${CHATBOT_SERVICE_URL:-http://host.docker.internal:8000}
+      CHATBOT_SERVICE_TIMEOUT_MS: ${CHATBOT_SERVICE_TIMEOUT_MS:-12000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: techxchange-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-techxchange}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: techxchange-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
 
-  mysql:
-    image: mysql:latest
-    container_name: mysql
-    ports:
-      - "5433:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: { DB.NAME }
-      MYSQL_USER: user
-      MYSQL_PASSWORD: { DB.PASS }
-    volumes:
-      - ./techXchange.sql:/docker-entrypoint-initdb.d/techXchange.sql
-      - mysql_data:/var/lib/mysql/data
 volumes:
+  postgres_data:
   redis_data:
-  mysql_data:

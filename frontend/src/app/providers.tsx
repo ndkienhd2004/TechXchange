@@ -13,15 +13,16 @@ import { fetchCart } from "@/features/cart/store/cartSlice";
 
 function AppBootstrap() {
   const dispatch = useAppDispatch();
-  const categories = useAppSelector((state) => state.catalog.categoriesFlat);
+  const categoriesLoaded = useAppSelector((state) => state.catalog.loaded);
+  const categoriesLoading = useAppSelector((state) => state.catalog.loading);
   const token = useAppSelector((state) => state.auth.token);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   useEffect(() => {
-    if (!categories || categories.length === 0) {
+    if (!categoriesLoaded && !categoriesLoading) {
       dispatch(fetchCatalogCategories());
     }
-  }, [dispatch, categories]);
+  }, [dispatch, categoriesLoaded, categoriesLoading]);
 
   useEffect(() => {
     if (isAuthenticated && token) {

@@ -128,6 +128,25 @@ export const sectionLabel = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });
 
+export const sectionHeaderRow = (): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 8,
+  paddingRight: 12,
+});
+
+export const assistantNewChatButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.brand.purple[400]}`,
+  background: "transparent",
+  color: theme.colors.palette.brand.purple[500],
+  borderRadius: 999,
+  padding: "4px 10px",
+  cursor: "pointer",
+  fontSize: theme.typography.fontSize.xs.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
 export const conversationList = (): CSSProperties => ({
   minHeight: 0,
   overflowY: "auto",
@@ -307,10 +326,15 @@ export const markdownCodeBlock = (theme: Theme, mine: boolean): CSSProperties =>
 });
 
 export const markdownLink = (mine: boolean): CSSProperties => ({
+  border: "none",
+  background: "transparent",
+  padding: 0,
   color: mine ? "#fff" : "#8b5cf6",
   textDecoration: "underline",
   textUnderlineOffset: 2,
   fontWeight: 600,
+  cursor: "pointer",
+  font: "inherit",
 });
 
 export const markdownBlockquote = (theme: Theme, mine: boolean): CSSProperties => ({
@@ -330,6 +354,102 @@ export const assistantCitationList = (theme: Theme): CSSProperties => ({
   marginTop: 6,
   fontSize: theme.typography.fontSize.xs.size,
   opacity: 0.85,
+});
+
+export const assistantCitationLink = (theme: Theme): CSSProperties => ({
+  border: "none",
+  background: "transparent",
+  padding: 0,
+  color: theme.colors.palette.brand.purple[500],
+  textDecoration: "underline",
+  textUnderlineOffset: 2,
+  fontWeight: 600,
+  cursor: "pointer",
+  font: "inherit",
+});
+
+export const assistantActionList = (): CSSProperties => ({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+  marginTop: 8,
+});
+
+export const assistantActionButton = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.brand.purple[400]}`,
+  background: theme.theme === "dark" ? "rgba(124,58,237,0.12)" : "rgba(168,85,247,0.08)",
+  color: theme.colors.palette.brand.purple[500],
+  borderRadius: 999,
+  padding: "6px 10px",
+  cursor: "pointer",
+  font: "inherit",
+  fontSize: theme.typography.fontSize.xs.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const assistantProductCards = (): CSSProperties => ({
+  display: "grid",
+  gap: 8,
+  marginTop: 10,
+});
+
+export const assistantProductCard = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "56px 1fr",
+  gap: 10,
+  alignItems: "center",
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.primary,
+  borderRadius: 12,
+  padding: 8,
+  cursor: "pointer",
+});
+
+export const assistantProductThumb = (theme: Theme): CSSProperties => ({
+  width: 56,
+  height: 56,
+  borderRadius: 10,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  objectFit: "cover",
+  overflow: "hidden",
+  display: "block",
+});
+
+export const assistantProductThumbFallback = (theme: Theme): CSSProperties => ({
+  ...assistantProductThumb(theme),
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+});
+
+export const assistantProductMeta = (): CSSProperties => ({
+  minWidth: 0,
+  display: "grid",
+  gap: 4,
+});
+
+export const assistantProductTitle = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  color: theme.colors.palette.text.primary,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const assistantProductPrice = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.bold,
+  color: theme.colors.palette.brand.purple[500],
+});
+
+export const assistantProductHint = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.xs.size,
+  color: theme.colors.palette.text.muted,
 });
 
 export const inputBar = (theme: Theme): CSSProperties => ({

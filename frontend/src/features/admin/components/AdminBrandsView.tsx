@@ -32,7 +32,7 @@ const requestTabs: { key: AdminStatus; label: string }[] = [
 ];
 
 type BrandMode = "brands" | "requests";
-type BrandOption = { id: number; name: string; image?: string };
+type BrandOption = { id: number; name: string; image?: string | null };
 
 const BRAND_PAGE_SIZE = 10;
 

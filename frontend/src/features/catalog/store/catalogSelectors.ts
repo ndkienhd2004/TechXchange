@@ -5,3 +5,4 @@ export const selectCatalogCategoriesTree = (state: RootState) =>
 export const selectCatalogCategoriesFlat = (state: RootState) =>
   state.catalog.categoriesFlat;
 export const selectCatalogLoading = (state: RootState) => state.catalog.loading;
+export const selectCatalogLoaded = (state: RootState) => state.catalog.loaded;

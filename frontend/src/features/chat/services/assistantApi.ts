@@ -14,6 +14,10 @@ export type AssistantMessage = {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  citations?: Array<{
+    title?: string;
+    uri?: string;
+  }>;
   citations_json?: Array<{
     title?: string;
     uri?: string;

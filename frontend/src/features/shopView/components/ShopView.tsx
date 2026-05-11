@@ -45,7 +45,9 @@ type StoreProduct = {
   default_image?: string;
   catalog?: {
     category?: { id: number; name: string };
+    specs?: Record<string, unknown>;
   };
+  primary_serial_specs?: Record<string, string>;
 };
 
 type SortBy = "latest" | "priceAsc" | "priceDesc";
