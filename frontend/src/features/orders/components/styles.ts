@@ -109,6 +109,15 @@ export const thumb = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.secondary,
 });
 
+export const thumbImage = (theme: Theme): CSSProperties => ({
+  width: theme.spacing["2xl"],
+  height: theme.spacing["2xl"],
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  objectFit: "cover",
+  display: "block",
+});
+
 export const productName = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });

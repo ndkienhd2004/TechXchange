@@ -38,6 +38,10 @@ export default function AppIcon({
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
+    style: {
+      display: "block",
+      flexShrink: 0,
+    },
   };
 
   if (name === "search") {

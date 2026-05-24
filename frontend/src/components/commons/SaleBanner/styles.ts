@@ -31,11 +31,20 @@ export const tag = (theme: Theme): CSSProperties => ({
   textTransform: "uppercase",
   color: theme.colors.palette.text.secondary,
 });
+export const tagInverse = (theme: Theme): CSSProperties => ({
+  ...tag(theme),
+  color: "#ffffff",
+  opacity: 0.85,
+});
 
 export const title = (theme: Theme): CSSProperties => ({
   margin: 0,
   fontSize: theme.typography.fontSize.lg.size,
   fontWeight: theme.typography.fontWeight.bold,
+});
+export const titleInverse = (theme: Theme): CSSProperties => ({
+  ...title(theme),
+  color: "#ffffff",
 });
 
 export const subtitle = (theme: Theme): CSSProperties => ({
@@ -43,10 +52,19 @@ export const subtitle = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.sm.size,
   color: theme.colors.palette.text.secondary,
 });
+export const subtitleInverse = (theme: Theme): CSSProperties => ({
+  ...subtitle(theme),
+  color: "#ffffff",
+  opacity: 0.92,
+});
 
 export const priceText = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.base.size,
   color: theme.colors.palette.text.secondary,
+});
+export const priceTextInverse = (theme: Theme): CSSProperties => ({
+  ...priceText(theme),
+  color: "#ffffff",
 });
 
 export const imageWrap = (theme: Theme): CSSProperties => ({

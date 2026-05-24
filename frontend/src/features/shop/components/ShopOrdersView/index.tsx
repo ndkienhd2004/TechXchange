@@ -15,6 +15,10 @@ type ShopOrderItem = {
   product?: {
     id: number;
     name: string;
+    catalog?: {
+      id: number;
+      default_image?: string | null;
+    };
     images?: Array<{ id: number; url: string }>;
   };
 };
@@ -102,6 +106,11 @@ export default function ShopOrdersView() {
       return haystack.includes(q);
     });
   }, [orders, search]);
+
+  const resolveItemImage = (item?: ShopOrderItem) =>
+    item?.product?.images?.[0]?.url ||
+    item?.product?.catalog?.default_image ||
+    "";
 
   const onApprove = async (orderId: number) => {
     try {
@@ -215,7 +224,15 @@ export default function ShopOrdersView() {
                     </td>
                     <td style={themed(styles.td)}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={themed(styles.orderThumb)} />
+                        {resolveItemImage(firstItem) ? (
+                          <img
+                            src={resolveItemImage(firstItem)}
+                            alt={firstItem?.product?.name || "order-product"}
+                            style={themed(styles.orderThumb)}
+                          />
+                        ) : (
+                          <div style={themed(styles.orderThumb)} />
+                        )}
                         <div style={themed(styles.orderMeta)}>
                           {(order.items || []).length} sản phẩm
                           {firstItem?.product?.name ? ` • ${firstItem.product.name}` : ""}

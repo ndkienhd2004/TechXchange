@@ -17,6 +17,20 @@ class AssistantController {
     if (status === 401) return response.unauthorized(res, message);
     if (status === 403) return response.forbidden(res, message);
     if (status === 404) return response.notFound(res, message);
+    if (status === 503) {
+      return res.status(503).json({
+        code: "503",
+        success: false,
+        message,
+      });
+    }
+    if (status === 504) {
+      return res.status(504).json({
+        code: "504",
+        success: false,
+        message,
+      });
+    }
     return response.serverError(res, message);
   }
 

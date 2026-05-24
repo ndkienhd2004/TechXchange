@@ -163,8 +163,10 @@ export const requestCatalogSpec = createAsyncThunk(
   async (
     payload: {
       catalog_id: number;
-      spec_key: string;
-      proposed_values: string[];
+      specs_json?: string;
+      specs?: Record<string, unknown>;
+      spec_key?: string;
+      proposed_values?: string[];
     },
     thunkAPI,
   ) => {

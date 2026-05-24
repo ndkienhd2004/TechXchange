@@ -34,13 +34,19 @@ export interface Product {
   brand_id: string;
   category_id: string;
   description: string | null;
-  specs: Record<string, string>;
+  specs: Record<string, unknown> | null;
   default_image: string;
   msrp: string;
   price?: string | number;
   status: string;
   created_at: string;
   updated_at: string;
+  images?: Array<{
+    id?: string | number;
+    url: string;
+    sort_order?: number;
+  }>;
+  catalog?: ProductCatalog;
   brand: ProductBrand;
   category: ProductCategory;
   buyturn: number;
@@ -101,7 +107,7 @@ export interface ProductCatalog {
   brand_id: string;
   category_id: string;
   description: string | null;
-  specs: Record<string, string>;
+  specs: Record<string, unknown> | null;
   default_image: string;
   msrp: string;
   status: string;

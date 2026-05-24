@@ -91,6 +91,12 @@ export default function CartView() {
     router.push(`/checkout?cart_item_ids=${selectedIds.join(",")}`);
   };
 
+  const resolveCartImage = (item: (typeof items)[number]) =>
+    item.product?.images?.[0]?.url ||
+    item.product?.default_image ||
+    item.product?.catalog?.default_image ||
+    "";
+
   return (
     <div style={themed(styles.page)}>
       <div style={themed(styles.container)}>
@@ -125,6 +131,7 @@ export default function CartView() {
                 </div>
                 {shopItems.map((item) => {
                   const price = Number(item.product?.price || 0);
+                  const imageUrl = resolveCartImage(item);
                   return (
                     <div key={item.id} style={themed(styles.itemRow)}>
                       <label style={themed(styles.checkboxCell)}>
@@ -136,7 +143,16 @@ export default function CartView() {
                         />
                       </label>
                       <div style={themed(styles.productCell)}>
-                        <div style={themed(styles.thumb)} />
+                        {imageUrl ? (
+                          // Use native img here to support all external hosts without Next Image domain config.
+                          <img
+                            src={imageUrl}
+                            alt={item.product?.name ?? "Ảnh sản phẩm"}
+                            style={themed(styles.thumbImage)}
+                          />
+                        ) : (
+                          <div style={themed(styles.thumb)} />
+                        )}
                         <div>
                           <div style={themed(styles.itemName)}>
                             {item.product?.name ?? `#${item.product_id}`}

@@ -19,7 +19,7 @@ export default function AdminLayout({
   const router = useRouter();
 
   const navItems = [
-    { label: "Dashboard", href: "/admin" },
+    { label: "Tổng quan", href: "/admin" },
     { label: "Cửa hàng", href: "/admin/stores" },
     { label: "Thương hiệu", href: "/admin/brands" },
     { label: "Sản phẩm", href: "/admin/products" },
@@ -36,7 +36,7 @@ export default function AdminLayout({
             <AppIcon name="settings" size={18} />
           </div>
           <div>
-            <div style={themed(styles.adminName)}>Admin Panel</div>
+            <div style={themed(styles.adminName)}>Trang quản trị</div>
             <div style={themed(styles.adminSubtitle)}>TechXchange</div>
           </div>
         </div>

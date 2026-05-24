@@ -23,6 +23,7 @@ export interface ApiErrorPayload {
   code?: string;
   success?: boolean;
   message?: string;
+  reason?: string;
 }
 
 /** Chuẩn hóa lỗi từ axios → object thuần để Redux/slice dùng. */
@@ -110,6 +111,13 @@ function isAuthCredentialEndpoint(url: string): boolean {
   );
 }
 
+function shouldTryRefresh(payload: ApiErrorPayload): boolean {
+  const reason = payload.reason?.toLowerCase();
+  const message = payload.message?.toLowerCase() ?? "";
+  if (reason) return reason === "token_expired";
+  return message.includes("expired") || message.includes("hết hạn");
+}
+
 /**
  * Khởi tạo axios instance (gọi 1 lần khi tạo store).
  */
@@ -153,6 +161,9 @@ export function createAxiosInstance(
       ) {
         return rejectWithPayload(err, payload);
       }
+      if (!shouldTryRefresh(payload)) {
+        return rejectWithPayload(err, payload);
+      }
       config._retry = true;
 
       const store = storeRef;
@@ -160,7 +171,9 @@ export function createAxiosInstance(
 
       const refreshToken = sanitizeToken(store.getState().auth.refreshToken);
       if (!refreshToken) {
-        store.dispatch({ type: AUTH_LOGOUT });
+        // Tránh logout nhầm khi lỗi 401 không do token hết hạn.
+        // Đến đây chỉ còn case token hết hạn nhưng thiếu refresh token.
+        store.dispatch({ type: AUTH_LOGOUT, payload: { silent: true } });
         return rejectWithPayload(err, payload);
       }
 
@@ -171,7 +184,7 @@ export function createAxiosInstance(
       }
       const newToken = await refreshPromise;
       if (!newToken) {
-        store.dispatch({ type: AUTH_LOGOUT });
+        store.dispatch({ type: AUTH_LOGOUT, payload: { silent: true } });
         return rejectWithPayload(err, payload);
       }
 

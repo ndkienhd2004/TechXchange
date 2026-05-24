@@ -130,6 +130,15 @@ export const thumb = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.hover,
 });
 
+export const thumbImage = (theme: Theme): CSSProperties => ({
+  width: "72px",
+  height: "72px",
+  borderRadius: theme.spacing.md,
+  objectFit: "cover",
+  background: theme.colors.palette.backgrounds.hover,
+  display: "block",
+});
+
 export const itemName = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });

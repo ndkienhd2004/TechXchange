@@ -9,6 +9,7 @@ const {
   ShopInventoryLedger,
   ProductSerial,
   ProductImage,
+  ProductCatalog,
   Review,
   Store,
   Shipment,
@@ -26,6 +27,10 @@ class OrderService {
     if (!Array.isArray(storeIds) || storeIds.length === 0) return new Map();
 
     try {
+      // Tính giá nhập trung bình theo trọng số (weighted average) trên các
+      // bản ghi 'import' của shop. Bao gồm cả 'export' (đã được fill
+      // unit_cost từ import gần nhất) để có fallback cho những product có
+      // bản ghi export legacy nhưng chưa kịp tạo bản ghi import.
       const rows = await sequelize.query(
         `
           SELECT
@@ -35,8 +40,8 @@ class OrderService {
               0
             ) AS avg_import_cost
           FROM shop_inventory_ledger sil
-          WHERE sil.store_id = ANY(:storeIds)
-            AND sil.type = 'import'
+          WHERE sil.store_id IN (:storeIds)
+            AND sil.type IN ('import', 'export')
             AND sil.unit_cost IS NOT NULL
           GROUP BY sil.product_id
         `,
@@ -944,6 +949,7 @@ class OrderService {
       referenceId = null,
     } = options;
     const exportLedgerEntries = [];
+    const pendingAllocations = [];
 
     for (const item of orderItems || []) {
       // eslint-disable-next-line no-await-in-loop
@@ -960,19 +966,118 @@ class OrderService {
         ? result.allocations
         : [];
       allocations.forEach((alloc) => {
-        exportLedgerEntries.push({
-          store_id: Number(storeId),
-          product_id: Number(item.product_id),
-          serial_id: Number(alloc.serial_id),
-          inventory_id: Number(alloc.inventory_id),
-          type: "export",
-          quantity: Number(alloc.quantity),
-          unit_cost: null,
-          note: `Xuất kho từ đơn #${referenceId || ""}`.trim(),
-          reference_type: referenceType,
-          reference_id: referenceId ? Number(referenceId) : null,
-          created_by: actorUserId ? Number(actorUserId) : null,
+        pendingAllocations.push({ item, alloc });
+      });
+    }
+
+    // Tra cứu giá nhập (unit_cost) gần nhất theo từng serial từ các bản
+    // ghi 'import' đã tồn tại, để bản ghi 'export' giữ được cost basis
+    // -- vừa hiển thị đúng cột "Giá nhập" ở màn kiểm kho, vừa làm cơ sở
+    // cho báo cáo lợi nhuận.
+    const serialIds = [
+      ...new Set(
+        pendingAllocations
+          .map(({ alloc }) => Number(alloc.serial_id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    ];
+    const importCostBySerial = new Map();
+    if (storeId && serialIds.length > 0) {
+      try {
+        const importEntries = await ShopInventoryLedger.findAll({
+          where: {
+            store_id: Number(storeId),
+            serial_id: { [Op.in]: serialIds },
+            type: "import",
+            unit_cost: { [Op.ne]: null },
+          },
+          attributes: ["serial_id", "unit_cost", "created_at"],
+          order: [["created_at", "DESC"]],
+          transaction,
         });
+        for (const entry of importEntries) {
+          const sid = Number(entry.serial_id);
+          // First entry seen wins (đã sort DESC -> đây là lần nhập gần nhất).
+          if (!importCostBySerial.has(sid)) {
+            importCostBySerial.set(sid, entry.unit_cost);
+          }
+        }
+      } catch (error) {
+        if (!this.isMissingInventoryLedgerTableError(error)) throw error;
+      }
+    }
+
+    // Fallback theo product_id: nếu serial không có bản ghi import (data
+    // legacy), tra theo giá nhập trung bình của product trong cùng shop.
+    const productIdsForFallback = [
+      ...new Set(
+        pendingAllocations
+          .filter(
+            ({ alloc }) => !importCostBySerial.has(Number(alloc.serial_id)),
+          )
+          .map(({ item }) => Number(item.product_id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    ];
+    const importCostByProduct = new Map();
+    if (storeId && productIdsForFallback.length > 0) {
+      try {
+        const rows = await sequelize.query(
+          `
+            SELECT
+              sil.product_id::bigint AS product_id,
+              COALESCE(
+                SUM(sil.quantity * sil.unit_cost) / NULLIF(SUM(sil.quantity), 0),
+                0
+              ) AS avg_import_cost
+            FROM shop_inventory_ledger sil
+            WHERE sil.store_id = :storeId
+              AND sil.product_id IN (:productIds)
+              AND sil.type = 'import'
+              AND sil.unit_cost IS NOT NULL
+            GROUP BY sil.product_id
+          `,
+          {
+            replacements: {
+              storeId: Number(storeId),
+              productIds: productIdsForFallback,
+            },
+            type: QueryTypes.SELECT,
+            transaction,
+          },
+        );
+        for (const row of rows) {
+          const value = Number(row.avg_import_cost || 0);
+          if (value > 0) {
+            importCostByProduct.set(Number(row.product_id), value);
+          }
+        }
+      } catch (error) {
+        if (!this.isMissingInventoryLedgerTableError(error)) throw error;
+      }
+    }
+
+    for (const { item, alloc } of pendingAllocations) {
+      const serialId = Number(alloc.serial_id);
+      const productId = Number(item.product_id);
+      let unitCost = null;
+      if (importCostBySerial.has(serialId)) {
+        unitCost = importCostBySerial.get(serialId);
+      } else if (importCostByProduct.has(productId)) {
+        unitCost = importCostByProduct.get(productId);
+      }
+      exportLedgerEntries.push({
+        store_id: Number(storeId),
+        product_id: productId,
+        serial_id: serialId,
+        inventory_id: Number(alloc.inventory_id),
+        type: "export",
+        quantity: Number(alloc.quantity),
+        unit_cost: unitCost,
+        note: `Xuất kho từ đơn #${referenceId || ""}`.trim(),
+        reference_type: referenceType,
+        reference_id: referenceId ? Number(referenceId) : null,
+        created_by: actorUserId ? Number(actorUserId) : null,
       });
     }
 
@@ -1427,8 +1532,14 @@ class OrderService {
               model: Product,
               as: "product",
               required: false,
-              attributes: ["id", "name", "store_id"],
+              attributes: ["id", "name", "store_id", "catalog_id"],
               include: [
+                {
+                  model: ProductCatalog,
+                  as: "catalog",
+                  attributes: ["id", "default_image"],
+                  required: false,
+                },
                 {
                   model: ProductImage,
                   as: "images",

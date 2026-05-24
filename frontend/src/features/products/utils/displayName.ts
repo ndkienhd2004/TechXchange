@@ -7,6 +7,31 @@ type ProductSpecValue =
   | ProductSpecValue[]
   | Record<string, unknown>;
 
+function toSentenceCase(input: string): string {
+  const normalized = input.trim().toLowerCase();
+  if (!normalized) return "";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+export function formatSpecKeyLabel(key: string): string {
+  return key
+    .split(/[_\s-]+/g)
+    .filter(Boolean)
+    .map((part, index) => {
+      const normalized = part.trim().toLowerCase();
+      if (!normalized) return "";
+      if (index === 0) {
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+      }
+      return normalized;
+    })
+    .join(" ");
+}
+
+export function formatSpecValueLabel(value: unknown): string {
+  return toSentenceCase(normalizeSpecValue(value));
+}
+
 function normalizeSpecValue(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
@@ -57,8 +82,8 @@ export function buildSpecsSuffix(specs?: Record<string, unknown> | null): string
 
   const entries = Object.entries(specs)
     .map(([key, rawValue]) => ({
-      key: String(key || "").trim(),
-      value: normalizeSpecValue(rawValue),
+      key: formatSpecKeyLabel(String(key || "").trim()),
+      value: formatSpecValueLabel(rawValue),
     }))
     .filter((entry) => Boolean(entry.key) && Boolean(entry.value))
     .sort((a, b) => a.key.localeCompare(b.key));
@@ -67,7 +92,7 @@ export function buildSpecsSuffix(specs?: Record<string, unknown> | null): string
     return "";
   }
 
-  return entries.map((entry) => `${entry.key} ${entry.value}`).join(", ");
+  return entries.map((entry) => `${entry.key}: ${entry.value}`).join(", ");
 }
 
 export function buildProductDisplayName(

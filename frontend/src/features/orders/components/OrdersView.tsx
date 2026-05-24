@@ -17,6 +17,10 @@ type OrderItem = {
   product?: {
     id: number;
     name: string;
+    catalog?: {
+      default_image?: string | null;
+    };
+    images?: Array<{ id?: number; url?: string; sort_order?: number }>;
     store?: { id: number; name: string };
   };
 };
@@ -82,6 +86,11 @@ export default function OrdersView() {
     if (activeTab === "all") return orders;
     return orders.filter((o) => o.status === activeTab);
   }, [orders, activeTab]);
+
+  const resolveOrderItemImage = (item?: OrderItem | null) =>
+    item?.product?.images?.[0]?.url ||
+    item?.product?.catalog?.default_image ||
+    "";
 
   const openReviewModal = (productId: number) => {
     setReviewProductId(productId);
@@ -236,7 +245,16 @@ export default function OrdersView() {
               </div>
 
               <div style={themed(styles.orderBody)}>
-                <div style={themed(styles.thumb)} />
+                {resolveOrderItemImage(firstItem) ? (
+                  // Use img to allow dynamic external hosts without Next image host config.
+                  <img
+                    src={resolveOrderItemImage(firstItem)}
+                    alt={firstItem?.product?.name || "order-item"}
+                    style={themed(styles.thumbImage)}
+                  />
+                ) : (
+                  <div style={themed(styles.thumb)} />
+                )}
                 <div>
                   <div style={themed(styles.productName)}>
                     {firstItem?.product?.name || "Sản phẩm"}
@@ -269,7 +287,15 @@ export default function OrdersView() {
                   </div>
                   {order.items.map((item) => (
                     <div key={item.id} style={themed(styles.itemRow)}>
-                      <div style={themed(styles.thumb)} />
+                      {resolveOrderItemImage(item) ? (
+                        <img
+                          src={resolveOrderItemImage(item)}
+                          alt={item.product?.name || `item-${item.product_id}`}
+                          style={themed(styles.thumbImage)}
+                        />
+                      ) : (
+                        <div style={themed(styles.thumb)} />
+                      )}
                       <div>
                         <div style={themed(styles.productName)}>
                           {item.product?.name || `#${item.product_id}`}

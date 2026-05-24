@@ -11,11 +11,35 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "images.unsplash.com",
+        hostname: "techxchange-bucket.s3.us-east-2.amazonaws.com",
       },
       {
         protocol: "https",
-        hostname: "techxchange-bucket.s3.us-east-2.amazonaws.com",
+        hostname: "cdn2.fptshop.com.vn",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.hstatic.net",
+      },
+      {
+        protocol: "http",
+        hostname: "cdn.hstatic.net",
+      },
+      {
+        protocol: "https",
+        hostname: "ttgshop.vn",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn2.cellphones.com.vn",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ebayimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
     ],
   },

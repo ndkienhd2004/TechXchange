@@ -29,14 +29,36 @@ const parseCatalogSpecValues = (value) => {
   return normalizeValues([value]);
 };
 
+const parseSpecsPayload = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("specs_json phải là JSON object");
+      }
+      return parsed;
+    } catch (_err) {
+      throw new Error("specs_json không phải JSON hợp lệ");
+    }
+  }
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+  throw new Error("specs phải là object hoặc JSON string");
+};
+
 class CatalogSpecRequestService {
   static async createRequest(requesterId, payload) {
     const catalog_id = Number(payload.catalog_id);
+    const incomingSpecs = parseSpecsPayload(payload.specs);
     const spec_key = normalizeSpecKey(payload.spec_key);
     const proposed_values = normalizeValues(payload.proposed_values);
 
-    if (!catalog_id || !spec_key || proposed_values.length === 0) {
-      throw new Error("Thiếu thông tin yêu cầu specs");
+    if (!catalog_id) {
+      throw new Error("Thiếu catalog_id");
     }
 
     const catalog = await ProductCatalog.findByPk(catalog_id);
@@ -47,16 +69,20 @@ class CatalogSpecRequestService {
       throw new Error("Catalog chưa khả dụng để đề xuất specs");
     }
 
-    const pending = await CatalogSpecRequest.findOne({
-      where: {
-        requester_id: requesterId,
+    // Luồng mới: shop cập nhật specs trực tiếp, không cần admin duyệt.
+    if (incomingSpecs) {
+      await catalog.update({ specs: incomingSpecs });
+      return {
+        mode: "direct_update",
         catalog_id,
-        spec_key,
-        status: "pending",
-      },
-    });
-    if (pending) {
-      throw new Error("Đã có yêu cầu specs đang chờ duyệt");
+        specs: incomingSpecs,
+      };
+    }
+
+    // Backward compatibility: payload cũ (spec_key + proposed_values)
+    // sẽ merge trực tiếp vào catalog và tự đánh dấu approved để giữ history.
+    if (!spec_key || proposed_values.length === 0) {
+      throw new Error("Thiếu thông tin specs");
     }
 
     const existingSpecs =
@@ -69,12 +95,25 @@ class CatalogSpecRequestService {
       throw new Error("Thông số này đã có đủ giá trị trong catalog");
     }
 
-    return CatalogSpecRequest.create({
+    const request = await CatalogSpecRequest.create({
       requester_id: requesterId,
       catalog_id,
       spec_key,
       proposed_values,
+      status: "approved",
+      admin_id: requesterId,
+      admin_note: "Auto-approved by direct shop update flow",
     });
+
+    const mergedValues = [...new Set([...existingValues, ...proposed_values])];
+    existingSpecs[spec_key] = mergedValues.join(" | ");
+    await catalog.update({ specs: existingSpecs });
+
+    return {
+      mode: "legacy_merge_auto_approved",
+      request,
+      catalog,
+    };
   }
 
   static async getMyRequests(requesterId, status, limit, offset) {

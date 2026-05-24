@@ -112,8 +112,10 @@ const authSlice = createSlice({
         state.refreshToken = normalizeToken(action.payload.refreshToken);
       state.isAuthenticated = Boolean(state.token);
     },
-    logout: (state) => {
-      showSuccessToast("Đăng xuất thành công");
+    logout: (state, action: PayloadAction<{ silent?: boolean } | undefined>) => {
+      if (!action.payload?.silent) {
+        showSuccessToast("Đăng xuất thành công");
+      }
       state.token = null;
       state.refreshToken = null;
       state.user = null;

@@ -18,18 +18,18 @@ interface HeroSlide {
 const slides: HeroSlide[] = [
   {
     id: 1,
-    badge: "Premium Gaming Controller",
-    title: "Upgrade smart, Work faster, Play harder",
-    buttonText: "Start Buying",
+    badge: "Tay cầm gaming cao cấp",
+    title: "Nâng cấp thông minh, làm việc nhanh hơn, giải trí đã hơn",
+    buttonText: "Mua sắm ngay",
     buttonLink: "/products",
     gradientKey: "brand_primary",
   },
   {
     id: 2,
-    badge: "Up to 50% Off Electronics",
-    title: "Black Friday Deals",
-    buttonText: "Start Buying",
-    buttonLink: "/promotions",
+    badge: "Điện tử giảm đến 50%",
+    title: "Ưu đãi Black Friday",
+    buttonText: "Mua sắm ngay",
+    buttonLink: "/products",
     gradientKey: "brand_promo",
   },
 ];
@@ -104,7 +104,7 @@ export default function HeroCarousel() {
           onClick={prevSlide}
           className={carouselStyles.navButton}
           style={themed(styles.navButton)}
-          aria-label="Previous slide"
+          aria-label="Slide trước"
         >
           <svg
             width="24"
@@ -124,7 +124,7 @@ export default function HeroCarousel() {
           onClick={nextSlide}
           className={carouselStyles.navButtonRight}
           style={themed(styles.navButtonRight)}
-          aria-label="Next slide"
+          aria-label="Slide tiếp theo"
         >
           <svg
             width="24"
@@ -148,7 +148,7 @@ export default function HeroCarousel() {
               onClick={() => goToSlide(index)}
               className={carouselStyles.dot}
               style={index === currentSlide ? styles.dotActive() : styles.dot()}
-              aria-label={`Go to slide ${index + 1}`}
+              aria-label={`Đi tới slide ${index + 1}`}
             />
           ))}
         </div>

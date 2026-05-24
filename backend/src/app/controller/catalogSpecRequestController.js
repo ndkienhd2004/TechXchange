@@ -6,16 +6,23 @@ class CatalogSpecRequestController {
     try {
       const requesterId = req.user.id;
       const catalog_id = Number(req.body.catalog_id);
+      const specs =
+        req.body.specs_json !== undefined ? req.body.specs_json : req.body.specs;
       const spec_key = req.body.spec_key ? String(req.body.spec_key).trim() : "";
       const proposed_values = req.body.proposed_values;
 
       const request = await CatalogSpecRequestService.createRequest(requesterId, {
         catalog_id,
+        specs,
         spec_key,
         proposed_values,
       });
 
-      return response.created(res, "Tạo yêu cầu thêm specs thành công", request);
+      return response.created(
+        res,
+        "Cập nhật specs catalog thành công (không cần duyệt admin)",
+        request
+      );
     } catch (error) {
       return response.badRequest(res, error.message);
     }

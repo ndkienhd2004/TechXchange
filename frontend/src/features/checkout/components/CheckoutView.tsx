@@ -214,6 +214,12 @@ export default function CheckoutView() {
     [addresses, selectedAddressId],
   );
 
+  const resolveCheckoutImage = (item: (typeof checkoutItems)[number]) =>
+    item.product?.images?.[0]?.url ||
+    item.product?.default_image ||
+    item.product?.catalog?.default_image ||
+    "";
+
   return (
     <div style={themed(styles.page)}>
       <div style={themed(styles.container)}>
@@ -297,9 +303,20 @@ export default function CheckoutView() {
               {checkoutItems.length === 0 ? (
                 <p style={themed(styles.emptyText)}>Không có sản phẩm để thanh toán.</p>
               ) : (
-                checkoutItems.map((item) => (
+                checkoutItems.map((item) => {
+                  const imageUrl = resolveCheckoutImage(item);
+                  return (
                   <div key={item.id} style={themed(styles.productRow)}>
-                    <div style={themed(styles.thumb)} />
+                    {imageUrl ? (
+                      // Use img to avoid Next image host restrictions on dynamic external sources.
+                      <img
+                        src={imageUrl}
+                        alt={item.product?.name || `product-${item.product_id}`}
+                        style={themed(styles.thumbImage)}
+                      />
+                    ) : (
+                      <div style={themed(styles.thumb)} />
+                    )}
                     <div>
                       <div style={themed(styles.productName)}>
                         {item.product?.name || `#${item.product_id}`}
@@ -310,7 +327,7 @@ export default function CheckoutView() {
                       {currency(Number(item.subtotal || 0))}
                     </div>
                   </div>
-                ))
+                )})
               )}
             </section>
 

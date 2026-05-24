@@ -57,24 +57,27 @@ export default function HomeView() {
     () => [
       {
         tag: "Black Friday",
-        title: "Special Sale",
-        subtitle: "Up to 50% Off",
+        title: "Ưu đãi đặc biệt",
+        subtitle: "Giảm đến 50%",
         background: `linear-gradient(120deg, ${theme.colors.palette.backgrounds.secondary} 0%, ${theme.colors.palette.backgrounds.card} 100%)`,
         imageAlt: "Lifestyle room",
+        textTone: "default" as const,
       },
       {
-        tag: "VR Headset",
-        title: "New Arrival",
-        subtitle: "$299.00",
+        tag: "Kính VR",
+        title: "Hàng mới về",
+        subtitle: "Từ 299$",
         background: `linear-gradient(120deg, ${theme.colors.palette.brand.purple[900]} 0%, ${theme.colors.palette.brand.purple[600]} 100%)`,
         imageAlt: "VR headset",
+        textTone: "inverse" as const,
       },
       {
-        tag: "Special Offer",
-        title: "Gaming Gear",
-        subtitle: "Up to 30% Off",
+        tag: "Ưu đãi nổi bật",
+        title: "Phụ kiện gaming",
+        subtitle: "Giảm đến 30%",
         background: `linear-gradient(120deg, ${theme.colors.palette.brand.pink[900]} 0%, ${theme.colors.palette.brand.pink[600]} 100%)`,
         imageAlt: "Gaming controller",
+        textTone: "inverse" as const,
       },
     ],
     [theme.colors],
@@ -126,7 +129,7 @@ export default function HomeView() {
 
           <section style={themed(styles.section)}>
             <div style={themed(styles.sectionHeader)}>
-              <h2 style={themed(styles.sectionTitle)}>Featured Products</h2>
+              <h2 style={themed(styles.sectionTitle)}>Sản phẩm nổi bật</h2>
               <Link href="/products" style={themed(styles.viewAllLink)}>
                 Xem tất cả →
               </Link>

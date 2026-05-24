@@ -6,4 +6,5 @@ export interface SaleBannerProps {
   imageSrc?: string;
   imageAlt?: string;
   background: string;
+  textTone?: "default" | "inverse";
 }

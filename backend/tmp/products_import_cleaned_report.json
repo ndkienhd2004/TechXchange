@@ -1,0 +1,711 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-19T14:28:45.649Z",
+    "totalRaw": 1134,
+    "totalDeduped": 1131
+  },
+  "sourceStats": {
+    "crawled_pc_parts_gearvn_28": {
+      "raw": 28
+    },
+    "crawled_ttgshop_pc_parts_20_30": {
+      "raw": 27
+    },
+    "fptshop-1000": {
+      "raw": 1000
+    },
+    "retail-products": {
+      "raw": 80
+    }
+  },
+  "topCategories": [
+    [
+      "Phụ kiện",
+      207
+    ],
+    [
+      "Điện thoại",
+      188
+    ],
+    [
+      "Ốp lưng",
+      156
+    ],
+    [
+      "Màn hình",
+      133
+    ],
+    [
+      "Camera",
+      83
+    ],
+    [
+      "Phụ kiện sạc",
+      74
+    ],
+    [
+      "Tai nghe",
+      52
+    ],
+    [
+      "Chuột",
+      40
+    ],
+    [
+      "Laptop",
+      36
+    ],
+    [
+      "Pin sạc dự phòng",
+      23
+    ],
+    [
+      "Thiết bị lưu trữ",
+      21
+    ],
+    [
+      "Loa",
+      21
+    ],
+    [
+      "CPU",
+      19
+    ],
+    [
+      "Card đồ họa",
+      18
+    ],
+    [
+      "Bàn phím",
+      18
+    ],
+    [
+      "Nguồn máy tính",
+      7
+    ],
+    [
+      "RAM",
+      7
+    ],
+    [
+      "Thiết bị mạng",
+      7
+    ],
+    [
+      "SSD",
+      5
+    ],
+    [
+      "Tivi",
+      5
+    ],
+    [
+      "Vỏ máy tính",
+      4
+    ],
+    [
+      "Bo mạch chủ",
+      2
+    ],
+    [
+      "Tản nhiệt CPU",
+      2
+    ],
+    [
+      "PC",
+      2
+    ],
+    [
+      "Máy tính bảng",
+      1
+    ]
+  ],
+  "topSubcategories": [
+    [
+      "Phụ kiện > Phụ kiện khác",
+      207
+    ],
+    [
+      "Ốp lưng > Ốp lưng điện thoại",
+      156
+    ],
+    [
+      "Camera > Camera giám sát",
+      83
+    ],
+    [
+      "Phụ kiện sạc > Cáp/Sạc",
+      74
+    ],
+    [
+      "Điện thoại > Android khác",
+      68
+    ],
+    [
+      "Màn hình > Màn hình khác",
+      61
+    ],
+    [
+      "Màn hình > Màn hình Gaming",
+      60
+    ],
+    [
+      "Điện thoại > Android Xiaomi",
+      56
+    ],
+    [
+      "Tai nghe > Tai nghe khác",
+      47
+    ],
+    [
+      "Chuột > Chuột máy tính",
+      40
+    ],
+    [
+      "Điện thoại > Android Samsung",
+      29
+    ],
+    [
+      "Điện thoại > Điện thoại khác",
+      23
+    ],
+    [
+      "Pin sạc dự phòng > Sạc dự phòng",
+      23
+    ],
+    [
+      "Thiết bị lưu trữ > Lưu trữ ngoài",
+      21
+    ],
+    [
+      "Loa > Loa nghe nhạc",
+      21
+    ],
+    [
+      "Bàn phím > Bàn phím máy tính",
+      18
+    ],
+    [
+      "Laptop > Laptop khác",
+      14
+    ],
+    [
+      "Laptop > Laptop Gaming",
+      14
+    ],
+    [
+      "Card đồ họa > NVIDIA GeForce",
+      12
+    ],
+    [
+      "Điện thoại > iPhone",
+      12
+    ],
+    [
+      "Màn hình > Màn hình Đồ họa/Văn phòng",
+      12
+    ],
+    [
+      "CPU > Intel Core",
+      9
+    ],
+    [
+      "Thiết bị mạng > Khác",
+      7
+    ],
+    [
+      "CPU > CPU khác",
+      6
+    ],
+    [
+      "Nguồn máy tính > PSU Phổ thông",
+      5
+    ],
+    [
+      "Card đồ họa > Card đồ họa khác",
+      5
+    ],
+    [
+      "Tivi > Khác",
+      5
+    ],
+    [
+      "Tai nghe > Tai nghe TWS",
+      5
+    ],
+    [
+      "RAM > RAM DDR4",
+      4
+    ],
+    [
+      "CPU > AMD Ryzen",
+      4
+    ],
+    [
+      "Laptop > MacBook",
+      4
+    ],
+    [
+      "Laptop > Laptop Văn phòng",
+      4
+    ],
+    [
+      "Vỏ máy tính > Case ATX",
+      3
+    ],
+    [
+      "RAM > RAM khác",
+      2
+    ],
+    [
+      "Bo mạch chủ > Khác",
+      2
+    ],
+    [
+      "SSD > SSD SATA",
+      2
+    ],
+    [
+      "Tản nhiệt CPU > Tản nhiệt khác",
+      2
+    ],
+    [
+      "SSD > SSD khác",
+      2
+    ],
+    [
+      "PC > Khác",
+      2
+    ],
+    [
+      "RAM > RAM DDR5",
+      1
+    ],
+    [
+      "Vỏ máy tính > Case khác",
+      1
+    ],
+    [
+      "Nguồn máy tính > PSU khác",
+      1
+    ],
+    [
+      "Card đồ họa > AMD Radeon",
+      1
+    ],
+    [
+      "Nguồn máy tính > PSU Công suất cao",
+      1
+    ],
+    [
+      "SSD > SSD NVMe",
+      1
+    ],
+    [
+      "Máy tính bảng > Khác",
+      1
+    ]
+  ],
+  "topBrands": [
+    [
+      "Samsung",
+      120
+    ],
+    [
+      "Xiaomi",
+      73
+    ],
+    [
+      "YVS",
+      70
+    ],
+    [
+      "Apple",
+      55
+    ],
+    [
+      "Oppo",
+      45
+    ],
+    [
+      "MSI",
+      31
+    ],
+    [
+      "Mipow",
+      31
+    ],
+    [
+      "Honor",
+      30
+    ],
+    [
+      "Asus",
+      24
+    ],
+    [
+      "ESR",
+      23
+    ],
+    [
+      "Viewsonic",
+      22
+    ],
+    [
+      "Innostyle",
+      22
+    ],
+    [
+      "DJI",
+      20
+    ],
+    [
+      "Devia",
+      20
+    ],
+    [
+      "LG",
+      19
+    ],
+    [
+      "Meetu",
+      18
+    ],
+    [
+      "Belkin",
+      17
+    ],
+    [
+      "Icore",
+      17
+    ],
+    [
+      "Nubia",
+      15
+    ],
+    [
+      "Imou",
+      15
+    ],
+    [
+      "Logitech",
+      15
+    ],
+    [
+      "Gigabyte",
+      13
+    ],
+    [
+      "Insta360",
+      13
+    ],
+    [
+      "Intel",
+      12
+    ],
+    [
+      "Tecno",
+      12
+    ],
+    [
+      "Rapoo",
+      12
+    ],
+    [
+      "Uniq",
+      12
+    ],
+    [
+      "Ugreen",
+      12
+    ],
+    [
+      "Baseus",
+      11
+    ],
+    [
+      "VSP",
+      10
+    ],
+    [
+      "Tapo",
+      10
+    ],
+    [
+      "SanDisk",
+      10
+    ],
+    [
+      "Havit",
+      10
+    ],
+    [
+      "Acer",
+      9
+    ],
+    [
+      "Vietmap",
+      8
+    ],
+    [
+      "Lenovo",
+      7
+    ],
+    [
+      "Edra",
+      7
+    ],
+    [
+      "Dell",
+      7
+    ],
+    [
+      "Ezviz",
+      7
+    ],
+    [
+      "Akaso",
+      7
+    ],
+    [
+      "JBL",
+      7
+    ],
+    [
+      "FPT",
+      6
+    ],
+    [
+      "Kodak",
+      6
+    ],
+    [
+      "Trusmi",
+      6
+    ],
+    [
+      "Jcpal",
+      6
+    ],
+    [
+      "Alpha Works",
+      6
+    ],
+    [
+      "AMD",
+      5
+    ],
+    [
+      "Cooler Master",
+      5
+    ],
+    [
+      "Masstel",
+      5
+    ],
+    [
+      "Gopro",
+      5
+    ],
+    [
+      "Spigen",
+      5
+    ],
+    [
+      "Aukey",
+      5
+    ],
+    [
+      "Tomtoc",
+      5
+    ],
+    [
+      "Hyperwork",
+      5
+    ],
+    [
+      "Cellphones",
+      5
+    ],
+    [
+      "Zotac",
+      4
+    ],
+    [
+      "Redmagic",
+      4
+    ],
+    [
+      "Nokia",
+      4
+    ],
+    [
+      "Coteci",
+      4
+    ],
+    [
+      "Microlab",
+      4
+    ],
+    [
+      "Sony",
+      4
+    ],
+    [
+      "TP-Link",
+      4
+    ],
+    [
+      "Marshall",
+      4
+    ],
+    [
+      "Switcheasy",
+      4
+    ],
+    [
+      "Gearvn",
+      4
+    ],
+    [
+      "HP",
+      4
+    ],
+    [
+      "Ổ",
+      3
+    ],
+    [
+      "Benco",
+      3
+    ],
+    [
+      "Kingston",
+      3
+    ],
+    [
+      "Remax",
+      3
+    ],
+    [
+      "Umetravel",
+      3
+    ],
+    [
+      "Anker",
+      3
+    ],
+    [
+      "Zadez",
+      3
+    ],
+    [
+      "Cuktech",
+      3
+    ],
+    [
+      "Philips",
+      3
+    ],
+    [
+      "Hiksemi",
+      3
+    ],
+    [
+      "D-link",
+      3
+    ],
+    [
+      "Lexar",
+      3
+    ],
+    [
+      "Acari",
+      3
+    ],
+    [
+      "365",
+      2
+    ],
+    [
+      "NVIDIA",
+      2
+    ],
+    [
+      "RAM",
+      2
+    ],
+    [
+      "VGA",
+      2
+    ],
+    [
+      "Antec",
+      2
+    ],
+    [
+      "Quạt",
+      2
+    ],
+    [
+      "Inoi",
+      2
+    ],
+    [
+      "Creative",
+      2
+    ],
+    [
+      "Adata",
+      2
+    ],
+    [
+      "Cảnh Phong",
+      2
+    ],
+    [
+      "Laut",
+      2
+    ],
+    [
+      "Targus",
+      2
+    ],
+    [
+      "Edifier",
+      2
+    ],
+    [
+      "Golf",
+      2
+    ],
+    [
+      "Hyper",
+      2
+    ],
+    [
+      "Razer",
+      2
+    ],
+    [
+      "Corsair",
+      1
+    ],
+    [
+      "Nguồn",
+      1
+    ],
+    [
+      "Colorful",
+      1
+    ],
+    [
+      "VỎ",
+      1
+    ],
+    [
+      "TCL",
+      1
+    ]
+  ]
+}

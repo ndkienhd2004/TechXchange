@@ -120,7 +120,7 @@ export default function AdminDashboardView() {
   return (
     <AdminLayout>
       <header style={themed(styles.pageHeader)}>
-        <h1 style={themed(styles.pageTitle)}>Admin Dashboard</h1>
+        <h1 style={themed(styles.pageTitle)}>Bảng điều khiển quản trị</h1>
         <p style={themed(styles.pageSubtitle)}>
           Tổng quan hệ thống TechXchange
         </p>

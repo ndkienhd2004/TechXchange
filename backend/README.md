@@ -432,7 +432,7 @@ refresh_tokens {
 
 ### Caching
 
-- Implement Redis for token caching
+- Consider adding a cache layer for token/session optimization in the future
 - Cache user profiles
 - Rate limiting
 

@@ -778,13 +778,13 @@ export default function GlobalChatWidget() {
       if (previews.length <= 1) return previews;
 
       const normalizedContent = normalizeSearchText(content);
-      if (!normalizedContent) return previews.slice(0, 3);
+      if (!normalizedContent) return previews;
 
       const matched = previews.filter((preview) =>
         buildPreviewMatchKeys(preview).some((key) => normalizedContent.includes(key)),
       );
 
-      return (matched.length > 0 ? matched : previews).slice(0, 3);
+      return matched.length > 0 ? matched : previews;
     },
     [buildCitationProductPreviews],
   );

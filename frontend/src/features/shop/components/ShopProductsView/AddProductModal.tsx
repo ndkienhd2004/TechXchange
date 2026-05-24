@@ -27,6 +27,22 @@ interface AddProductModalProps {
 }
 
 const ITEMS_PER_LIMIT = 5;
+type CatalogSpecDraftRow = {
+  id: string;
+  key: string;
+  value: string;
+};
+
+function createCatalogSpecDraftRow(
+  key = "",
+  value = "",
+): CatalogSpecDraftRow {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    key,
+    value,
+  };
+}
 
 function extractErrorMessage(error: unknown, fallbackMessage: string): string {
   if (typeof error === "string" && error.trim()) {
@@ -79,13 +95,22 @@ export default function AddProductModal({
   );
   const [price, setPrice] = useState("");
   const [shopDescription, setShopDescription] = useState("");
-  const [specRequestOpen, setSpecRequestOpen] = useState(false);
-  const [specRequestMode, setSpecRequestMode] = useState<"existing" | "new">(
-    "existing",
+  const [catalogSpecRows, setCatalogSpecRows] = useState<CatalogSpecDraftRow[]>(
+    [],
   );
-  const [requestExistingKey, setRequestExistingKey] = useState("");
-  const [requestNewKey, setRequestNewKey] = useState("");
-  const [requestSpecValues, setRequestSpecValues] = useState("");
+  const [catalogSpecComposerOpen, setCatalogSpecComposerOpen] = useState(false);
+  const [catalogSpecComposerMode, setCatalogSpecComposerMode] = useState<
+    "existing" | "new"
+  >("existing");
+  const [catalogSpecComposerKey, setCatalogSpecComposerKey] = useState("");
+  const [catalogSpecComposerNewKey, setCatalogSpecComposerNewKey] =
+    useState("");
+  const [catalogSpecComposerValues, setCatalogSpecComposerValues] =
+    useState("");
+  const [editingCatalogSpecRowId, setEditingCatalogSpecRowId] = useState<
+    string | null
+  >(null);
+  const [catalogSpecsSaving, setCatalogSpecsSaving] = useState(false);
 
   const [requestName, setRequestName] = useState("");
   const [requestBrandId, setRequestBrandId] = useState("");
@@ -182,24 +207,201 @@ export default function AddProductModal({
       .sort((a, b) => a.label.localeCompare(b.label));
   };
 
+  const normalizeSpecKey = (rawKey: string) =>
+    rawKey.trim().toLowerCase().replace(/\s+/g, "_");
+
+  const buildCatalogSpecRows = (rawSpecs: unknown): CatalogSpecDraftRow[] => {
+    if (!rawSpecs || typeof rawSpecs !== "object") {
+      return [];
+    }
+
+    return normalizeCatalogSpecEntries(rawSpecs as Record<string, unknown>).map(
+      (entry) =>
+        createCatalogSpecDraftRow(entry.key, entry.options.join(", ")),
+    );
+  };
+
+  const buildCatalogSpecsObject = (
+    rows: CatalogSpecDraftRow[],
+    strict: boolean,
+  ): Record<string, string[]> => {
+    const specMap = new Map<string, Set<string>>();
+
+    rows.forEach((row, index) => {
+      const normalizedKey = normalizeSpecKey(row.key);
+      const values = getSpecOptions(row.value);
+      const rowIsEmpty = !row.key.trim() && !row.value.trim();
+
+      if (rowIsEmpty) return;
+
+      if (!normalizedKey || values.length === 0) {
+        if (strict) {
+          throw new Error(`Thông số dòng ${index + 1} cần có tên và giá trị`);
+        }
+        return;
+      }
+
+      if (!specMap.has(normalizedKey)) {
+        specMap.set(normalizedKey, new Set<string>());
+      }
+
+      const valueSet = specMap.get(normalizedKey)!;
+      values.forEach((value) => valueSet.add(value));
+    });
+
+    return Object.fromEntries(
+      Array.from(specMap.entries()).map(([key, valueSet]) => [
+        key,
+        Array.from(valueSet),
+      ]),
+    );
+  };
+
+  const syncSelectedSpecs = (
+    entries: Array<{ key: string; options: string[] }>,
+    currentSelected: Record<string, string>,
+  ) => {
+    return entries.reduce<Record<string, string>>((acc, entry) => {
+      const selectedValue = currentSelected[entry.key];
+      if (selectedValue && entry.options.includes(selectedValue)) {
+        acc[entry.key] = selectedValue;
+      }
+      return acc;
+    }, {});
+  };
+
+  const resetCatalogSpecComposer = () => {
+    setCatalogSpecComposerOpen(false);
+    setCatalogSpecComposerMode("existing");
+    setCatalogSpecComposerKey("");
+    setCatalogSpecComposerNewKey("");
+    setCatalogSpecComposerValues("");
+    setEditingCatalogSpecRowId(null);
+  };
+
+  const openCatalogSpecComposer = () => {
+    setCatalogSpecComposerOpen(true);
+    setCatalogSpecComposerMode(
+      editableSpecEntries.length > 0 ? "existing" : "new",
+    );
+    setCatalogSpecComposerKey(editableSpecEntries[0]?.key ?? "");
+    setCatalogSpecComposerNewKey("");
+    setCatalogSpecComposerValues("");
+    setEditingCatalogSpecRowId(null);
+  };
+
+  const applyCatalogSpecRows = (nextRows: CatalogSpecDraftRow[]) => {
+    const nextEntries = normalizeCatalogSpecEntries(
+      buildCatalogSpecsObject(nextRows, false),
+    );
+    setCatalogSpecRows(nextRows);
+    setSelectedSpecs((prev) => syncSelectedSpecs(nextEntries, prev));
+  };
+
+  const handleApplyCatalogSpecComposer = () => {
+    const values = getSpecOptions(catalogSpecComposerValues);
+    if (values.length === 0) {
+      showErrorToast("Vui lòng nhập ít nhất một giá trị");
+      return;
+    }
+
+    if (catalogSpecComposerMode === "existing") {
+      const normalizedKey = normalizeSpecKey(catalogSpecComposerKey);
+      if (!normalizedKey) {
+        showErrorToast("Vui lòng chọn thông số có sẵn");
+        return;
+      }
+
+      const targetRow = catalogSpecRows.find(
+        (row) => normalizeSpecKey(row.key) === normalizedKey,
+      );
+      if (!targetRow) {
+        showErrorToast("Không tìm thấy thông số cần cập nhật");
+        return;
+      }
+
+      const mergedValues = Array.from(
+        new Set([...getSpecOptions(targetRow.value), ...values]),
+      );
+      applyCatalogSpecRows(
+        catalogSpecRows.map((row) =>
+          row.id === targetRow.id
+            ? { ...row, value: mergedValues.join(", ") }
+            : row,
+        ),
+      );
+      resetCatalogSpecComposer();
+      return;
+    }
+
+    const normalizedKey = normalizeSpecKey(catalogSpecComposerNewKey);
+    if (!normalizedKey) {
+      showErrorToast("Vui lòng nhập tên thông số");
+      return;
+    }
+
+    if (editingCatalogSpecRowId) {
+      applyCatalogSpecRows(
+        catalogSpecRows.map((row) =>
+          row.id === editingCatalogSpecRowId
+            ? {
+                ...row,
+                key: catalogSpecComposerNewKey.trim(),
+                value: values.join(", "),
+              }
+            : row,
+        ),
+      );
+      resetCatalogSpecComposer();
+      return;
+    }
+
+    const existingRow = catalogSpecRows.find(
+      (row) => normalizeSpecKey(row.key) === normalizedKey,
+    );
+    if (existingRow) {
+      const mergedValues = Array.from(
+        new Set([...getSpecOptions(existingRow.value), ...values]),
+      );
+      applyCatalogSpecRows(
+        catalogSpecRows.map((row) =>
+          row.id === existingRow.id
+            ? { ...row, value: mergedValues.join(", ") }
+            : row,
+        ),
+      );
+      resetCatalogSpecComposer();
+      return;
+    }
+
+    applyCatalogSpecRows([
+      ...catalogSpecRows,
+      createCatalogSpecDraftRow(catalogSpecComposerNewKey.trim(), values.join(", ")),
+    ]);
+    resetCatalogSpecComposer();
+  };
+
+  const handleEditCatalogSpecRow = (row: CatalogSpecDraftRow) => {
+    setCatalogSpecComposerOpen(true);
+    setCatalogSpecComposerMode("new");
+    setCatalogSpecComposerKey("");
+    setCatalogSpecComposerNewKey(row.key);
+    setCatalogSpecComposerValues(row.value);
+    setEditingCatalogSpecRowId(row.id);
+  };
+
+  const handleRemoveCatalogSpecRow = (row: CatalogSpecDraftRow) => {
+    applyCatalogSpecRows(
+      catalogSpecRows.filter((item) => item.id !== row.id),
+    );
+  };
+
+  const editableCatalogSpecs = buildCatalogSpecsObject(catalogSpecRows, false);
+  const editableSpecEntries = normalizeCatalogSpecEntries(editableCatalogSpecs);
   const currentSerialSpecsPreview =
     Object.keys(selectedSpecs).length > 0
       ? JSON.stringify(selectedSpecs)
       : "(trống)";
-  const selectedCatalog = productCatalogs.find(
-    (item) => item.id === selectedCatalogId,
-  );
-  const selectedCatalogSpecEntries =
-    selectedCatalog &&
-    selectedCatalog.specs &&
-    typeof selectedCatalog.specs === "object"
-      ? normalizeCatalogSpecEntries(
-          selectedCatalog.specs as Record<string, unknown>,
-        )
-      : [];
-  const selectedCatalogSpecKeys = selectedCatalogSpecEntries.map(
-    (item) => item.key,
-  );
 
   const handleAddExisting = async () => {
     if (!selectedCatalogId || !price) {
@@ -212,6 +414,19 @@ export default function AddProductModal({
       return;
     }
     try {
+      const hasCatalogSpecRows = catalogSpecRows.some(
+        (row) => row.key.trim() || row.value.trim(),
+      );
+      if (hasCatalogSpecRows) {
+        const nextCatalogSpecs = buildCatalogSpecsObject(catalogSpecRows, true);
+        await dispatch(
+          requestCatalogSpec({
+            catalog_id: Number(selectedCatalogId),
+            specs: nextCatalogSpecs,
+          }),
+        ).unwrap();
+      }
+
       await dispatch(
         createShopProduct({
           catalog_id: parseInt(selectedCatalogId),
@@ -307,41 +522,41 @@ export default function AddProductModal({
     }
   };
 
-  const handleRequestSpec = async () => {
-    const resolvedKey =
-      specRequestMode === "existing"
-        ? requestExistingKey.trim().toLowerCase()
-        : requestNewKey.trim().toLowerCase();
-
-    if (!selectedCatalogId || !resolvedKey || !requestSpecValues.trim()) {
-      alert("Vui lòng chọn catalog và nhập key/value thông số");
-      return;
-    }
-
-    const values = requestSpecValues
-      .split(/[,;|]/g)
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    if (values.length === 0) {
-      alert("Vui lòng nhập ít nhất 1 giá trị");
+  const handleSaveCatalogSpecs = async () => {
+    if (!selectedCatalogId) {
+      showErrorToast("Vui lòng chọn một sản phẩm từ catalog");
       return;
     }
 
     try {
+      const nextCatalogSpecs = buildCatalogSpecsObject(catalogSpecRows, true);
+      setCatalogSpecsSaving(true);
       await dispatch(
         requestCatalogSpec({
           catalog_id: Number(selectedCatalogId),
-          spec_key: resolvedKey,
-          proposed_values: values,
+          specs: nextCatalogSpecs,
         }),
       ).unwrap();
-      alert("Đã gửi yêu cầu thêm thông số, chờ admin duyệt");
-      setRequestNewKey("");
-      setRequestSpecValues("");
-      setSpecRequestOpen(false);
-    } catch {
-      alert("Không gửi được yêu cầu thêm thông số");
+
+      const nextEntries = normalizeCatalogSpecEntries(nextCatalogSpecs);
+      setCatalogSpecRows(buildCatalogSpecRows(nextCatalogSpecs));
+      setSelectedSpecs((prev) => syncSelectedSpecs(nextEntries, prev));
+      showSuccessToast("Đã cập nhật thông số catalog");
+
+      await dispatch(
+        getProductCatalogs({
+          page: currentPage,
+          limit: ITEMS_PER_LIMIT,
+          q: debouncedQuery,
+          append: false,
+        }),
+      ).unwrap();
+    } catch (error) {
+      showErrorToast(
+        extractErrorMessage(error, "Không cập nhật được thông số catalog"),
+      );
+    } finally {
+      setCatalogSpecsSaving(false);
     }
   };
 
@@ -429,18 +644,10 @@ export default function AddProductModal({
                               setSelectedCatalogId(c.id);
                               setPrice(c.msrp || "");
                               setShopDescription("");
-                              setRequestNewKey("");
-                              setRequestSpecValues("");
-                              setSpecRequestMode("existing");
-                              setRequestExistingKey("");
                               setListingImages([]);
-                              const defaultSpecs: Record<string, string> = {};
-                              specEntries.forEach((entry) => {
-                                if (entry.options.length > 0) {
-                                  defaultSpecs[entry.key] = entry.options[0];
-                                }
-                              });
-                              setSelectedSpecs(defaultSpecs);
+                              setCatalogSpecRows(buildCatalogSpecRows(c.specs));
+                              setSelectedSpecs({});
+                              resetCatalogSpecComposer();
                             }}
                           >
                             <input
@@ -585,66 +792,452 @@ export default function AddProductModal({
                                 </div>
 
                                 <div style={themed(styles.modalPanel)}>
-                                  <label
-                                    style={themed(
-                                      styles.modalProductSmallLabel,
-                                    )}
-                                  >
-                                    Tùy chọn có sẵn từ catalog
-                                  </label>
-                                  <div style={themed(styles.modalSpecGrid)}>
-                                    {specEntries.length === 0 ? (
+                                  <div style={themed(styles.modalSectionHeader)}>
+                                    <div>
+                                      <div
+                                        style={themed(
+                                          styles.modalRequestHeader,
+                                        )}
+                                      >
+                                        Thông số catalog
+                                      </div>
+                                      <div
+                                        style={themed(styles.modalRequestSub)}
+                                      >
+                                        Bộ thông số dùng chung cho catalog này.
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      style={themed(styles.modalGhostButton)}
+                                      onClick={openCatalogSpecComposer}
+                                    >
+                                      Thêm thông số
+                                    </button>
+                                  </div>
+                                  <div style={themed(styles.modalRequestPanel)}>
+                                    <div
+                                      style={themed(styles.modalRequestHeader)}
+                                    >
+                                      {editableSpecEntries.length === 0
+                                        ? "Catalog này chưa có thông số"
+                                        : `${editableSpecEntries.length} thông số đang có`}
+                                    </div>
+                                    <div style={themed(styles.modalRequestSub)}>
+                                      Mỗi thông số có thể chứa nhiều giá trị để
+                                      shop chọn khi tạo listing.
+                                    </div>
+                                    {editableSpecEntries.length === 0 ? (
                                       <div style={themed(styles.modalHint)}>
-                                        Catalog chưa có thông số chọn sẵn.
+                                        Chưa có thông số.
                                       </div>
                                     ) : (
-                                      specEntries.map((entry) => {
-                                        if (entry.options.length === 0)
-                                          return null;
-
-                                        return (
-                                          <label
-                                            key={entry.key}
-                                            style={themed(styles.modalSpecItem)}
+                                      <div
+                                        style={themed(styles.modalSpecSummaryList)}
+                                      >
+                                        {catalogSpecRows.map((row) => (
+                                          <div
+                                            key={row.id}
+                                            style={themed(styles.modalSpecCard)}
                                           >
-                                            <span
+                                            <div
                                               style={themed(
-                                                styles.modalProductSmallLabel,
+                                                styles.modalSpecCardHeader,
                                               )}
                                             >
-                                              {entry.label}
-                                            </span>
-                                            <select
+                                              <div>
+                                                <div
+                                                  style={themed(
+                                                    styles.modalSpecCardTitle,
+                                                  )}
+                                                >
+                                                  {formatSpecLabel(row.key)}
+                                                </div>
+                                                <div
+                                                  style={themed(
+                                                    styles.modalRequestSub,
+                                                  )}
+                                                >
+                                                  key: {normalizeSpecKey(row.key)}
+                                                </div>
+                                              </div>
+                                              <div
+                                                style={themed(
+                                                  styles.modalInlineActions,
+                                                )}
+                                              >
+                                                <button
+                                                  type="button"
+                                                  style={themed(
+                                                    styles.modalGhostButton,
+                                                  )}
+                                                  onClick={() =>
+                                                    handleEditCatalogSpecRow(
+                                                      row,
+                                                    )
+                                                  }
+                                                >
+                                                  Sửa
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  style={themed(
+                                                    styles.modalDangerButton,
+                                                  )}
+                                                  onClick={() =>
+                                                    handleRemoveCatalogSpecRow(
+                                                      row,
+                                                    )
+                                                  }
+                                                >
+                                                  Xóa
+                                                </button>
+                                              </div>
+                                            </div>
+                                            <div
+                                              style={themed(
+                                                styles.modalTagWrap,
+                                              )}
+                                            >
+                                              {getSpecOptions(row.value).map(
+                                                (value) => (
+                                                  <span
+                                                    key={`${row.id}-${value}`}
+                                                    style={themed(
+                                                      styles.modalTag,
+                                                    )}
+                                                  >
+                                                    {value}
+                                                  </span>
+                                                ),
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {catalogSpecComposerOpen && (
+                                      <div
+                                        style={themed(
+                                          styles.modalComposerBox,
+                                        )}
+                                      >
+                                        <div
+                                          style={themed(
+                                            styles.modalSectionHeader,
+                                          )}
+                                        >
+                                          <div
+                                            style={themed(
+                                              styles.modalRequestHeader,
+                                            )}
+                                          >
+                                            {editingCatalogSpecRowId
+                                              ? "Sửa thông số"
+                                              : "Thêm thông số"}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            style={themed(
+                                              styles.modalGhostButton,
+                                            )}
+                                            onClick={resetCatalogSpecComposer}
+                                          >
+                                            Đóng
+                                          </button>
+                                        </div>
+                                        {!editingCatalogSpecRowId && (
+                                          <div
+                                            style={themed(styles.modalInlineTabs)}
+                                          >
+                                            <button
+                                              type="button"
+                                              style={
+                                                catalogSpecComposerMode ===
+                                                "existing"
+                                                  ? themed(
+                                                      styles.modalTabActive,
+                                                    )
+                                                  : themed(styles.modalTab)
+                                              }
+                                              onClick={() =>
+                                                setCatalogSpecComposerMode(
+                                                  "existing",
+                                                )
+                                              }
+                                              disabled={
+                                                editableSpecEntries.length ===
+                                                0
+                                              }
+                                            >
+                                              Thêm vào có sẵn
+                                            </button>
+                                            <button
+                                              type="button"
+                                              style={
+                                                catalogSpecComposerMode === "new"
+                                                  ? themed(
+                                                      styles.modalTabActive,
+                                                    )
+                                                  : themed(styles.modalTab)
+                                              }
+                                              onClick={() =>
+                                                setCatalogSpecComposerMode(
+                                                  "new",
+                                                )
+                                              }
+                                            >
+                                              Tạo thông số mới
+                                            </button>
+                                          </div>
+                                        )}
+                                        <div style={themed(styles.modalForm)}>
+                                          {catalogSpecComposerMode ===
+                                            "existing" &&
+                                          !editingCatalogSpecRowId ? (
+                                            <label
+                                              style={themed(styles.modalLabel)}
+                                            >
+                                              Chọn thông số
+                                              <select
+                                                value={catalogSpecComposerKey}
+                                                onChange={(e) =>
+                                                  setCatalogSpecComposerKey(
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                style={themed(
+                                                  styles.modalInputFull,
+                                                )}
+                                              >
+                                                {editableSpecEntries.map(
+                                                  (entry) => (
+                                                    <option
+                                                      key={entry.key}
+                                                      value={entry.key}
+                                                    >
+                                                      {entry.label}
+                                                    </option>
+                                                  ),
+                                                )}
+                                              </select>
+                                            </label>
+                                          ) : (
+                                            <label
+                                              style={themed(styles.modalLabel)}
+                                            >
+                                              Tên thông số
+                                              <input
+                                                type="text"
+                                                value={
+                                                  catalogSpecComposerNewKey
+                                                }
+                                                onChange={(e) =>
+                                                  setCatalogSpecComposerNewKey(
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                placeholder="Ví dụ: màu sắc"
+                                                style={themed(
+                                                  styles.modalInputFull,
+                                                )}
+                                              />
+                                            </label>
+                                          )}
+                                          <label
+                                            style={themed(styles.modalLabel)}
+                                          >
+                                            Giá trị
+                                            <input
+                                              type="text"
                                               value={
-                                                selectedSpecs[entry.key] ??
-                                                entry.options[0]
+                                                catalogSpecComposerValues
                                               }
                                               onChange={(e) =>
-                                                setSelectedSpecs((prev) => ({
-                                                  ...prev,
-                                                  [entry.key]: e.target.value,
-                                                }))
+                                                setCatalogSpecComposerValues(
+                                                  e.target.value,
+                                                )
                                               }
+                                              placeholder="Ví dụ: Đen, Trắng, Xanh"
                                               style={themed(
                                                 styles.modalInputFull,
                                               )}
-                                            >
-                                              {entry.options.map((opt) => (
-                                                <option key={opt} value={opt}>
-                                                  {opt}
-                                                </option>
-                                              ))}
-                                            </select>
+                                            />
                                           </label>
-                                        );
-                                      })
+                                        </div>
+                                        <div
+                                          style={themed(styles.modalActions)}
+                                        >
+                                          <button
+                                            type="button"
+                                            style={themed(
+                                              styles.modalGhostButton,
+                                            )}
+                                            onClick={handleApplyCatalogSpecComposer}
+                                          >
+                                            {editingCatalogSpecRowId
+                                              ? "Cập nhật thông số"
+                                              : "Thêm vào danh sách"}
+                                          </button>
+                                        </div>
+                                      </div>
                                     )}
+                                    <div style={themed(styles.modalActions)}>
+                                      <button
+                                        type="button"
+                                        style={themed(styles.primaryButton)}
+                                        onClick={handleSaveCatalogSpecs}
+                                        disabled={catalogSpecsSaving}
+                                      >
+                                        {catalogSpecsSaving
+                                          ? "Đang lưu..."
+                                          : "Lưu vào catalog"}
+                                      </button>
+                                    </div>
                                   </div>
 
-                                  <div
-                                    style={themed(styles.modalVariantPreview)}
-                                  >
-                                    serial_specs: {currentSerialSpecsPreview}
+                                  <div style={themed(styles.modalRequestPanel)}>
+                                    <div
+                                      style={themed(styles.modalRequestHeader)}
+                                    >
+                                      Thông số áp dụng cho sản phẩm này
+                                    </div>
+                                    <div style={themed(styles.modalRequestSub)}>
+                                      Chọn những thông số shop muốn dùng cho
+                                      listing hiện tại.
+                                    </div>
+                                    {editableSpecEntries.length === 0 ? (
+                                      <div style={themed(styles.modalHint)}>
+                                        Chưa có thông số để chọn.
+                                      </div>
+                                    ) : (
+                                      <div style={themed(styles.modalForm)}>
+                                        {editableSpecEntries.map((entry) => {
+                                          const isChecked =
+                                            entry.key in selectedSpecs;
+                                          return (
+                                            <div
+                                              key={entry.key}
+                                              style={themed(
+                                                styles.modalSelectionCard,
+                                              )}
+                                            >
+                                              <div
+                                                style={themed(
+                                                  styles.modalSelectionCardHeader,
+                                                )}
+                                              >
+                                                <label
+                                                  style={themed(
+                                                    styles.modalCheckboxRow,
+                                                  )}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                      setSelectedSpecs((prev) => {
+                                                        if (!e.target.checked) {
+                                                          const next = {
+                                                            ...prev,
+                                                          };
+                                                          delete next[entry.key];
+                                                          return next;
+                                                        }
+
+                                                        return {
+                                                          ...prev,
+                                                          [entry.key]:
+                                                            prev[entry.key] ??
+                                                            entry.options[0] ??
+                                                            "",
+                                                        };
+                                                      });
+                                                    }}
+                                                />
+                                                <div>
+                                                  <div
+                                                    style={themed(
+                                                      styles.modalSpecCardTitle,
+                                                    )}
+                                                  >
+                                                    {entry.label}
+                                                  </div>
+                                                  <div
+                                                    style={themed(
+                                                      styles.modalRequestSub,
+                                                    )}
+                                                  >
+                                                    {entry.options.length} giá
+                                                    trị có sẵn
+                                                  </div>
+                                                </div>
+                                              </label>
+                                              <span
+                                                style={themed(
+                                                  isChecked
+                                                    ? styles.modalTag
+                                                    : styles.modalMutedBadge,
+                                                )}
+                                              >
+                                                {isChecked
+                                                  ? "Đang áp dụng"
+                                                  : "Chưa chọn"}
+                                              </span>
+                                            </div>
+                                            {isChecked ? (
+                                              <div
+                                                style={themed(
+                                                  styles.modalSelectionControl,
+                                                )}
+                                              >
+                                                <select
+                                                  value={
+                                                    selectedSpecs[entry.key] ??
+                                                    entry.options[0]
+                                                  }
+                                                  onChange={(e) =>
+                                                    setSelectedSpecs((prev) => ({
+                                                      ...prev,
+                                                      [entry.key]:
+                                                        e.target.value,
+                                                    }))
+                                                  }
+                                                  style={themed(
+                                                    styles.modalInputFull,
+                                                  )}
+                                                >
+                                                  {entry.options.map((opt) => (
+                                                    <option
+                                                      key={opt}
+                                                      value={opt}
+                                                    >
+                                                      {opt}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                            ) : (
+                                              <div
+                                                style={themed(
+                                                  styles.modalHint,
+                                                )}
+                                              >
+                                                Chọn để dùng thông số này cho
+                                                listing hiện tại.
+                                              </div>
+                                            )}
+                                          </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    <div
+                                      style={themed(styles.modalVariantPreview)}
+                                    >
+                                      serial_specs:{" "}
+                                      {currentSerialSpecsPreview}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -695,36 +1288,6 @@ export default function AddProductModal({
                       disabled={currentPage === productCatalogsTotalPages}
                     >
                       ›
-                    </button>
-                  </div>
-                )}
-                {selectedCatalogId && (
-                  <div style={themed(styles.modalRequestPanel)}>
-                    <div style={themed(styles.modalRequestHeader)}>
-                      Cần thêm thông số cho catalog?
-                    </div>
-                    <div style={themed(styles.modalRequestSub)}>
-                      Mở form riêng để đề xuất cho admin, tránh lẫn với thông số
-                      listing.
-                    </div>
-                    <button
-                      type="button"
-                      style={themed(styles.modalGhostButton)}
-                      onClick={() => {
-                        if (selectedCatalogSpecKeys.length > 0) {
-                          setRequestExistingKey(
-                            selectedCatalogSpecKeys[0] ?? "",
-                          );
-                        }
-                        setSpecRequestMode(
-                          selectedCatalogSpecKeys.length > 0
-                            ? "existing"
-                            : "new",
-                        );
-                        setSpecRequestOpen(true);
-                      }}
-                    >
-                      Đề xuất thông số mới
                     </button>
                   </div>
                 )}
@@ -859,115 +1422,6 @@ export default function AddProductModal({
         open={brandModalOpen}
         onClose={() => setBrandModalOpen(false)}
       />
-      {specRequestOpen && (
-        <div style={themed(styles.modalOverlay)}>
-          <div style={themed(styles.specRequestModalCard)}>
-            <div style={themed(styles.modalHeader)}>
-              <h3 style={themed(styles.modalTitle)}>
-                Đề xuất thông số catalog
-              </h3>
-              <button
-                type="button"
-                style={themed(styles.modalClose)}
-                onClick={() => setSpecRequestOpen(false)}
-              >
-                <AppIcon name="close" />
-              </button>
-            </div>
-            <div style={themed(styles.specRequestBody)}>
-              <div style={themed(styles.specRequestTabs)}>
-                <button
-                  type="button"
-                  style={
-                    specRequestMode === "existing"
-                      ? themed(styles.specRequestTabActive)
-                      : themed(styles.specRequestTab)
-                  }
-                  onClick={() => setSpecRequestMode("existing")}
-                  disabled={selectedCatalogSpecKeys.length === 0}
-                >
-                  Thêm vào key có sẵn
-                </button>
-                <button
-                  type="button"
-                  style={
-                    specRequestMode === "new"
-                      ? themed(styles.specRequestTabActive)
-                      : themed(styles.specRequestTab)
-                  }
-                  onClick={() => setSpecRequestMode("new")}
-                >
-                  Tạo key mới
-                </button>
-              </div>
-
-              {specRequestMode === "existing" ? (
-                <label style={themed(styles.modalLabel)}>
-                  Chọn key có sẵn
-                  <select
-                    value={requestExistingKey}
-                    onChange={(e) => setRequestExistingKey(e.target.value)}
-                    style={themed(styles.modalInput)}
-                  >
-                    {selectedCatalogSpecKeys.length === 0 ? (
-                      <option value="">Catalog chưa có key nào</option>
-                    ) : (
-                      selectedCatalogSpecEntries.map((item) => (
-                        <option key={item.key} value={item.key}>
-                          {item.label}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </label>
-              ) : (
-                <label style={themed(styles.modalLabel)}>
-                  Key mới
-                  <input
-                    type="text"
-                    value={requestNewKey}
-                    onChange={(e) => setRequestNewKey(e.target.value)}
-                    placeholder="vd: material"
-                    style={themed(styles.modalInput)}
-                  />
-                </label>
-              )}
-
-              <label style={themed(styles.modalLabel)}>
-                Giá trị đề xuất
-                <input
-                  type="text"
-                  value={requestSpecValues}
-                  onChange={(e) => setRequestSpecValues(e.target.value)}
-                  placeholder="vd: vàng|đỏ|xanh"
-                  style={themed(styles.modalInput)}
-                />
-              </label>
-
-              <div style={themed(styles.modalActions)}>
-                <button
-                  type="button"
-                  style={themed(styles.modalGhostButton)}
-                  onClick={() => setSpecRequestOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  style={themed(styles.primaryButton)}
-                  onClick={handleRequestSpec}
-                  disabled={
-                    specRequestMode === "existing" &&
-                    selectedCatalogSpecKeys.length === 0
-                  }
-                >
-                  Gửi đề xuất
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

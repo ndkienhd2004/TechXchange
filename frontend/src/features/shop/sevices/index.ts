@@ -198,8 +198,10 @@ export const requestNewProductService = async (payload: {
 
 export const requestCatalogSpecService = async (payload: {
   catalog_id: number;
-  spec_key: string;
-  proposed_values: string[];
+  specs_json?: string;
+  specs?: Record<string, unknown>;
+  spec_key?: string;
+  proposed_values?: string[];
 }) => {
   const response = await api().post("/products/catalog-spec-requests", payload);
   return response.data;

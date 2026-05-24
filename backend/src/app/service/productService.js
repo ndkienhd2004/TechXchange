@@ -18,6 +18,14 @@ const CategoryService = require("./categoryService");
  * Product Service - Xử lý nghiệp vụ liên quan đến sản phẩm
  */
 class ProductService {
+  static clampString(value, maxLength, fallback = "") {
+    const normalized = String(value ?? fallback).trim();
+    if (!normalized) return fallback;
+    return normalized.length > maxLength
+      ? normalized.slice(0, maxLength)
+      : normalized;
+  }
+
   static normalizeVariantOptions(raw) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
       return {};
@@ -99,9 +107,8 @@ class ProductService {
       .map(([key]) => key);
 
     if (catalogSpecMap.size === 0) {
-      if (optionKeys.length > 0) {
-        throw new Error("Catalog chưa cấu hình specs, không thể gửi variant_options");
-      }
+      // Luồng specs mới cho phép shop tự quản lý JSON tự do.
+      // Khi catalog không theo map key/value cũ thì không chặn variant_options.
       return normalizedOptions;
     }
 
@@ -822,7 +829,7 @@ class ProductService {
             catalog_id: catalog.id,
             category_id: catalog.category_id,
             brand_id: catalog.brand_id || null,
-            name: catalog.name,
+            name: ProductService.clampString(catalog.name, 100, "Sản phẩm"),
             description: description || catalog.description || null,
             seller_id: userId,
             store_id,
@@ -835,7 +842,7 @@ class ProductService {
 
         const generatedSerialCode =
           serial_code && String(serial_code).trim()
-            ? String(serial_code).trim()
+            ? ProductService.clampString(serial_code, 64, "")
             : `SER-${product.id}-${Date.now()}`;
 
         const serial = await ProductSerial.create(
@@ -857,20 +864,38 @@ class ProductService {
           { transaction },
         );
 
-        if (Array.isArray(images) && images.length > 0) {
-          const imageRows = images
-            .map((item, index) => ({
-              product_id: product.id,
-              url: item.url,
-              sort_order: Number.isInteger(item.sort_order)
-                ? item.sort_order
-                : index,
-            }))
-            .filter((item) => item.url);
+        const imageRowsFromPayload = Array.isArray(images)
+          ? images
+              .map((item, index) => ({
+                product_id: product.id,
+                url: item?.url ? String(item.url).trim() : "",
+                sort_order: Number.isInteger(item?.sort_order)
+                  ? Number(item.sort_order)
+                  : index,
+              }))
+              .filter((item) => item.url)
+          : [];
 
-          if (imageRows.length > 0) {
-            await ProductImage.bulkCreate(imageRows, { transaction });
-          }
+        const catalogDefaultImage =
+          typeof catalog.default_image === "string"
+            ? catalog.default_image.trim()
+            : "";
+
+        const imageRows =
+          imageRowsFromPayload.length > 0
+            ? imageRowsFromPayload
+            : catalogDefaultImage
+              ? [
+                  {
+                    product_id: product.id,
+                    url: catalogDefaultImage,
+                    sort_order: 0,
+                  },
+                ]
+              : [];
+
+        if (imageRows.length > 0) {
+          await ProductImage.bulkCreate(imageRows, { transaction });
         }
 
         const createdProduct = await Product.findByPk(product.id, {

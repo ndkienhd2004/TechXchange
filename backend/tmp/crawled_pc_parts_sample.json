@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "createdAt": "2026-05-19T14:56:52.957Z",
+    "total": 0,
+    "options": {
+      "source": "all",
+      "limit": 20,
+      "perSourceLimit": 12,
+      "delayMs": 700,
+      "timeoutMs": 15000,
+      "retries": 2,
+      "jsonOutput": "tmp/crawled_pc_parts_sample.json",
+      "verbose": false
+    },
+    "reports": [
+      {
+        "source": "gearvn",
+        "totalUrls": 4570,
+        "kept": 0,
+        "skipped": 4570
+      },
+      {
+        "source": "ttgshop",
+        "totalUrls": 0,
+        "kept": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "items": []
+}

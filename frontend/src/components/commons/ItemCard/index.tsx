@@ -27,8 +27,8 @@ export default function ItemCard({
   reviewCount = 0,
   badgeText = "-8%",
   imageSrc,
-  imageAlt = "Product image",
-  ctaLabel = "Buy now",
+  imageAlt = "Hình sản phẩm",
+  ctaLabel = "Mua ngay",
 }: ItemCardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -116,7 +116,7 @@ export default function ItemCard({
             onError={() => setSafeImageSrc(null)}
           />
         ) : (
-          <div style={themed(styles.mediaPlaceholder)}>Preview</div>
+          <div style={themed(styles.mediaPlaceholder)}>Xem trước</div>
         )}
         <span style={themed(styles.badge)}>{badgeText}</span>
       </div>
@@ -165,7 +165,7 @@ export default function ItemCard({
         <button
           type="button"
           style={themed(styles.iconButton)}
-          aria-label="Add to cart"
+          aria-label="Thêm vào giỏ hàng"
           data-nprogress-ignore="true"
           onClick={handleAddToCart}
           disabled={adding}

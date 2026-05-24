@@ -11,6 +11,10 @@ export interface CartItem {
     id: number;
     name: string;
     price: number | string;
+    default_image?: string | null;
+    catalog?: {
+      default_image?: string | null;
+    };
     images?: { id: number; url: string; sort_order: number }[];
     store?: { id: number; name: string };
   };

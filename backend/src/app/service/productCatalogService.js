@@ -3,6 +3,27 @@ const { ProductCatalog, Product, Brand, ProductCategory } = require("../../model
 const CategoryService = require("./categoryService");
 
 class ProductCatalogService {
+  static parseSpecsPayload(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "string") {
+      const raw = value.trim();
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("specs phải là JSON object");
+        }
+        return parsed;
+      } catch (_err) {
+        throw new Error("specs không phải JSON hợp lệ");
+      }
+    }
+    if (typeof value === "object" && !Array.isArray(value)) {
+      return value;
+    }
+    throw new Error("specs phải là object hoặc JSON string");
+  }
+
   static logDeleteEvent(stage, payload = {}) {
     console.log(`[Admin][CatalogDelete][${stage}]`, payload);
   }
@@ -135,8 +156,7 @@ class ProductCatalogService {
     }
 
     if (payload.specs !== undefined) {
-      patch.specs =
-        payload.specs && typeof payload.specs === "object" ? payload.specs : null;
+      patch.specs = ProductCatalogService.parseSpecsPayload(payload.specs);
     }
 
     if (payload.status !== undefined) {

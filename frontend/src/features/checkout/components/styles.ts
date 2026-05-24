@@ -117,6 +117,15 @@ export const thumb = (theme: Theme): CSSProperties => ({
   background: theme.colors.palette.backgrounds.secondary,
 });
 
+export const thumbImage = (theme: Theme): CSSProperties => ({
+  width: "64px",
+  height: "64px",
+  borderRadius: theme.spacing.md,
+  objectFit: "cover",
+  background: theme.colors.palette.backgrounds.secondary,
+  display: "block",
+});
+
 export const productName = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });
@@ -145,6 +154,11 @@ export const paymentOption = (theme: Theme): CSSProperties => ({
   borderRadius: theme.spacing.md,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.primary,
+  cursor: "pointer",
+  width: "100%",
+  textAlign: "left",
+  fontSize: theme.typography.fontSize.xl.size,
 });
 
 export const paymentOptionActive = (theme: Theme): CSSProperties => ({

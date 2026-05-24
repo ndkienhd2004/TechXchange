@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "createdAt": "2026-05-19T18:01:31.311Z",
+    "total": 0,
+    "options": {
+      "source": "gearvn",
+      "limit": 300,
+      "perSourceLimit": 220,
+      "delayMs": 500,
+      "timeoutMs": 20000,
+      "retries": 2,
+      "jsonOutput": "tmp/crawled_gearvn_pc_parts_full.json",
+      "verbose": false
+    },
+    "reports": [
+      {
+        "source": "gearvn",
+        "totalUrls": 4573,
+        "kept": 0,
+        "skipped": 4573
+      }
+    ]
+  },
+  "items": []
+}

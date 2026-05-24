@@ -5,8 +5,8 @@ import ShopLayout from "../ShopLayout";
 import * as styles from "../styles";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
-  getMyCatalogSpecRequests,
   getMyProductRequests,
   getShopProducts,
 } from "../../store";
@@ -18,6 +18,7 @@ import {
   updateShopProductService,
 } from "../../sevices";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
+import { uploadImageToS3 } from "@/services/uploadApi";
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +28,7 @@ type EditProductForm = {
   price: string;
   status: "active" | "inactive" | "sold_out";
   description: string;
+  images: Array<{ key: string; url: string }>;
 };
 
 export default function ShopProductsView() {
@@ -38,7 +40,6 @@ export default function ShopProductsView() {
     loading,
     productsTotal,
     productRequests,
-    catalogSpecRequests,
     requestsLoading,
   } =
     useAppSelector((state: RootState) => state.shop);
@@ -51,6 +52,7 @@ export default function ShopProductsView() {
   );
   const [editingProduct, setEditingProduct] = useState<EditProductForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editImageUploading, setEditImageUploading] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [requestStatus, setRequestStatus] = useState("all");
   const totalItems = productsTotal;
@@ -69,9 +71,6 @@ export default function ShopProductsView() {
   useEffect(() => {
     dispatch(
       getMyProductRequests({ page: 1, limit: 10, status: requestStatus }),
-    );
-    dispatch(
-      getMyCatalogSpecRequests({ page: 1, limit: 10, status: requestStatus }),
     );
   }, [dispatch, requestStatus]);
 
@@ -97,6 +96,29 @@ export default function ShopProductsView() {
   const openEditProduct = (product: (typeof products)[number]) => {
     const safePrice = Number(product.price ?? product.msrp ?? 0);
     const status = String(product.status || "active").toLowerCase();
+    const existingImages = Array.isArray(product.images)
+      ? product.images
+          .map((image, index) => ({
+            key: String(image.id ?? `existing-${index}`),
+            url: String(image.url || "").trim(),
+          }))
+          .filter((image) => image.url)
+      : [];
+
+    const fallbackCatalogImage =
+      typeof product.catalog?.default_image === "string"
+        ? product.catalog.default_image.trim()
+        : typeof product.default_image === "string"
+          ? product.default_image.trim()
+          : "";
+
+    const initialImages =
+      existingImages.length > 0
+        ? existingImages
+        : fallbackCatalogImage
+          ? [{ key: "catalog-default", url: fallbackCatalogImage }]
+          : [];
+
     setEditingProduct({
       id: Number(product.id),
       name: product.name || "",
@@ -104,6 +126,7 @@ export default function ShopProductsView() {
       status:
         status === "inactive" || status === "sold_out" ? status : "active",
       description: String(product.description || ""),
+      images: initialImages,
     });
   };
 
@@ -126,6 +149,10 @@ export default function ShopProductsView() {
         price,
         status: editingProduct.status,
         description: editingProduct.description.trim() || "",
+        images: editingProduct.images.map((image, index) => ({
+          url: image.url,
+          sort_order: index,
+        })),
       });
       showSuccessToast("Cập nhật sản phẩm thành công");
       setEditingProduct(null);
@@ -142,6 +169,62 @@ export default function ShopProductsView() {
     } finally {
       setSavingEdit(false);
     }
+  };
+
+  const handleUploadEditImages = async (files: FileList | null) => {
+    if (!editingProduct || !files || files.length === 0) return;
+
+    const maxUploadBytes = 10 * 1024 * 1024;
+    const allowedUploadTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    try {
+      const selectedFiles = Array.from(files);
+      if (editingProduct.images.length + selectedFiles.length > 6) {
+        showErrorToast("Tối đa 6 ảnh cho mỗi sản phẩm");
+        return;
+      }
+
+      setEditImageUploading(true);
+      for (const file of selectedFiles) {
+        if (!allowedUploadTypes.includes(file.type)) {
+          throw new Error("Chỉ hỗ trợ ảnh JPG, PNG, WEBP, GIF");
+        }
+        if (file.size > maxUploadBytes) {
+          throw new Error("Ảnh vượt quá 10MB");
+        }
+        const uploaded = await uploadImageToS3({ file, folder: "products" });
+        setEditingProduct((prev) =>
+          prev
+            ? {
+                ...prev,
+                images: [...prev.images, { key: uploaded.key, url: uploaded.url }],
+              }
+            : prev,
+        );
+      }
+    } catch (error) {
+      showErrorToast(error);
+    } finally {
+      setEditImageUploading(false);
+    }
+  };
+
+  const getProductPreviewImage = (product: (typeof products)[number]) => {
+    const firstImage = Array.isArray(product.images) ? product.images[0]?.url : "";
+    if (firstImage) return firstImage;
+
+    if (typeof product.catalog?.default_image === "string" && product.catalog.default_image.trim()) {
+      return product.catalog.default_image.trim();
+    }
+    if (typeof product.default_image === "string" && product.default_image.trim()) {
+      return product.default_image.trim();
+    }
+    return "";
   };
 
   const onDeleteProduct = async (product: (typeof products)[number]) => {
@@ -242,60 +325,72 @@ export default function ShopProductsView() {
                 </td>
               </tr>
             ) : (
-              products.map((product) => (
-                <tr key={product.id}>
-                  <td style={themed(styles.td)}>
-                    <div
-                      style={{ display: "flex", gap: 12, alignItems: "center" }}
-                    >
-                      <div style={themed(styles.orderThumb)} />
-                      <div>
-                        <div style={themed(styles.orderName)}>
-                          {product.name}
-                        </div>
-                        <div style={themed(styles.orderMeta)}>
-                          {product.category?.name ?? "-"}
+              products.map((product) => {
+                const previewImage = getProductPreviewImage(product);
+                return (
+                  <tr key={product.id}>
+                    <td style={themed(styles.td)}>
+                      <div
+                        style={{ display: "flex", gap: 12, alignItems: "center" }}
+                      >
+                        <div
+                          style={{
+                            ...themed(styles.orderThumb),
+                            backgroundImage: previewImage
+                              ? `url(${previewImage})`
+                              : undefined,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }}
+                        />
+                        <div>
+                          <div style={themed(styles.orderName)}>
+                            {product.name}
+                          </div>
+                          <div style={themed(styles.orderMeta)}>
+                            {product.category?.name ?? "-"}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={themed(styles.td)}>
-                    <div style={themed(styles.price)}>
-                      {product.price ?? product.msrp}
-                    </div>
-                    <div style={themed(styles.muted)}>MSRP: {product.msrp}</div>
-                  </td>
-                  <td style={themed(styles.td)}>{product.quantity ?? "-"}</td>
-                  <td style={themed(styles.td)}>{product.buyturn ?? "-"}</td>
-                  <td style={themed(styles.td)}>{product.status ?? "-"}</td>
-                  <td style={themed(styles.td)}>
-                    <div style={themed(styles.rowActions)}>
-                      <button
-                        type="button"
-                        style={themed(styles.iconButton)}
-                        onClick={() => openViewProduct(product)}
-                      >
-                        <AppIcon name="view" />
-                      </button>
-                      <button
-                        type="button"
-                        style={themed(styles.iconButton)}
-                        onClick={() => openEditProduct(product)}
-                      >
-                        <AppIcon name="edit" />
-                      </button>
-                      <button
-                        type="button"
-                        style={themed(styles.iconButton)}
-                        onClick={() => onDeleteProduct(product)}
-                        disabled={deletingProductId === Number(product.id)}
-                      >
-                        <AppIcon name="delete" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.price)}>
+                        {product.price ?? product.msrp}
+                      </div>
+                      <div style={themed(styles.muted)}>MSRP: {product.msrp}</div>
+                    </td>
+                    <td style={themed(styles.td)}>{product.quantity ?? "-"}</td>
+                    <td style={themed(styles.td)}>{product.buyturn ?? "-"}</td>
+                    <td style={themed(styles.td)}>{product.status ?? "-"}</td>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.rowActions)}>
+                        <button
+                          type="button"
+                          style={themed(styles.iconButton)}
+                          onClick={() => openViewProduct(product)}
+                        >
+                          <AppIcon name="view" />
+                        </button>
+                        <button
+                          type="button"
+                          style={themed(styles.iconButton)}
+                          onClick={() => openEditProduct(product)}
+                        >
+                          <AppIcon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          style={themed(styles.iconButton)}
+                          onClick={() => onDeleteProduct(product)}
+                          disabled={deletingProductId === Number(product.id)}
+                        >
+                          <AppIcon name="delete" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -517,6 +612,64 @@ export default function ShopProductsView() {
                     style={themed(styles.modalTextarea)}
                   />
                 </label>
+
+                <label style={themed(styles.modalLabel)}>
+                  Ảnh sản phẩm (tối đa 6 ảnh)
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={(e) => {
+                      void handleUploadEditImages(e.target.files);
+                      e.currentTarget.value = "";
+                    }}
+                    style={themed(styles.modalInput)}
+                    disabled={savingEdit || editImageUploading}
+                  />
+                </label>
+
+                {editImageUploading && (
+                  <div style={themed(styles.modalHint)}>Đang upload ảnh...</div>
+                )}
+
+                {editingProduct.images.length > 0 && (
+                  <div style={themed(styles.modalUploadPreviewGrid)}>
+                    {editingProduct.images.map((image) => (
+                      <div
+                        key={image.key}
+                        style={themed(styles.modalUploadPreviewItem)}
+                      >
+                        <Image
+                          src={image.url}
+                          alt="Product preview"
+                          width={180}
+                          height={140}
+                          unoptimized
+                          style={themed(styles.modalUploadPreview)}
+                        />
+                        <button
+                          type="button"
+                          style={themed(styles.modalUploadRemoveButton)}
+                          onClick={() =>
+                            setEditingProduct((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    images: prev.images.filter(
+                                      (item) => item.key !== image.key,
+                                    ),
+                                  }
+                                : prev,
+                            )
+                          }
+                          disabled={savingEdit}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -552,9 +705,7 @@ export default function ShopProductsView() {
         <div style={themed(styles.tableHeader)}>
           <div>
             <h3 style={{ margin: 0 }}>Theo dõi yêu cầu của bạn</h3>
-            <p style={themed(styles.pageSubtitle)}>
-              Yêu cầu tạo sản phẩm và yêu cầu thêm thông số catalog
-            </p>
+            <p style={themed(styles.pageSubtitle)}>Yêu cầu tạo sản phẩm</p>
           </div>
           <select
             value={requestStatus}
@@ -583,34 +734,6 @@ export default function ShopProductsView() {
                     <div style={themed(styles.orderMeta)}>
                       {item.category?.name ?? "-"} •{" "}
                       {new Date(item.created_at).toLocaleDateString("vi-VN")}
-                    </div>
-                  </div>
-                  <span style={themed(styles.requestStatusPill)}>
-                    {item.status}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div style={themed(styles.requestBox)}>
-            <h4 style={themed(styles.requestTitle)}>Yêu cầu thêm thông số</h4>
-            {requestsLoading && catalogSpecRequests.length === 0 ? (
-              <div style={themed(styles.muted)}>Đang tải...</div>
-            ) : catalogSpecRequests.length === 0 ? (
-              <div style={themed(styles.muted)}>Chưa có yêu cầu.</div>
-            ) : (
-              catalogSpecRequests.map((item) => (
-                <div key={item.id} style={themed(styles.requestItem)}>
-                  <div style={themed(styles.requestItemMain)}>
-                    <div style={themed(styles.orderName)}>
-                      {item.catalog?.name ?? `Catalog #${item.catalog_id}`}
-                    </div>
-                    <div style={themed(styles.orderMeta)}>
-                      {item.spec_key}:{" "}
-                      {Array.isArray(item.proposed_values)
-                        ? item.proposed_values.join(" | ")
-                        : "-"}
                     </div>
                   </div>
                   <span style={themed(styles.requestStatusPill)}>

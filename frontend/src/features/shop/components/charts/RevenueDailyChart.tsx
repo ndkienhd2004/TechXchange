@@ -22,6 +22,12 @@ export default function RevenueDailyChart({
   data: RevenueDailyPoint[];
 }) {
   const { themed } = useAppTheme();
+  const formatVnd = (value: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
   const grid = themed((theme) => ({ stroke: theme.colors.palette.borders.dark }));
   const text = themed((theme) => ({ fill: theme.colors.palette.text.muted }));
   const lineColor = themed((theme) => ({
@@ -40,10 +46,15 @@ export default function RevenueDailyChart({
         <CartesianGrid strokeDasharray="3 3" stroke={grid.stroke} />
         <XAxis dataKey="label" tick={text} axisLine={false} tickLine={false} />
         <YAxis tick={text} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(value) => [formatVnd(Number(value || 0)), "Doanh thu"]}
+          labelFormatter={(label) => `Ngày ${label}`}
+        />
         <Line
           type="monotone"
           dataKey="revenue"
+          name="Doanh thu"
           stroke={lineColor.stroke}
           strokeWidth={3}
           dot={{ r: 4 }}

@@ -22,6 +22,12 @@ export default function RevenueMonthlyChart({
   data: RevenueMonthlyPoint[];
 }) {
   const { themed } = useAppTheme();
+  const formatVnd = (value: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
   const grid = themed((theme) => ({ stroke: theme.colors.palette.borders.dark }));
   const text = themed((theme) => ({ fill: theme.colors.palette.text.muted }));
   const barColor = themed((theme) => ({
@@ -40,8 +46,17 @@ export default function RevenueMonthlyChart({
         <CartesianGrid strokeDasharray="3 3" stroke={grid.stroke} />
         <XAxis dataKey="label" tick={text} axisLine={false} tickLine={false} />
         <YAxis tick={text} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="revenue" fill={barColor.fill} radius={[6, 6, 0, 0]} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(value) => [formatVnd(Number(value || 0)), "Doanh thu"]}
+          labelFormatter={(label) => `Tháng ${label}`}
+        />
+        <Bar
+          dataKey="revenue"
+          name="Doanh thu"
+          fill={barColor.fill}
+          radius={[6, 6, 0, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

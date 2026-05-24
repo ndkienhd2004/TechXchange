@@ -390,7 +390,7 @@ export default function ShopView() {
                               undefined
                             }
                             imageAlt={product.name}
-                            ctaLabel={Number(product.quantity || 0) > 0 ? "Buy now" : "Hết hàng"}
+                            ctaLabel={Number(product.quantity || 0) > 0 ? "Mua ngay" : "Hết hàng"}
                           />
                         </div>
                       </Link>

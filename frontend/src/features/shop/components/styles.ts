@@ -76,7 +76,7 @@ export const navItem = (theme: Theme): CSSProperties => ({
 export const navItemActive = (theme: Theme): CSSProperties => ({
   ...navItem(theme),
   background: theme.colors.palette.brand.purple[600],
-  color: theme.colors.palette.text.primary,
+  color: "#ffffff",
   fontWeight: theme.typography.fontWeight.semibold,
 });
 
@@ -266,7 +266,7 @@ export const topRank = (theme: Theme): CSSProperties => ({
   height: theme.spacing.xl,
   borderRadius: "50%",
   background: theme.colors.palette.brand.purple[600],
-  color: theme.colors.palette.text.primary,
+  color: "#ffffff",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -294,7 +294,7 @@ export const actionCard = (theme: Theme): CSSProperties => ({
   gap: theme.spacing.md,
   padding: theme.spacing.lg,
   borderRadius: theme.spacing.lg,
-  color: theme.colors.palette.text.primary,
+  color: "#ffffff",
   textDecoration: "none",
   fontWeight: theme.typography.fontWeight.semibold,
 });
@@ -415,6 +415,10 @@ export const statusPill = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
   fontWeight: theme.typography.fontWeight.semibold,
   textTransform: "uppercase",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  whiteSpace: "nowrap",
 });
 
 export const statusConfirmed = (theme: Theme): CSSProperties => ({
@@ -518,7 +522,7 @@ export const primaryButton = (theme: Theme): CSSProperties => ({
   padding: `${theme.spacing[2]} ${theme.spacing[4]}`,
   borderRadius: theme.spacing.md,
   background: theme.colors.palette.brand.purple[600],
-  color: theme.colors.palette.text.primary,
+  color: "#ffffff",
   border: "none",
   fontWeight: theme.typography.fontWeight.semibold,
   cursor: "pointer",
@@ -561,7 +565,7 @@ export const pageButtonActive = (theme: Theme): CSSProperties => ({
   ...pageButton(theme),
   background: theme.colors.palette.brand.purple[600],
   borderColor: theme.colors.palette.brand.purple[600],
-  color: theme.colors.palette.text.primary,
+  color: "#ffffff",
 });
 
 export const pageButtonDisabled = (theme: Theme): CSSProperties => ({
@@ -830,7 +834,16 @@ export const modalFooter = (theme: Theme): CSSProperties => ({
 export const modalActions = (theme: Theme): CSSProperties => ({
   display: "flex",
   justifyContent: "flex-end",
+  alignItems: "center",
+  gap: theme.spacing[2],
   marginTop: theme.spacing.md,
+});
+
+export const modalSectionHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
 });
 
 export const modalForm = (theme: Theme): CSSProperties => ({
@@ -994,6 +1007,19 @@ export const modalGhostButton = (theme: Theme): CSSProperties => ({
   fontWeight: theme.typography.fontWeight.semibold,
 });
 
+export const modalDangerButton = (theme: Theme): CSSProperties => ({
+  ...modalGhostButton(theme),
+  borderColor: theme.colors.palette.semantic.error,
+  color: theme.colors.palette.semantic.error,
+});
+
+export const modalInlineActions = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing[2],
+  flexWrap: "wrap",
+});
+
 export const modalTagWrap = (theme: Theme): CSSProperties => ({
   display: "flex",
   flexWrap: "wrap",
@@ -1030,6 +1056,85 @@ export const modalRequestHeader = (theme: Theme): CSSProperties => ({
 export const modalRequestSub = (theme: Theme): CSSProperties => ({
   fontSize: theme.typography.fontSize.xs.size,
   color: theme.colors.palette.text.secondary,
+});
+
+export const modalSpecSummaryList = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const modalSpecCard = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const modalSpecCardHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
+});
+
+export const modalSpecCardTitle = (theme: Theme): CSSProperties => ({
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  color: theme.colors.palette.text.primary,
+});
+
+export const modalComposerBox = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.brand.purple[500]}`,
+  borderRadius: theme.spacing.md,
+  background: "rgba(168, 85, 247, 0.08)",
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing.md,
+});
+
+export const modalInlineTabs = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing[2],
+});
+
+export const modalSelectionCard = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.dark}`,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  padding: theme.spacing.md,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const modalSelectionCardHeader = (_theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: "12px",
+});
+
+export const modalCheckboxRow = (_theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  cursor: "pointer",
+});
+
+export const modalMutedBadge = (theme: Theme): CSSProperties => ({
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  color: theme.colors.palette.text.secondary,
+  background: theme.colors.palette.backgrounds.hover,
+  borderRadius: "999px",
+  padding: `${theme.spacing[1]} ${theme.spacing[3]}`,
+  fontSize: theme.typography.fontSize.xs.size,
+  whiteSpace: "nowrap",
+});
+
+export const modalSelectionControl = (_theme: Theme): CSSProperties => ({
+  display: "grid",
 });
 
 export const requestGrid = (theme: Theme): CSSProperties => ({

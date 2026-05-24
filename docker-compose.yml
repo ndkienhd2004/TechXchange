@@ -32,15 +32,72 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
-      RECOMMENDATION_SERVICE_URL: ${RECOMMENDATION_SERVICE_URL:-http://host.docker.internal:8010}
+      RECOMMENDATION_SERVICE_URL: ${RECOMMENDATION_SERVICE_URL:-http://recommendation:8010}
       RECOMMENDATION_SERVICE_TIMEOUT_MS: ${RECOMMENDATION_SERVICE_TIMEOUT_MS:-5000}
-      CHATBOT_SERVICE_URL: ${CHATBOT_SERVICE_URL:-http://host.docker.internal:8000}
+      CHATBOT_SERVICE_URL: ${CHATBOT_SERVICE_URL:-http://chatbot:8000}
       CHATBOT_SERVICE_TIMEOUT_MS: ${CHATBOT_SERVICE_TIMEOUT_MS:-12000}
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      chatbot:
         condition: service_started
+      recommendation:
+        condition: service_started
+
+  chatbot:
+    build:
+      context: ../TechXchange_Chatbot
+      dockerfile: Dockerfile
+    image: techxchange/chatbot:local
+    container_name: techxchange-chatbot
+    restart: unless-stopped
+    ports:
+      - "${CHATBOT_PORT:-8000}:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      NODE_ENV: development
+      APP_DATABASE_URL: ${CHATBOT_APP_DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/techxchange}
+      CHATBOT_DATABASE_URL: ${CHATBOT_DATABASE_URL:-sqlite:///./chatbot_app.db}
+      SOURCE_DATABASE_URL: ${CHATBOT_SOURCE_DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/techxchange}
+      SYNC_ENABLED: ${CHATBOT_SYNC_ENABLED:-true}
+      SYNC_ON_STARTUP: ${CHATBOT_SYNC_ON_STARTUP:-true}
+      SYNC_INTERVAL_SECONDS: ${CHATBOT_SYNC_INTERVAL_SECONDS:-900}
+      ASSISTANT_REQUIRE_AUTH: ${ASSISTANT_REQUIRE_AUTH:-false}
+      ASSISTANT_DEFAULT_USER_ID: ${ASSISTANT_DEFAULT_USER_ID:-1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ENABLE_GEMINI_CHAT: ${ENABLE_GEMINI_CHAT:-false}
+      ENABLE_GEMINI_EMBED: ${ENABLE_GEMINI_EMBED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  recommendation:
+    build:
+      context: ../TechXchange_recommendation_system
+      dockerfile: Dockerfile
+    image: techxchange/recommendation:local
+    container_name: techxchange-recommendation
+    restart: unless-stopped
+    ports:
+      - "${RECOMMENDATION_PORT:-8010}:8010"
+    environment:
+      DB_NAME: ${DB_NAME:-techxchange}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8010
+      APP_RELOAD: ${RECOMMENDATION_APP_RELOAD:-false}
+      LOG_LEVEL: ${RECOMMENDATION_LOG_LEVEL:-info}
+      GOOGLE_GENAI_USE_VERTEXAI: ${GOOGLE_GENAI_USE_VERTEXAI:-true}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
@@ -60,15 +117,5 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: techxchange-redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-
 volumes:
   postgres_data:
-  redis_data:

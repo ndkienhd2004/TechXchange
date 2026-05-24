@@ -86,9 +86,9 @@ export default function Footer() {
     <>
       <footer style={themed(styles.footer)}>
         <div style={themed(styles.topSection)}>
-          {/* STAY CONNECTED */}
+          {/* KẾT NỐI CÙNG CHÚNG TÔI */}
           <div style={themed(styles.column)}>
-            <h3 style={themed(styles.columnTitle)}>STAY CONNECTED</h3>
+            <h3 style={themed(styles.columnTitle)}>KẾT NỐI</h3>
             <p style={themed(styles.contactText)}>Innotek Tech Ltd.</p>
             <p style={themed(styles.contactText)}>sales@techxchange.com</p>
             <p style={themed(styles.contactText)}>0123456789</p>
@@ -115,15 +115,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* ACCOUNT */}
+          {/* TÀI KHOẢN */}
           <div style={themed(styles.column)}>
-            <h3 style={themed(styles.columnTitle)}>ACCOUNT</h3>
+            <h3 style={themed(styles.columnTitle)}>TÀI KHOẢN</h3>
             <ul style={themed(styles.linkList)}>
               {[
-                { label: "Wishlist", href: "/wishlist" },
-                { label: "Cart", href: "/cart" },
-                { label: "Track Order", href: "/track-order" },
-                { label: "Shipping Details", href: "/shipping" },
+                { label: "Yêu thích", href: "/wishlist" },
+                { label: "Giỏ hàng", href: "/cart" },
+                { label: "Theo dõi đơn hàng", href: "/track-order" },
+                { label: "Thông tin vận chuyển", href: "/shipping" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link
@@ -144,15 +144,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* USEFUL LINKS */}
+          {/* LIÊN KẾT HỮU ÍCH */}
           <div style={themed(styles.column)}>
-            <h3 style={themed(styles.columnTitle)}>USEFUL LINKS</h3>
+            <h3 style={themed(styles.columnTitle)}>LIÊN KẾT HỮU ÍCH</h3>
             <ul style={themed(styles.linkList)}>
               {[
-                { label: "About Us", href: "/about" },
-                { label: "Contact Us", href: "/contact" },
-                { label: "Our Location", href: "/location" },
-                { label: "Policy", href: "/policy" },
+                { label: "Về chúng tôi", href: "/about" },
+                { label: "Liên hệ", href: "/contact" },
+                { label: "Địa chỉ", href: "/location" },
+                { label: "Chính sách", href: "/policy" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link
@@ -173,15 +173,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* HELP CENTER */}
+          {/* TRUNG TÂM HỖ TRỢ */}
           <div style={themed(styles.column)}>
-            <h3 style={themed(styles.columnTitle)}>HELP CENTER</h3>
+            <h3 style={themed(styles.columnTitle)}>TRUNG TÂM HỖ TRỢ</h3>
             <ul style={themed(styles.linkList)}>
               {[
-                { label: "Payment", href: "/help/payment" },
-                { label: "Refund", href: "/help/refund" },
-                { label: "EMI Change", href: "/help/emi" },
-                { label: "Exchange", href: "/help/exchange" },
+                { label: "Thanh toán", href: "/help/payment" },
+                { label: "Hoàn tiền", href: "/help/refund" },
+                { label: "Trả góp", href: "/help/emi" },
+                { label: "Đổi trả", href: "/help/exchange" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link
@@ -202,9 +202,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* NEWSLETTER */}
+          {/* BẢN TIN */}
           <div style={themed(styles.column)}>
-            <h3 style={themed(styles.columnTitle)}>NEWSLETTER</h3>
+            <h3 style={themed(styles.columnTitle)}>BẢN TIN</h3>
             <p style={themed(styles.newsletterText)}>
               Đăng ký để nhận thông tin khuyến mãi mới nhất
             </p>
@@ -246,7 +246,7 @@ export default function Footer() {
         {/* BOTTOM */}
         <div style={themed(styles.bottomSection)}>
           <p style={themed(styles.copyright)}>
-            Copyright © 2024. All rights reserved.
+            Bản quyền © 2024. Đã đăng ký mọi quyền.
           </p>
           <div style={themed(styles.paymentRow)}>
             <span style={themed(styles.paymentBadge)}>VISA</span>

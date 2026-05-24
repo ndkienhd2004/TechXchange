@@ -544,18 +544,6 @@ const Nav = ({
           </div>
         )}
       </div>
-      <Link
-        href="/promotions"
-        style={
-          hoveredElement === "promotions"
-            ? themed(styles.navLinkHover)
-            : themed(styles.navLink)
-        }
-        onMouseEnter={() => setHoveredElement("promotions")}
-        onMouseLeave={() => setHoveredElement(null)}
-      >
-        Khuyến mãi
-      </Link>
     </nav>
   );
 };

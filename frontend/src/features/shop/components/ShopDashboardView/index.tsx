@@ -258,7 +258,7 @@ export default function ShopDashboardView() {
   return (
     <ShopLayout>
       <header style={themed(styles.pageHeader)}>
-        <h1 style={themed(styles.pageTitle)}>Dashboard</h1>
+        <h1 style={themed(styles.pageTitle)}>Tổng quan</h1>
         <p style={themed(styles.pageSubtitle)}>
           Chào mừng trở lại, {info?.name || "Shop của bạn"}!
         </p>
@@ -307,7 +307,7 @@ export default function ShopDashboardView() {
             {info?.logo ? (
               <Image
                 src={info.logo}
-                alt={info.name || "Shop avatar"}
+                alt={info.name || "Ảnh đại diện cửa hàng"}
                 fill
                 sizes="120px"
                 style={{ objectFit: "cover" }}

@@ -1,0 +1,311 @@
+{
+  "total": 27,
+  "counts": {
+    "Card đồ họa": 4,
+    "CPU": 5,
+    "Nguồn máy tính": 4,
+    "RAM": 4,
+    "SSD": 4,
+    "Vỏ máy tính": 3,
+    "Tản nhiệt CPU": 3
+  },
+  "items": [
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/bo-dung-dung-vga-kem-riser-cooler-master-vertical-graphics-card-holder-kit-v3.html",
+      "name": "Bộ dựng đứng VGA kèm Riser Cooler Master VERTICAL GRAPHICS CARD HOLDER KIT V3",
+      "description": "Bộ dựng đứng VGA kèm Riser Cooler Master VERTICAL GRAPHICS CARD HOLDER KIT V3 - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1063646702_71388_cm_vertical_v3_pcie4__2__f0d1481da7784808a36ebc1431ed605d.jpg",
+      "price": 1490000,
+      "brandName": "Cooler Master",
+      "categoryName": "Card đồ họa"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vga-gigabyte-radeon-rx-6500-xt-eagle-4g",
+      "name": "VGA Gigabyte Radeon RX 6500 XT EAGLE 4G",
+      "description": "VGA Gigabyte Radeon RX 6500 XT EAGLE 4G - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1063564372_radeon__rx_6500_xt_eagle_4g_01_f4efcbdd64444c31bb61286273f09a6c.jpg",
+      "price": 3890000,
+      "brandName": "Gigabyte",
+      "categoryName": "Card đồ họa"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vga-ocpc-rtx-3060-12gb",
+      "name": "VGA OCPC RTX 3060 12GB",
+      "description": "VGA OCPC RTX 3060 12GB - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1051700331_73418_card_man_hinh_ocpc_rtx_3060_12gb__2__c7b1dc42b9664ae883cc8571f1ef5b1a.jpg",
+      "price": 9990000,
+      "brandName": "VGA",
+      "categoryName": "Card đồ họa"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vga-ocpc-gtx-1660-super-6gb-gddr6",
+      "name": "VGA OCPC GTX 1660 Super 6GB GDDR6",
+      "description": "VGA OCPC GTX 1660 Super 6GB GDDR6 - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1049544524_vga_ocpc_1660s_1_f8a06da26f924ad597e7510842cc5e99.png",
+      "price": 5390000,
+      "brandName": "VGA",
+      "categoryName": "Card đồ họa"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/cpu-intel-core-i7-13700kf-tray",
+      "name": "CPU Intel Core i7-13700KF - TRAY (3.4GHz turbo up to 5.4Ghz, 16 nhân 24 luồng, 24MB Cache, 125W) - Socket Intel LGA 1700/Raptor Lake)",
+      "description": "CPU Intel Core i7-13700KF - TRAY (3.4GHz turbo up to 5.4Ghz, 16 nhân 24 luồng, 24MB Cache, 125W) - Socket Intel LGA 1700/Raptor Lake) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100466_cpu_intel_core_i7_13700k_tray.jpg",
+      "price": 8990000,
+      "brandName": "Intel",
+      "categoryName": "CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/intel-core-ultra-7-270k-plus-tray",
+      "name": "CPU Intel Core Ultra 7 270K Plus (24 Nhân 24 Luồng , Up 5.5GHz) - TRAY",
+      "description": "CPU Intel Core Ultra 7 270K Plus (24 Nhân 24 Luồng , Up 5.5GHz) - TRAY - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100412_intel_core_ultra_7_270k_plus_tray.jpg",
+      "price": 10490000,
+      "brandName": "Intel",
+      "categoryName": "CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/cpu-amd-ryzen-9-9950x3d2-dual-edition-up-to-5-6ghz-16-cores-zen5-192-mb-cache",
+      "name": "CPU AMD Ryzen 9 9950X3D2 Dual Edition (Up to 5.6GHz | 16 Cores Zen5 | 192 MB Cache)",
+      "description": "CPU AMD Ryzen 9 9950X3D2 Dual Edition (Up to 5.6GHz | 16 Cores Zen5 | 192 MB Cache) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100385_cpu_amd_ryzen_9_9950x3d2_pcm_1.jpg",
+      "price": 28990000,
+      "brandName": "AMD",
+      "categoryName": "CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/cpu-amd-ryzen-7-5700x-tray",
+      "name": "CPU AMD RYZEN 7 5700X ( 3.4 GHz (4.6GHz Max Boost) / 36MB Cache / 8 cores, 16 threads / 65W / Socket AM4) TRAY",
+      "description": "CPU AMD RYZEN 7 5700X ( 3.4 GHz (4.6GHz Max Boost) / 36MB Cache / 8 cores, 16 threads / 65W / Socket AM4) TRAY - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100377_cpu_amd_ryzen_7_5700x_tray.jpg",
+      "price": 4290000,
+      "brandName": "AMD",
+      "categoryName": "CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/cpu-intel-core-i7-14700f-tray",
+      "name": "CPU INTEL CORE I7 14700F - TRAY (UP TO 5.4GHZ, 20 NHÂN 28 LUỒNG, 33MB CACHE, 65W)",
+      "description": "CPU INTEL CORE I7 14700F - TRAY (UP TO 5.4GHZ, 20 NHÂN 28 LUỒNG, 33MB CACHE, 65W) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100341_cpu_intel_core_i7_14700f_tray_pcm.jpg",
+      "price": 8990000,
+      "brandName": "Intel",
+      "categoryName": "CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/nguon-may-tinh-asus-rog-strix-gaming-1200p",
+      "name": "Nguồn máy tính ASUS ROG STRIX GAMING 1200P (1200W, ATX 3.1, PCIe 5.0, 80 Plus Plantinum, Full Modular, 10 năm bảo hành)",
+      "description": "Nguồn máy tính ASUS ROG STRIX GAMING 1200P (1200W, ATX 3.1, PCIe 5.0, 80 Plus Plantinum, Full Modular, 10 năm bảo hành) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100407_nguon_may_tinh_asus_rog_strix_gaming_1200p_0010_1__15_.jpg",
+      "price": 7990000,
+      "brandName": "ASUS",
+      "categoryName": "Nguồn máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/nguon-may-tinh-antec-g750-750w-80-plus-gold",
+      "name": "Nguồn Máy Tính Antec G750 - 750w 80 Plus Gold",
+      "description": "Nguồn Máy Tính Antec G750 - 750w 80 Plus Gold - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100369_nguon_may_tinh_antec_g750_750w_80_plus_gold_pcm_1.jpg",
+      "price": 1490000,
+      "brandName": "Antec",
+      "categoryName": "Nguồn máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/nguon-may-tinh-antec-csk750dc-750w-80-plus-bronze",
+      "name": "Nguồn máy tính Antec CSK750DC 750W 80 Plus Bronze",
+      "description": "Nguồn máy tính Antec CSK750DC 750W 80 Plus Bronze - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100282_28635_antec_csk750dc_ec_80_plus_bronze_12.jpg",
+      "price": 1390000,
+      "brandName": "Antec",
+      "categoryName": "Nguồn máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/nguon-gigabyte-p650ss-650w-80-plus-silver-atx-3-0",
+      "name": "Nguồn GIGABYTE P650SS 650w (80 plus Silver, ATX 3.0)",
+      "description": "Nguồn GIGABYTE P650SS 650w (80 plus Silver, ATX 3.0) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100281_250_11747_nguon_gigabyte_p650ss_650w_80_plus_silver__3_.jpg",
+      "price": 1090000,
+      "brandName": "Gigabyte",
+      "categoryName": "Nguồn máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/ram-samsung-16gb-ddr4-2133mhz-ecc-registered",
+      "name": "RAM Samsung 16GB DDR4 2133MHz ECC Registered",
+      "description": "RAM Samsung 16GB DDR4 2133MHz ECC Registered - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100457_1072100456_ram_samsung_32gb_ddr4_2133mhz_ecc_registered.jpg",
+      "price": 1890000,
+      "brandName": "Samsung",
+      "categoryName": "RAM"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/ram-samsung-32gb-ddr4-2133mhz-ecc-registered",
+      "name": "RAM Samsung 32GB DDR4 2133MHz ECC Registered",
+      "description": "RAM Samsung 32GB DDR4 2133MHz ECC Registered - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100456_ram_samsung_32gb_ddr4_2133mhz_ecc_registered.jpg",
+      "price": 2890000,
+      "brandName": "Samsung",
+      "categoryName": "RAM"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/mainboard-msi-pro-z790-p-wifi-ddr4",
+      "name": "MAINBOARD MSI PRO Z790-P WIFI DDR4",
+      "description": "MAINBOARD MSI PRO Z790-P WIFI DDR4 - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100428_mainboard_msi_pro_z790_p_wifi_ddr4_1.jpg",
+      "price": 5390000,
+      "brandName": "MSI",
+      "categoryName": "RAM"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/ram-teamgroup-elite-plus-16gb-ddr4-bus-3200mhz-tpd416g3200hc22bk",
+      "name": "Ram TeamGroup Elite Plus 16GB DDR4 Bus 3200Mhz (TPD416G3200HC22BK)",
+      "description": "Ram TeamGroup Elite Plus 16GB DDR4 Bus 3200Mhz (TPD416G3200HC22BK) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100417_ram_teamgroup_elite_plus_16gb_ddr4_1.jpg",
+      "price": 2890000,
+      "brandName": "Ram",
+      "categoryName": "RAM"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/o-cung-ssd-agi-ai238-512gb-2-5-inch-sata-iii",
+      "name": "Ổ cứng SSD AGI AI238 512GB 2.5 inch SATA III - AGI500GIMAI238-CB",
+      "description": "Ổ cứng SSD AGI AI238 512GB 2.5 inch SATA III - AGI500GIMAI238-CB - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100430_o_cung_ssd_agi_sata_ai238_512gb_1.png",
+      "price": 1990000,
+      "brandName": "Ổ",
+      "categoryName": "SSD"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/o-cung-ssd-sstc-m100-512gb-sata-iii-2-5",
+      "name": "Ổ cứng SSD SSTC M100 512GB | SATA III, 2.5",
+      "description": "Ổ cứng SSD SSTC M100 512GB | SATA III, 2.5 - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100429_sstc_megamouth_m100_512gb_1.jpg",
+      "price": 1990000,
+      "brandName": "Ổ",
+      "categoryName": "SSD"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/mainboard-colorful-battle-ax-b450m-t-m-2-v14",
+      "name": "Mainboard Colorful BATTLE-AX B450M-T M.2 V14",
+      "description": "Mainboard Colorful BATTLE-AX B450M-T M.2 V14 - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100414_mainboard_colorful_battle_ax_b450m_t_m_2_v14_1.jpg",
+      "price": 1590000,
+      "brandName": "Colorful",
+      "categoryName": "SSD"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/o-cung-ssd-sstc-oceanic-whitetip-e130-256gb-m-2-2280-pcie-nvme-gen-3x4",
+      "name": "Ổ Cứng SSD SSTC Oceanic Whitetip E130 256GB M.2 2280 PCIe NVMe (Gen 3x4)",
+      "description": "Ổ Cứng SSD SSTC Oceanic Whitetip E130 256GB M.2 2280 PCIe NVMe (Gen 3x4) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100410_o_cung_ssd_sstc_oceanic_whitetip_e130_256gb_m_2_2280_pcie_nvme_gen_3x4__2_.jpg",
+      "price": 1190000,
+      "brandName": "Ổ",
+      "categoryName": "SSD"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vo-case-aigo-c218m-black-matx-mau-den-case-be-ca",
+      "name": "VỎ CASE AIGO C218M BLACK ( MATX, Màu Đen, Case Bể Cá)",
+      "description": "VỎ CASE AIGO C218M BLACK ( MATX, Màu Đen, Case Bể Cá) - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100378_11516_48983_v____case_aigo_c218m_black__2_.jpg",
+      "price": 940000,
+      "brandName": "VỎ",
+      "categoryName": "Vỏ máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vo-case-zotac-gaming-alloy-black-matx",
+      "name": "VỎ CASE ZOTAC GAMING ALLOY BLACK mATX",
+      "description": "VỎ CASE ZOTAC GAMING ALLOY BLACK mATX - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100368_vo_case_zotac_gaming_alloy_matx_computer_case_black_1.jpg",
+      "price": 990000,
+      "brandName": "Zotac",
+      "categoryName": "Vỏ máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/vo-case-zotac-gaming-alloy-white-matx",
+      "name": "VỎ CASE ZOTAC GAMING ALLOY WHITE mATX",
+      "description": "VỎ CASE ZOTAC GAMING ALLOY WHITE mATX - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100367_vo_case_zotac_gaming_alloy_matx_computer_case_white_.jpg",
+      "price": 990000,
+      "brandName": "Zotac",
+      "categoryName": "Vỏ máy tính"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/quat-tan-nhiet-jungle-leopard-tf360-den",
+      "name": "Quạt Tản Nhiệt Jungle Leopard TF360 Đen",
+      "description": "Quạt Tản Nhiệt Jungle Leopard TF360 Đen - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100397_1072100396_quat_tan_nhiet_jungle_leopard_tf360_den.jpg",
+      "price": 490000,
+      "brandName": "Quạt",
+      "categoryName": "Tản nhiệt CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/quat-tan-nhiet-jungle-leopard-tf360-trang",
+      "name": "Quạt Tản Nhiệt Jungle Leopard TF360 Trắng",
+      "description": "Quạt Tản Nhiệt Jungle Leopard TF360 Trắng - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100396_quat_tan_nhiet_jungle_leopard_tf360_den.jpg",
+      "price": 490000,
+      "brandName": "Quạt",
+      "categoryName": "Tản nhiệt CPU"
+    },
+    {
+      "source": "ttgshop",
+      "sourceName": "TTGShop",
+      "sourceUrl": "https://ttgshop.vn/tan-nhiet-cooler-master-hyper-620s-argb",
+      "name": "Tản nhiệt Cooler Master HYPER 620S ARGB",
+      "description": "Tản nhiệt Cooler Master HYPER 620S ARGB - imported from TTGShop",
+      "image": "https://ttgshop.vn/media/product/1072100389_tan_nhiet_cooler_master_hyper_620s_argb_1.jpg",
+      "price": 790000,
+      "brandName": "Cooler Master",
+      "categoryName": "Tản nhiệt CPU"
+    }
+  ]
+}

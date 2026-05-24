@@ -27,7 +27,11 @@ import { selectIsAuthenticated } from "@/features/auth";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
-import { buildProductDisplayName } from "@/features/products/utils/displayName";
+import {
+  buildProductDisplayName,
+  formatSpecKeyLabel,
+  formatSpecValueLabel,
+} from "@/features/products/utils/displayName";
 import {
   buildAuthRedirectHref,
   buildCurrentPath,
@@ -110,7 +114,30 @@ function formatVariantLabel(variant: {
   serial_code?: string;
   attributes?: Record<string, string>;
 }) {
-  if (variant.variant_label) return variant.variant_label;
+  if (variant.variant_label) {
+    const parsedFromVariantLabel = variant.variant_label
+      .split("|")
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .map((segment) => {
+        const separatorIndex = segment.indexOf("=");
+        if (separatorIndex < 0) {
+          return "";
+        }
+        const rawKey = segment.slice(0, separatorIndex).trim();
+        const rawValue = segment.slice(separatorIndex + 1).trim();
+        if (!rawKey || !rawValue) {
+          return "";
+        }
+        return `${formatSpecKeyLabel(rawKey)}: ${formatSpecValueLabel(rawValue)}`;
+      })
+      .filter(Boolean)
+      .join(", ");
+    if (parsedFromVariantLabel) {
+      return parsedFromVariantLabel;
+    }
+    return variant.variant_label;
+  }
   const attributes = variant.attributes || {};
   const entries = Object.entries(attributes).filter(([key, value]) =>
     Boolean(key && value),
@@ -118,8 +145,11 @@ function formatVariantLabel(variant: {
   if (entries.length > 0) {
     return entries
       .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-      .map(([key, value]) => `${key}=${value}`)
-      .join("|");
+      .map(
+        ([key, value]) =>
+          `${formatSpecKeyLabel(key)}: ${formatSpecValueLabel(value)}`,
+      )
+      .join(", ");
   }
   return variant.serial_code || "Mặc định";
 }
@@ -680,7 +710,7 @@ export default function ProductDetailPage() {
                             color: theme.colors.palette.text.secondary,
                           }}
                         >
-                          {spec.key}
+                          {formatSpecKeyLabel(spec.key)}
                         </span>
                         <select
                           value={selectedSpecs[spec.key] ?? ""}
@@ -697,7 +727,7 @@ export default function ProductDetailPage() {
                               key={`${spec.key}-${valueRow.value}`}
                               value={valueRow.value}
                             >
-                              {valueRow.value}
+                              {formatSpecValueLabel(valueRow.value)}
                             </option>
                           ))}
                         </select>
@@ -925,7 +955,7 @@ export default function ProductDetailPage() {
                                 : `${variant.serial_code || "variant"}-${variantIndex}`
                             }
                           >
-                            <strong>{formatVariantLabel(variant)}</strong>:{" "}
+                            <strong>{formatVariantLabel(variant)}</strong> -{" "}
                             {variant.quantity} sản phẩm
                           </li>
                         ))}

@@ -99,13 +99,16 @@ export const aiItem = (theme: Theme, active: boolean): CSSProperties => ({
 
 export const botAvatar = (theme: Theme): CSSProperties => ({
   width: 34,
+  minWidth: 34,
   height: 34,
+  minHeight: 34,
   borderRadius: "50%",
   background: `linear-gradient(140deg, ${theme.colors.palette.brand.purple[600]} 0%, ${theme.colors.palette.brand.pink[600]} 100%)`,
   color: "#fff",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  flexShrink: 0,
 });
 
 export const aiTitle = (theme: Theme): CSSProperties => ({
@@ -174,12 +177,15 @@ export const conversationItem = (theme: Theme, active: boolean): CSSProperties =
 
 export const conversationAvatar = (theme: Theme): CSSProperties => ({
   width: 34,
+  minWidth: 34,
   height: 34,
+  minHeight: 34,
   borderRadius: "50%",
   background: theme.colors.palette.backgrounds.hover,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  flexShrink: 0,
 });
 
 export const conversationTitle = (theme: Theme): CSSProperties => ({
@@ -237,6 +243,11 @@ export const headerIconBtn = (): CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  width: 32,
+  minWidth: 32,
+  height: 32,
+  flexShrink: 0,
+  borderRadius: 8,
 });
 
 export const headerTitle = (theme: Theme): CSSProperties => ({

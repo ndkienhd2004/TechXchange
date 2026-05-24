@@ -5,7 +5,8 @@ class UploadController {
   static async createPresignedUpload(req, res) {
     try {
       const folder = req.body?.folder;
-      const contentType = req.body?.content_type || req.body?.contentType;
+      const contentType =
+        req.body?.content_type || req.body?.contentType || req.body?.mimeType;
       const fileName = req.body?.file_name || req.body?.fileName;
 
       if (!folder || !contentType || !fileName) {

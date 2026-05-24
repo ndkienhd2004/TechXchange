@@ -25,7 +25,7 @@ export default function ShopLayout({
   }, [dispatch]);
 
   const navItems = [
-    { label: "Dashboard", href: "/shop" },
+    { label: "Tổng quan", href: "/shop" },
     { label: "Sản phẩm", href: "/shop/products" },
     { label: "Kho hàng", href: "/shop/inventory" },
     { label: "Đơn hàng", href: "/shop/orders" },
@@ -58,7 +58,7 @@ export default function ShopLayout({
             <div style={themed(styles.shopName)}>
               {loading && !info?.name ? "Đang tải..." : info?.name || "Shop của bạn"}
             </div>
-            <div style={themed(styles.shopSubtitle)}>Seller Center</div>
+            <div style={themed(styles.shopSubtitle)}>Kênh người bán</div>
           </div>
         </div>
 
