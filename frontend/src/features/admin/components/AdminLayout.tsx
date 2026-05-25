@@ -25,7 +25,6 @@ export default function AdminLayout({
     { label: "Sản phẩm", href: "/admin/products" },
     { label: "Yêu cầu sản phẩm", href: "/admin/reviews" },
     { label: "Danh mục", href: "/admin/categories" },
-    { label: "Người dùng", href: "/admin/users" },
   ];
 
   return (

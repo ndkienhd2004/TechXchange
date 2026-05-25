@@ -246,6 +246,49 @@ export const toolbar = (theme: Theme): CSSProperties => ({
   marginBottom: theme.spacing.lg,
 });
 
+export const toolbarStack = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "stretch",
+  gap: theme.spacing.lg,
+  marginBottom: theme.spacing.lg,
+});
+
+export const summaryGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  gap: theme.spacing.md,
+  marginBottom: theme.spacing.lg,
+});
+
+export const summaryCard = (theme: Theme): CSSProperties => ({
+  background: theme.colors.palette.backgrounds.card,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  borderRadius: theme.spacing.lg,
+  padding: theme.spacing.lg,
+  display: "grid",
+  gap: theme.spacing[2],
+});
+
+export const summaryLabel = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.sm.size,
+});
+
+export const summaryValue = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.xl.size,
+  fontWeight: theme.typography.fontWeight.bold,
+  lineHeight: 1.1,
+});
+
+export const toolbarRow = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "minmax(280px, 420px) 1fr",
+  gap: theme.spacing.md,
+  alignItems: "center",
+});
+
 export const searchWrap = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
@@ -257,7 +300,8 @@ export const searchWrap = (theme: Theme): CSSProperties => ({
   borderRadius: theme.spacing.md,
   border: `1px solid ${theme.colors.palette.borders.default}`,
   background: theme.colors.palette.backgrounds.secondary,
-  minWidth: "360px",
+  minWidth: 0,
+  width: "100%",
 });
 
 export const searchIcon = (theme: Theme): CSSProperties => ({
@@ -309,12 +353,44 @@ export const tabButtonActive = (theme: Theme): CSSProperties => ({
 
 export const tableCard = (theme: Theme): CSSProperties => ({
   ...card(theme),
+  overflow: "hidden",
+});
+
+export const tableHeader = (theme: Theme): CSSProperties => ({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: theme.spacing.md,
+  marginBottom: theme.spacing.md,
+});
+
+export const tableHeaderMeta = (): CSSProperties => ({
+  display: "grid",
+  gap: 6,
+});
+
+export const tableHeaderTitle = (theme: Theme): CSSProperties => ({
+  margin: 0,
+  fontSize: theme.typography.fontSize.lg.size,
+  fontWeight: theme.typography.fontWeight.bold,
+});
+
+export const tableHeaderSubtitle = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.sm.size,
+});
+
+export const tableWrap = (): CSSProperties => ({
+  width: "100%",
+  overflowX: "auto",
 });
 
 export const table = (theme: Theme): CSSProperties => ({
   width: "100%",
   borderCollapse: "collapse",
   fontSize: theme.typography.fontSize.sm.size,
+  tableLayout: "fixed",
+  minWidth: 980,
 });
 
 export const th = (theme: Theme): CSSProperties => ({
@@ -325,6 +401,7 @@ export const th = (theme: Theme): CSSProperties => ({
   paddingBottom: theme.spacing[2],
   paddingLeft: theme.spacing[3],
   paddingRight: theme.spacing[3],
+  verticalAlign: "top",
 });
 
 export const td = (theme: Theme): CSSProperties => ({
@@ -333,6 +410,47 @@ export const td = (theme: Theme): CSSProperties => ({
   paddingLeft: theme.spacing[3],
   paddingRight: theme.spacing[3],
   borderTop: `1px solid ${theme.colors.palette.borders.dark}`,
+  verticalAlign: "top",
+});
+
+export const productCell = (): CSSProperties => ({
+  display: "grid",
+  gap: 8,
+  minWidth: 0,
+});
+
+export const productTitle = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.base.size,
+  fontWeight: theme.typography.fontWeight.semibold,
+  lineHeight: 1.35,
+  wordBreak: "break-word",
+});
+
+export const inlineMeta = (): CSSProperties => ({
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+});
+
+export const inlineMetaPill = (theme: Theme): CSSProperties => ({
+  borderRadius: 999,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.secondary,
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.xs.size,
+  padding: "3px 8px",
+});
+
+export const cellTextStrong = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.primary,
+  fontWeight: theme.typography.fontWeight.medium,
+  lineHeight: 1.35,
+});
+
+export const cellTextMuted = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  lineHeight: 1.35,
 });
 
 export const statusPill = (theme: Theme): CSSProperties => ({
@@ -356,6 +474,11 @@ export const statusPending = (theme: Theme): CSSProperties => ({
   color: theme.colors.palette.status.pending.text,
 });
 
+export const statusRejected = (theme: Theme): CSSProperties => ({
+  background: theme.colors.palette.semantic.error + "22",
+  color: theme.colors.palette.semantic.error,
+});
+
 export const rowActions = (theme: Theme): CSSProperties => ({
   display: "flex",
   alignItems: "center",
@@ -363,20 +486,29 @@ export const rowActions = (theme: Theme): CSSProperties => ({
 });
 
 export const iconButton = (theme: Theme): CSSProperties => ({
-  background: "transparent",
-  border: "none",
+  width: 36,
+  height: 36,
+  borderRadius: theme.spacing.md,
+  background: theme.colors.palette.backgrounds.secondary,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
   color: theme.colors.palette.text.secondary,
   cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 export const dangerButton = (theme: Theme): CSSProperties => ({
-  width: theme.spacing.xl,
-  height: theme.spacing.xl,
-  borderRadius: theme.spacing.sm,
+  width: 36,
+  height: 36,
+  borderRadius: theme.spacing.md,
   border: `1px solid ${theme.colors.palette.semantic.error}`,
   color: theme.colors.palette.semantic.error,
   background: "transparent",
   cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 export const muted = (theme: Theme): CSSProperties => ({
@@ -428,6 +560,47 @@ export const modalCard = (theme: Theme): CSSProperties => ({
   boxShadow: theme.shadows.lg,
   overflow: "hidden",
   display: "grid",
+});
+
+export const formGrid = (theme: Theme): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: theme.spacing.md,
+});
+
+export const formField = (): CSSProperties => ({
+  display: "grid",
+  gap: 6,
+});
+
+export const formFieldFull = (): CSSProperties => ({
+  display: "grid",
+  gap: 6,
+  gridColumn: "1 / -1",
+});
+
+export const formLabel = (theme: Theme): CSSProperties => ({
+  color: theme.colors.palette.text.muted,
+  fontSize: theme.typography.fontSize.sm.size,
+  fontWeight: theme.typography.fontWeight.medium,
+});
+
+export const formInput = (theme: Theme): CSSProperties => ({
+  width: "100%",
+  borderRadius: theme.spacing.md,
+  border: `1px solid ${theme.colors.palette.borders.default}`,
+  background: theme.colors.palette.backgrounds.primary,
+  color: theme.colors.palette.text.primary,
+  fontSize: theme.typography.fontSize.sm.size,
+  padding: "10px 12px",
+  outline: "none",
+  fontFamily: theme.typography.fontFamily.sans.join(", "),
+});
+
+export const formTextarea = (theme: Theme): CSSProperties => ({
+  ...formInput(theme),
+  minHeight: 120,
+  resize: "vertical",
 });
 
 export const modalHeader = (theme: Theme): CSSProperties => ({

@@ -4,14 +4,11 @@ import { useEffect, useState } from "react";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  approveCatalogSpecRequestById,
-  fetchAdminCatalogSpecRequests,
+  fetchAdminProductCounts,
   fetchAdminProducts,
-  rejectCatalogSpecRequestById,
-  setAdminCatalogSpecRequestsStatus,
+  setAdminProductsStatus,
 } from "@/features/admin/store/adminSlice";
 import {
-  selectAdminCatalogSpecRequests,
   selectAdminProducts,
 } from "@/features/admin/store/adminSelectors";
 import type { AdminStatus } from "@/features/admin/types";
@@ -45,19 +42,12 @@ type CatalogRow = {
   category?: { id?: number | string };
 };
 
-const tabs: { key: AdminStatus; label: string }[] = [
-  { key: "all", label: "Tất cả" },
-  { key: "pending", label: "Chờ duyệt" },
-  { key: "approved", label: "Đã duyệt" },
-  { key: "rejected", label: "Từ chối" },
-];
-
 export default function AdminProductsView() {
   const { themed } = useAppTheme();
   const dispatch = useAppDispatch();
   const { items, page, totalPages, total, loading } =
     useAppSelector(selectAdminProducts);
-  const specRequests = useAppSelector(selectAdminCatalogSpecRequests);
+  const productState = useAppSelector(selectAdminProducts);
   const [q, setQ] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -70,9 +60,29 @@ export default function AdminProductsView() {
   const [brandOptions, setBrandOptions] = useState<Array<{ id: number; name: string }>>([]);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
+  const formatVnd = (value?: number | string | null) =>
+    value == null || value === ""
+      ? "-"
+      : new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+          maximumFractionDigits: 0,
+        }).format(Number(value || 0));
+
   useEffect(() => {
-    dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
-  }, [dispatch, page, q]);
+    dispatch(
+      fetchAdminProducts({
+        page,
+        status: productState.status,
+        limit: 10,
+        q: q || undefined,
+      }),
+    );
+  }, [dispatch, page, productState.status, q]);
+
+  useEffect(() => {
+    dispatch(fetchAdminProductCounts());
+  }, [dispatch]);
 
   useEffect(() => {
     (async () => {
@@ -98,45 +108,21 @@ export default function AdminProductsView() {
     })();
   }, []);
 
-  useEffect(() => {
-    dispatch(
-      fetchAdminCatalogSpecRequests({
-        page: specRequests.page,
-        status: specRequests.status,
-        limit: 10,
-      }),
-    );
-  }, [dispatch, specRequests.page, specRequests.status]);
-
-  const onApproveSpec = async (id: number) => {
-    await dispatch(approveCatalogSpecRequestById(id));
-    dispatch(
-      fetchAdminCatalogSpecRequests({
-        page: specRequests.page,
-        status: specRequests.status,
-        limit: 10,
-      }),
-    );
-  };
-
-  const onRejectSpec = async (id: number) => {
-    await dispatch(rejectCatalogSpecRequestById({ id }));
-    dispatch(
-      fetchAdminCatalogSpecRequests({
-        page: specRequests.page,
-        status: specRequests.status,
-        limit: 10,
-      }),
-    );
-  };
-
   const onDeleteCatalog = async (id: number) => {
     const ok = window.confirm("Xóa catalog này?");
     if (!ok) return;
     try {
       await deleteAdminCatalogProduct(id);
       showSuccessToast("Xóa catalog thành công");
-      dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
+      dispatch(
+        fetchAdminProducts({
+          page,
+          status: productState.status,
+          limit: 10,
+          q: q || undefined,
+        }),
+      );
+      dispatch(fetchAdminProductCounts());
     } catch (error) {
       showErrorToast(error);
     }
@@ -164,7 +150,15 @@ export default function AdminProductsView() {
       category_id: editingCategoryId ? Number(editingCategoryId) : undefined,
     });
     setEditOpen(false);
-    dispatch(fetchAdminProducts({ page, status: "all", limit: 10, q: q || undefined }));
+    dispatch(
+      fetchAdminProducts({
+        page,
+        status: productState.status,
+        limit: 10,
+        q: q || undefined,
+      }),
+    );
+    dispatch(fetchAdminProductCounts());
   };
 
   const statusLabel = (value: string) => {
@@ -175,97 +169,208 @@ export default function AdminProductsView() {
     return value;
   };
 
+  const productTabs = [
+    { key: "all" as const, label: "Tất cả", count: productState.counts.all },
+    {
+      key: "pending" as const,
+      label: "Chờ duyệt",
+      count: productState.counts.pending,
+    },
+    {
+      key: "approved" as const,
+      label: "Đã duyệt",
+      count: productState.counts.approved,
+    },
+    {
+      key: "rejected" as const,
+      label: "Từ chối",
+      count: productState.counts.rejected,
+    },
+  ];
+
   return (
     <AdminLayout>
       <header style={themed(styles.pageHeader)}>
         <h1 style={themed(styles.pageTitle)}>Danh mục sản phẩm</h1>
-        <p style={themed(styles.pageSubtitle)}>{total} sản phẩm</p>
+        <p style={themed(styles.pageSubtitle)}>
+          Quản lý catalog sản phẩm chuẩn, rà soát trạng thái duyệt và cập nhật
+          thông tin chung.
+        </p>
       </header>
 
-      <section style={themed(styles.toolbar)}>
-        <div style={themed(styles.searchWrap)}>
-          <span style={themed(styles.searchIcon)}>
-            <AppIcon name="search" />
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={themed(styles.searchInput)}
-          />
+      <section style={themed(styles.summaryGrid)}>
+        <div style={themed(styles.summaryCard)}>
+          <span style={themed(styles.summaryLabel)}>Tổng catalog</span>
+          <strong style={themed(styles.summaryValue)}>
+            {productState.counts.all.toLocaleString("vi-VN")}
+          </strong>
+        </div>
+        <div style={themed(styles.summaryCard)}>
+          <span style={themed(styles.summaryLabel)}>Chờ duyệt</span>
+          <strong style={themed(styles.summaryValue)}>
+            {productState.counts.pending.toLocaleString("vi-VN")}
+          </strong>
+        </div>
+        <div style={themed(styles.summaryCard)}>
+          <span style={themed(styles.summaryLabel)}>Đã duyệt</span>
+          <strong style={themed(styles.summaryValue)}>
+            {productState.counts.approved.toLocaleString("vi-VN")}
+          </strong>
+        </div>
+        <div style={themed(styles.summaryCard)}>
+          <span style={themed(styles.summaryLabel)}>Từ chối</span>
+          <strong style={themed(styles.summaryValue)}>
+            {productState.counts.rejected.toLocaleString("vi-VN")}
+          </strong>
+        </div>
+      </section>
+
+      <section style={themed(styles.toolbarStack)}>
+        <div style={themed(styles.tabGroup)}>
+          {productTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => dispatch(setAdminProductsStatus(tab.key))}
+              style={
+                tab.key === productState.status
+                  ? themed(styles.tabButtonActive)
+                  : themed(styles.tabButton)
+              }
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+        <div style={themed(styles.toolbarRow)}>
+          <div style={themed(styles.searchWrap)}>
+            <span style={themed(styles.searchIcon)}>
+              <AppIcon name="search" />
+            </span>
+            <input
+              type="text"
+              placeholder="Tìm theo tên sản phẩm, thương hiệu hoặc danh mục..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={themed(styles.searchInput)}
+            />
+          </div>
         </div>
       </section>
 
       <section style={themed(styles.tableCard)}>
-        <table style={themed(styles.table)}>
-          <thead>
-            <tr>
-              <th style={themed(styles.th)}>Sản phẩm</th>
-              <th style={themed(styles.th)}>Thương hiệu</th>
-              <th style={themed(styles.th)}>Danh mục</th>
-              <th style={themed(styles.th)}>Giá niêm yết</th>
-              <th style={themed(styles.th)}>Trạng thái</th>
-              <th style={themed(styles.th)}>Ngày tạo</th>
-              <th style={themed(styles.th)}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!loading && items.length === 0 ? (
+        <div style={themed(styles.tableHeader)}>
+          <div style={themed(styles.tableHeaderMeta)}>
+            <h2 style={themed(styles.tableHeaderTitle)}>Danh sách catalog</h2>
+            <span style={themed(styles.tableHeaderSubtitle)}>
+              {loading
+                ? "Đang tải dữ liệu..."
+                : `${total.toLocaleString("vi-VN")} kết quả phù hợp`}
+            </span>
+          </div>
+        </div>
+
+        <div style={themed(styles.tableWrap)}>
+          <table style={themed(styles.table)}>
+            <thead>
               <tr>
-                <td style={themed(styles.td)} colSpan={7}>
-                  <div style={themed(styles.emptyState)}>Không có sản phẩm phù hợp</div>
-                </td>
+                <th style={{ ...themed(styles.th), width: "42%" }}>Sản phẩm</th>
+                <th style={{ ...themed(styles.th), width: "11%" }}>Thương hiệu</th>
+                <th style={{ ...themed(styles.th), width: "11%" }}>Danh mục</th>
+                <th style={{ ...themed(styles.th), width: "12%" }}>Giá niêm yết</th>
+                <th style={{ ...themed(styles.th), width: "11%" }}>Trạng thái</th>
+                <th style={{ ...themed(styles.th), width: "9%" }}>Ngày tạo</th>
+                <th style={{ ...themed(styles.th), width: "9%" }}>Thao tác</th>
               </tr>
-            ) : (
-              items.map((product) => (
-                <tr key={product.id}>
-                  <td style={themed(styles.td)}>{product.name}</td>
-                  <td style={themed(styles.td)}>{product.brand?.name ?? "-"}</td>
-                  <td style={themed(styles.td)}>{product.category?.name ?? "-"}</td>
-                  <td style={themed(styles.td)}>
-                    {product.msrp ?? "-"}
-                  </td>
-                  <td style={themed(styles.td)}>
-                    <span
-                      style={{
-                        ...themed(styles.statusPill),
-                        ...(product.status === "active"
-                          ? themed(styles.statusApproved)
-                          : themed(styles.statusPending)),
-                      }}
-                    >
-                      {statusLabel(product.status)}
-                    </span>
-                  </td>
-                  <td style={themed(styles.td)}>
-                    {new Date(product.created_at).toLocaleDateString("vi-VN")}
-                  </td>
-                  <td style={themed(styles.td)}>
-                    <div style={themed(styles.rowActions)}>
-                      <button
-                        type="button"
-                        style={themed(styles.iconButton)}
-                        onClick={() => openEdit(product)}
-                        title="Sửa"
-                      >
-                        <AppIcon name="edit" />
-                      </button>
-                      <button
-                        type="button"
-                        style={themed(styles.dangerButton)}
-                        onClick={() => onDeleteCatalog(product.id)}
-                        title="Xóa"
-                      >
-                        <AppIcon name="delete" />
-                      </button>
+            </thead>
+            <tbody>
+              {!loading && items.length === 0 ? (
+                <tr>
+                  <td style={themed(styles.td)} colSpan={7}>
+                    <div style={themed(styles.emptyState)}>
+                      Không có sản phẩm phù hợp
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                items.map((product) => (
+                  <tr key={product.id}>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.productCell)}>
+                        <div style={themed(styles.productTitle)}>{product.name}</div>
+                        <div style={themed(styles.inlineMeta)}>
+                          <span style={themed(styles.inlineMetaPill)}>
+                            ID #{product.id}
+                          </span>
+                          {product.status && (
+                            <span style={themed(styles.inlineMetaPill)}>
+                              Mã trạng thái: {product.status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span style={themed(styles.cellTextStrong)}>
+                        {product.brand?.name ?? "-"}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span style={themed(styles.cellTextStrong)}>
+                        {product.category?.name ?? "-"}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span style={themed(styles.cellTextStrong)}>
+                        {formatVnd(product.msrp)}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span
+                        style={{
+                          ...themed(styles.statusPill),
+                          ...(product.status === "active" ||
+                          product.status === "approved"
+                            ? themed(styles.statusApproved)
+                            : product.status === "rejected"
+                              ? themed(styles.statusRejected)
+                              : themed(styles.statusPending)),
+                        }}
+                      >
+                        {statusLabel(product.status)}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <span style={themed(styles.cellTextMuted)}>
+                        {new Date(product.created_at).toLocaleDateString("vi-VN")}
+                      </span>
+                    </td>
+                    <td style={themed(styles.td)}>
+                      <div style={themed(styles.rowActions)}>
+                        <button
+                          type="button"
+                          style={themed(styles.iconButton)}
+                          onClick={() => openEdit(product)}
+                          title="Sửa catalog"
+                        >
+                          <AppIcon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          style={themed(styles.dangerButton)}
+                          onClick={() => onDeleteCatalog(product.id)}
+                          title="Xóa catalog"
+                        >
+                          <AppIcon name="delete" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         <div style={themed(styles.paginationRow)}>
           <button
@@ -274,7 +379,7 @@ export default function AdminProductsView() {
               dispatch(
                 fetchAdminProducts({
                   page: Math.max(page - 1, 1),
-                  status: "all",
+                  status: productState.status,
                   limit: 10,
                   q: q || undefined,
                 })
@@ -294,7 +399,7 @@ export default function AdminProductsView() {
               dispatch(
                 fetchAdminProducts({
                   page: Math.min(page + 1, Math.max(totalPages, 1)),
-                  status: "all",
+                  status: productState.status,
                   limit: 10,
                   q: q || undefined,
                 })
@@ -310,155 +415,105 @@ export default function AdminProductsView() {
 
       {editOpen && (
         <div style={themed(styles.modalOverlay)}>
-          <div style={{ ...themed(styles.tableCard), width: "min(760px, 94vw)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                placeholder="Tên sản phẩm"
-                style={themed(styles.searchInput)}
-              />
-              <input
-                value={editingMsrp}
-                onChange={(e) => setEditingMsrp(e.target.value)}
-                placeholder="MSRP"
-                type="number"
-                style={themed(styles.searchInput)}
-              />
-              <select
-                value={editingStatus}
-                onChange={(e) => setEditingStatus(e.target.value)}
-                style={themed(styles.searchInput)}
-              >
-                <option value="pending">pending</option>
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
-                <option value="rejected">rejected</option>
-                <option value="draft">draft</option>
-              </select>
-              <select
-                value={editingBrandId}
-                onChange={(e) => setEditingBrandId(e.target.value)}
-                style={themed(styles.searchInput)}
-              >
-                <option value="">Chọn brand</option>
-                {brandOptions.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={editingCategoryId}
-                onChange={(e) => setEditingCategoryId(e.target.value)}
-                style={themed(styles.searchInput)}
-              >
-                <option value="">Chọn category</option>
-                {categoryOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {`${c.level && c.level > 1 ? "— ".repeat(c.level - 1) : ""}${c.name}`}
-                  </option>
-                ))}
-              </select>
-              <span />
-              <textarea
-                value={editingDescription}
-                onChange={(e) => setEditingDescription(e.target.value)}
-                placeholder="Mô tả"
-                style={{ ...themed(styles.searchInput), minHeight: 120, gridColumn: "1 / -1" }}
-              />
+          <div style={{ ...themed(styles.modalCard), width: "min(760px, 94vw)" }}>
+            <div style={themed(styles.modalHeader)}>
+              <h3 style={themed(styles.modalTitle)}>Chỉnh sửa catalog</h3>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
-              <button type="button" style={themed(styles.tabButton)} onClick={() => setEditOpen(false)}>
+            <div style={themed(styles.modalBody)}>
+              <div style={themed(styles.formGrid)}>
+                <label style={themed(styles.formFieldFull)}>
+                  <span style={themed(styles.formLabel)}>Tên sản phẩm</span>
+                  <input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    placeholder="Nhập tên sản phẩm"
+                    style={themed(styles.formInput)}
+                  />
+                </label>
+                <label style={themed(styles.formField)}>
+                  <span style={themed(styles.formLabel)}>Giá niêm yết</span>
+                  <input
+                    value={editingMsrp}
+                    onChange={(e) => setEditingMsrp(e.target.value)}
+                    placeholder="Nhập MSRP"
+                    type="number"
+                    style={themed(styles.formInput)}
+                  />
+                </label>
+                <label style={themed(styles.formField)}>
+                  <span style={themed(styles.formLabel)}>Trạng thái</span>
+                  <select
+                    value={editingStatus}
+                    onChange={(e) => setEditingStatus(e.target.value)}
+                    style={themed(styles.formInput)}
+                  >
+                    <option value="pending">Chờ duyệt</option>
+                    <option value="active">Đã duyệt</option>
+                    <option value="inactive">Ngừng hiển thị</option>
+                    <option value="rejected">Từ chối</option>
+                    <option value="draft">Nháp</option>
+                  </select>
+                </label>
+                <label style={themed(styles.formField)}>
+                  <span style={themed(styles.formLabel)}>Thương hiệu</span>
+                  <select
+                    value={editingBrandId}
+                    onChange={(e) => setEditingBrandId(e.target.value)}
+                    style={themed(styles.formInput)}
+                  >
+                    <option value="">Chọn thương hiệu</option>
+                    {brandOptions.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={themed(styles.formField)}>
+                  <span style={themed(styles.formLabel)}>Danh mục</span>
+                  <select
+                    value={editingCategoryId}
+                    onChange={(e) => setEditingCategoryId(e.target.value)}
+                    style={themed(styles.formInput)}
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categoryOptions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {`${c.level && c.level > 1 ? "— ".repeat(c.level - 1) : ""}${c.name}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={themed(styles.formFieldFull)}>
+                  <span style={themed(styles.formLabel)}>Mô tả</span>
+                  <textarea
+                    value={editingDescription}
+                    onChange={(e) => setEditingDescription(e.target.value)}
+                    placeholder="Nhập mô tả sản phẩm"
+                    style={themed(styles.formTextarea)}
+                  />
+                </label>
+              </div>
+            </div>
+            <div style={themed(styles.modalFooter)}>
+              <button
+                type="button"
+                style={themed(styles.tabButton)}
+                onClick={() => setEditOpen(false)}
+              >
                 Hủy
               </button>
-              <button type="button" style={themed(styles.primaryButton)} onClick={onSaveEdit}>
-                Lưu
+              <button
+                type="button"
+                style={themed(styles.primaryButton)}
+                onClick={onSaveEdit}
+              >
+                Lưu thay đổi
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <section style={{ ...themed(styles.tableCard), marginTop: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Yêu cầu thêm thông số</h3>
-          <div style={themed(styles.tabGroup)}>
-            {tabs.map((tab) => (
-              <button
-                key={`spec-${tab.key}`}
-                type="button"
-                onClick={() => dispatch(setAdminCatalogSpecRequestsStatus(tab.key))}
-                style={
-                  tab.key === specRequests.status
-                    ? themed(styles.tabButtonActive)
-                    : themed(styles.tabButton)
-                }
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <table style={themed(styles.table)}>
-          <thead>
-            <tr>
-              <th style={themed(styles.th)}>Catalog</th>
-              <th style={themed(styles.th)}>Spec key</th>
-              <th style={themed(styles.th)}>Giá trị đề xuất</th>
-              <th style={themed(styles.th)}>Người gửi</th>
-              <th style={themed(styles.th)}>Trạng thái</th>
-              <th style={themed(styles.th)}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!specRequests.loading && specRequests.items.length === 0 ? (
-              <tr>
-                <td style={themed(styles.td)} colSpan={6}>
-                  <div style={themed(styles.emptyState)}>Không có yêu cầu thông số</div>
-                </td>
-              </tr>
-            ) : (
-              specRequests.items.map((row) => (
-                <tr key={row.id}>
-                  <td style={themed(styles.td)}>{row.catalog?.name ?? `#${row.catalog_id}`}</td>
-                  <td style={themed(styles.td)}>{row.spec_key}</td>
-                  <td style={themed(styles.td)}>
-                    {Array.isArray(row.proposed_values)
-                      ? row.proposed_values.join(" | ")
-                      : "-"}
-                  </td>
-                  <td style={themed(styles.td)}>{row.requester?.username ?? "-"}</td>
-                  <td style={themed(styles.td)}>{statusLabel(row.status)}</td>
-                  <td style={themed(styles.td)}>
-                    {row.status === "pending" ? (
-                      <div style={themed(styles.rowActions)}>
-                        <button
-                          type="button"
-                          style={themed(styles.primaryButton)}
-                          onClick={() => onApproveSpec(row.id)}
-                        >
-                          Duyệt
-                        </button>
-                        <button
-                          type="button"
-                          style={themed(styles.dangerButton)}
-                          onClick={() => onRejectSpec(row.id)}
-                        >
-                          Từ chối
-                        </button>
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
     </AdminLayout>
   );
 }

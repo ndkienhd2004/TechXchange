@@ -27,6 +27,7 @@ import { selectIsAuthenticated } from "@/features/auth";
 import { showErrorToast, showSuccessToast } from "@/components/commons/Toast";
 import { getAxiosInstance } from "@/services/axiosConfig";
 import { openChatWithStore } from "@/features/chat/utils/openChat";
+import { useOwnedStoreId } from "@/features/shop/hooks/useOwnedStoreId";
 import {
   buildProductDisplayName,
   formatSpecKeyLabel,
@@ -163,6 +164,7 @@ export default function ProductDetailPage() {
   const dispatch = useAppDispatch();
   const { theme, themed } = useAppTheme();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const { ownedStoreId } = useOwnedStoreId();
 
   const product = useAppSelector(selectSelectedProduct);
   const loading = useAppSelector(selectProductDetailLoading);
@@ -246,7 +248,9 @@ export default function ProductDetailPage() {
         const currentProductId = Number(id);
         setRecommendedProducts(
           rows.filter(
-            (row: ProductRow) => Number(row?.id) !== currentProductId,
+            (row: ProductRow) =>
+              Number(row?.id) !== currentProductId &&
+              (!ownedStoreId || Number(row?.store_id || 0) !== ownedStoreId),
           ),
         );
       } catch {
@@ -257,7 +261,7 @@ export default function ProductDetailPage() {
     };
 
     void run();
-  }, [id]);
+  }, [id, ownedStoreId]);
 
   useEffect(() => {
     const storeId = Number(product?.store_id || 0);

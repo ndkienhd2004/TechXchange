@@ -11,6 +11,7 @@ import ProductSideHeader, {
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchProducts } from "@/features/products/store/productSlice";
+import { useOwnedStoreId } from "@/features/shop/hooks/useOwnedStoreId";
 import {
   selectProducts,
   selectProductLoading,
@@ -19,7 +20,7 @@ import {
 import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import * as styles from "./styles";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -30,6 +31,7 @@ function ProductsContent() {
   const products = useAppSelector(selectProducts);
   const loading = useAppSelector(selectProductLoading);
   const totalPages = useAppSelector(selectProductTotalPages);
+  const { ownedStoreId, loading: ownedStoreLoading } = useOwnedStoreId();
 
   const currentPage = useMemo(() => {
     const p = searchParams.get("page");
@@ -77,6 +79,7 @@ function ProductsContent() {
   );
 
   useEffect(() => {
+    if (ownedStoreLoading) return;
     dispatch(
       fetchProducts({
         page: currentPage,
@@ -84,9 +87,18 @@ function ProductsContent() {
         category_id: categoryId,
         brand_id: brandId,
         q: searchQuery,
+        exclude_store_id: ownedStoreId ?? undefined,
       })
     );
-  }, [dispatch, currentPage, categoryId, brandId, searchQuery]);
+  }, [
+    dispatch,
+    currentPage,
+    categoryId,
+    brandId,
+    searchQuery,
+    ownedStoreId,
+    ownedStoreLoading,
+  ]);
 
   return (
     <div style={themed(styles.page)}>
@@ -97,7 +109,7 @@ function ProductsContent() {
             <main style={themed(styles.shell)}>
               <h1 style={themed(styles.title)}>Sản phẩm</h1>
               
-              {loading ? (
+              {loading || ownedStoreLoading ? (
                 <div style={themed(styles.fallback)}>Đang tải sản phẩm...</div>
               ) : (
                 <>

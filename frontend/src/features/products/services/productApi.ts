@@ -10,6 +10,7 @@ export interface GetProductsParams {
   category_id?: number;
   brand_id?: number;
   store_id?: number;
+  exclude_store_id?: number;
   seller_id?: number;
   status?: string;
   min_price?: number;

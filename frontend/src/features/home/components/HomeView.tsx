@@ -10,10 +10,12 @@ import { selectIsAuthenticated } from "@/features/auth";
 import { buildProductDisplayName } from "@/features/products/utils/displayName";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { getAxiosInstance } from "@/services/axiosConfig";
+import { useOwnedStoreId } from "@/features/shop/hooks/useOwnedStoreId";
 import * as styles from "./styles";
 
 type ProductRow = {
   id: number;
+  store_id?: number | string;
   name: string;
   price: number;
   rating?: number | string | null;
@@ -32,6 +34,7 @@ type ProductRow = {
 export default function HomeView() {
   const { theme, themed } = useAppTheme();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const { ownedStoreId, loading: ownedStoreLoading } = useOwnedStoreId();
   const [featuredProducts, setFeaturedProducts] = useState<ProductRow[]>([]);
   const [personalizedProducts, setPersonalizedProducts] = useState<ProductRow[]>(
     [],
@@ -39,10 +42,17 @@ export default function HomeView() {
   const [loadingPersonalized, setLoadingPersonalized] = useState(false);
 
   useEffect(() => {
+    if (ownedStoreLoading) return;
     const run = async () => {
       try {
         const api = getAxiosInstance();
-        const res = await api.get("/products", { params: { limit: 8, page: 1 } });
+        const res = await api.get("/products", {
+          params: {
+            limit: 8,
+            page: 1,
+            exclude_store_id: ownedStoreId ?? undefined,
+          },
+        });
         const rows = Array.isArray(res?.data?.data?.products) ? res.data.data.products : [];
         setFeaturedProducts(rows);
       } catch {
@@ -50,9 +60,17 @@ export default function HomeView() {
       }
     };
     void run();
-  }, []);
+  }, [ownedStoreId, ownedStoreLoading]);
 
-  const shownFeatured = useMemo(() => featuredProducts.slice(0, 4), [featuredProducts]);
+  const shownFeatured = useMemo(
+    () =>
+      featuredProducts
+        .filter((product) =>
+          ownedStoreId ? Number(product.store_id || 0) !== ownedStoreId : true,
+        )
+        .slice(0, 4),
+    [featuredProducts, ownedStoreId],
+  );
   const saleBanners = useMemo(
     () => [
       {
@@ -99,7 +117,11 @@ export default function HomeView() {
         const rows = Array.isArray(response?.data?.data?.products)
           ? response.data.data.products
           : [];
-        setPersonalizedProducts(rows);
+        setPersonalizedProducts(
+          rows.filter((product: ProductRow) =>
+            ownedStoreId ? Number(product.store_id || 0) !== ownedStoreId : true,
+          ),
+        );
       } catch {
         setPersonalizedProducts([]);
       } finally {
@@ -108,7 +130,7 @@ export default function HomeView() {
     };
 
     void run();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, ownedStoreId]);
 
   return (
     <div style={themed(styles.page)}>
